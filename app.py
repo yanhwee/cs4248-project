@@ -44,17 +44,34 @@ with app.setup:
 
     @contextlib.contextmanager
     def suppress_stdout_stderr():
-        """Suppresses low-level C and Python stdout/stderr logs during model/tokenizer loading."""
-        old_stdout = sys.stdout
-        old_stderr = sys.stderr
-        with open(os.devnull, "w") as devnull:
-            sys.stdout = devnull
-            sys.stderr = devnull
+        """Suppresses both Python and low-level C file descriptor stdout/stderr during model/tokenizer loading."""
+        old_stdout, old_stderr = sys.stdout, sys.stderr
+        save_fds = []
+        null_fds = []
+        try:
+            null_fds = [os.open(os.devnull, os.O_RDWR) for _ in range(2)]
+            save_fds = [os.dup(1), os.dup(2)]
+            os.dup2(null_fds[0], 1)
+            os.dup2(null_fds[1], 2)
+            sys.stdout = open(os.devnull, "w")
+            sys.stderr = open(os.devnull, "w")
+            yield
+        except Exception:
+            yield
+        finally:
             try:
-                yield
-            finally:
-                sys.stdout = old_stdout
-                sys.stderr = old_stderr
+                if save_fds:
+                    os.dup2(save_fds[0], 1)
+                    os.dup2(save_fds[1], 2)
+                for fd in save_fds + null_fds:
+                    try:
+                        os.close(fd)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
 
     # Hardware detection
     if torch.backends.mps.is_available():
@@ -83,6 +100,19 @@ def _(mo):
     * **2D Hungarian Bipartite Matching**: Aligns joint top-$k$ candidate spans across paraphrase pairs via polynomial-time bipartite assignment, preventing multi-entity cross-pairing chimeric spans.
     * **Sliding-Window Relative Margin Inference**: Calibrates local window candidate scores against unanswerable $\texttt{[CLS]}$ null anchors to eliminate inter-window logit drift.
     """)
+    return
+
+
+@app.cell
+def _(mo):
+    mo.callout(
+        mo.md(r"""
+        **Interactive Reader & Code Exploration Guide**:
+        * **Collapsible Code Inspectors**: Under **Sections 3, 4, 5, and 6**, expand any `🔍 Inspect PyTorch Implementation` accordion to review self-contained tensor implementations and algorithms directly within this application view.
+        * **Marimo Code Toggle**: To view full live reactive code cells side-by-side with markdown, press <kbd>Cmd</kbd> + <kbd>.</kbd> (macOS) or <kbd>Ctrl</kbd> + <kbd>.</kbd> (Linux/Windows), or launch with `marimo run --include-code app.py` (or `marimo edit app.py`).
+        """),
+        kind="info",
+    )
     return
 
 
@@ -395,7 +425,15 @@ def _(mo, train_records_sample):
     )
     _mutation_rate = (100.0 * _n_mutated / _n_total) if _n_total > 0 else 0.0
 
-    _ex = paired_train_records[0] if paired_train_records else {}
+    _ex = next(
+        (
+            r
+            for r in paired_train_records
+            if r.get("question", "").strip().lower()
+            != r.get("paraphrase", "").strip().lower()
+        ),
+        paired_train_records[0] if paired_train_records else {},
+    )
     _sample_q = _ex.get("question", "N/A")
     _sample_qp = _ex.get("paraphrase", "N/A")
     _sample_ans = _ex.get("answer_text", "N/A")
@@ -421,7 +459,7 @@ def _(mo, train_records_sample):
 
 @app.cell
 def _(mo):
-    mo.md(r"""
+    _sec3_md = mo.md(r"""
     ---
     ## 3. Sliding Window Preprocessing & Coordinate Space Projection
     In document-level extractive QA, context passage length $m$ frequently exceeds the maximum sequence capacity $L$ of transformer models ($m \gg L$, e.g. $L = 256$ or $512$). To prevent naive truncation of candidate answers, contexts are partitioned via sliding windows with stride $S$:
@@ -432,6 +470,30 @@ def _(mo):
     **Null Anchor Calibration**:
     For windows $w \in \{1, \dots, W\}$ where the ground-truth span $[a_{\text{start}}, a_{\text{end}}]$ lies outside the active window boundary $[c_{\text{start}}^{(w)}, c_{\text{end}}^{(w)}]$, target labels are projected onto index $0$ ($\texttt{[CLS]}$). This trains the model to explicitly predict the null hypothesis $z_{\text{null}}^{(w)} = z_{\text{start}}^{(w)}[0] + z_{\text{end}}^{(w)}[0]$, establishing an inter-window reference baseline.
     """)
+    _sec3_code = mo.accordion({
+        "🔍 Inspect PyTorch & Tokenizer Implementation: Sliding Window & Offset Projection": mo.md(r"""
+```python
+def prepare_paired_sliding_windows(records, tokenizer, max_seq_len=256, doc_stride=96):
+    # Tokenizes paired queries (q, q') with sliding-window passage stride and [CLS] null projection.
+    paired_features = []
+    for rec in records:
+        context, ans_start, ans_text = rec["context"], rec["answer_start"], rec["answer_text"]
+        ans_end = ans_start + len(ans_text) if ans_text else -1
+        
+        # Tokenize (q, context) and (q', context) with sliding window stride
+        for q_key in ["question", "paraphrase"]:
+            enc = tokenizer(
+                rec[q_key], context,
+                max_length=max_seq_len, stride=doc_stride,
+                truncation="only_second", return_overflowing_tokens=True,
+                return_offsets_mapping=True, padding="max_length"
+            )
+            # Map character span [ans_start, ans_end] to token span [start_idx, end_idx]
+            # If answer is not within the current window, project to index 0 ([CLS] null token)
+```
+"""),
+    })
+    mo.vstack([_sec3_md, _sec3_code])
     return
 
 
@@ -571,7 +633,7 @@ def prepare_paired_sliding_windows(
 
 @app.cell
 def _(mo):
-    mo.md(r"""
+    _sec4_md = mo.md(r"""
     ---
     ## 4. Model Architecture & Forward Computation Graph
     The architecture comprises a shared transformer backbone $\mathcal{E}_\theta$ (BERT / DeBERTa-v3) coupled to a linear span boundary projection layer $\mathbf{W}_{\text{span}} \in \mathbb{R}^{d \times 2}$. The forward computation graph bifurcates into two distinct output representations:
@@ -584,6 +646,25 @@ def _(mo):
        $$\mathbf{s} = \mathbf{z}_{\text{start}}[\mathbf{M}_{\text{pass}}], \quad \mathbf{e} = \mathbf{z}_{\text{end}}[\mathbf{M}_{\text{pass}}] \in \mathbb{R}^m$$
        Normalized passage distributions $P_{\text{start}}, P_{\text{end}} \in \Delta^{m-1}$ parameterize the consistency regularizers.
     """)
+    _sec4_code = mo.accordion({
+        "🔍 Inspect PyTorch Implementation: Bifurcated QA Model Architecture": mo.md(r"""
+```python
+class ParaphraseConsistentQAExtractor(nn.Module):
+    # Extractive QA Model with bifurcated output: CE sequence logits + passage distributions.
+    def __init__(self, model_name: str = "bert-base-uncased"):
+        super().__init__()
+        self.encoder = AutoModel.from_pretrained(model_name)
+        hidden_size = self.encoder.config.hidden_size
+        self.qa_outputs = nn.Linear(hidden_size, 2)
+
+    def forward(self, input_ids, attention_mask, pass_mask=None):
+        h = self.encoder(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state
+        logits = self.qa_outputs(h)
+        return {"z_start": logits[:, :, 0], "z_end": logits[:, :, 1], "hidden_states": h}
+```
+"""),
+    })
+    mo.vstack([_sec4_md, _sec4_code])
     return
 
 
@@ -644,7 +725,7 @@ def _(mo):
         **Proposition 1 (Geometric Pathology & Permutation Invariance of $\mathcal{D}_{\mathrm{KL}}$)**:
         Let $(\mathcal{X}, d_{\text{seq}})$ denote the ordered token lattice with distance $d_{\text{seq}}(i, j) = \frac{\vert i - j \vert}{m}$.
         Standard information divergences implicitly assume the discrete indicator metric $d(i, j) = \mathbf{1}_{i \neq j}$, disregarding sequence topology:
-        
+
         * **Spatial Permutation Invariance**: For any permutation $\pi \in \mathcal{S}_m$ acting on passage coordinates, $\mathcal{D}_{\mathrm{KL}}(\pi(P) \parallel \pi(Q)) \equiv \mathcal{D}_{\mathrm{KL}}(P \parallel Q)$. Consequently, an adjacent off-by-one boundary shift ($P = \delta_i, Q = \delta_{i+1}$) incurs the identical infinite divergence penalty as a 100-token displacement into an irrelevant paragraph.
         * **Disjoint Support Gradient Pathology**: When distributions exhibit disjoint supports ($\mathrm{supp}(P) \cap \mathrm{supp}(Q) = \emptyset$), $\mathcal{D}_{\mathrm{KL}} \to \infty$ and Euclidean gradient norms explode:
         $$\lim_{Q(i) \to 0^+} \left\Vert \nabla_\theta \mathcal{D}_{\mathrm{KL}} \right\Vert_2 = +\infty$$
@@ -666,7 +747,7 @@ def _(mo):
         mo.md(r"""
         **Proposition 2 (Continuity & Gradient Boundedness of 1D Wasserstein Distance)**:
         On the ordered token lattice, $W_1(P, Q)$ continuously tracks spatial distance:
-        
+
         * **Linear Spatial Distance Scaling**: For point predictions $P = \delta_i$ and $Q = \delta_j$, $W_1(\delta_i, \delta_j) = \frac{\vert i - j \vert}{m}$, penalizing nearby candidate boundaries smoothly.
         * **Strictly Bounded Subgradients**: The gradient with respect to cumulative distributions is uniformly bounded:
         $$\left\vert \frac{\partial W_1}{\partial \mathrm{CDF}(i)} \right\vert \le \frac{1}{m}$$
@@ -685,12 +766,33 @@ def _(mo):
     $$\mathcal{L}_{\text{Hungarian}} = \frac{1}{2} \sum_{a=1}^k w_a \cdot \Big\vert p_a^{(q)} - p_{\pi^*(a)}^{(q')} \Big\vert + \sum_{a=1}^k C_{a, \pi^*(a)} \cdot \left( \frac{p_a^{(q)} + p_{\pi^*(a)}^{(q')}}{2} \right)$$
     """)
 
+    _sec5_code = mo.accordion({
+        "🔍 Inspect PyTorch Implementation: 1D Optimal Transport, Hungarian Matching & Symmetric KL": mo.md(r"""
+```python
+def compute_1d_wasserstein_loss(p_dist: torch.Tensor, q_dist: torch.Tensor) -> torch.Tensor:
+    # Exact closed-form 1D Earth Mover Distance via cumulative distribution functions.
+    cdf_p = torch.cumsum(p_dist, dim=-1)
+    cdf_q = torch.cumsum(q_dist, dim=-1)
+    m = p_dist.shape[-1]
+    w1 = torch.sum(torch.abs(cdf_p - cdf_q), dim=-1) / float(max(1, m))
+    return torch.mean(w1)
+
+def compute_hungarian_span_loss(s_logits_q, e_logits_q, s_logits_qp, e_logits_qp, k=5):
+    # Joint candidate span extraction and Kuhn-Munkres bipartite matching with IoU cost.
+    # 1. Extracts top-k joint candidate spans (s_a, e_a) from 2D coordinate grid
+    # 2. Computes cost matrix C_ab = 0.5 * D_pos(a, b) + 0.5 * D_IoU(a, b)
+    # 3. Solves optimal assignment pi* in O(k^3) via scipy.optimize.linear_sum_assignment
+```
+"""),
+    })
+
     _sec5_display = mo.vstack([
         _sec5_header,
         _kl_box,
         _sec5_ot,
         _ot_box,
         _sec5_hungarian,
+        _sec5_code,
     ])
     _sec5_display
     return
@@ -826,7 +928,7 @@ def compute_hungarian_loss_single_sample(
 
 @app.cell
 def _(mo):
-    mo.md(r"""
+    _sec6_md = mo.md(r"""
     ---
     ## 6. MAP Decoding & Relative Margin Multi-Window Aggregation
     During sliding-window inference across documents $\mathcal{W}$, each local window $w$ computes candidate span scores alongside the unanswerable null baseline:
@@ -837,6 +939,29 @@ def _(mo):
     $$(i^*, j^*) = \arg\max_{(i_{\text{glob}}, j_{\text{glob}})} \max_{w \in \mathcal{W}} \Big( \text{score}^{(w)}(i, j) - \text{score}_{\text{null}}^{(w)} \Big)$$
     subject to span length constraint $0 \le j_{\text{glob}} - i_{\text{glob}} + 1 \le L_{\text{max\_span}}$.
     """)
+    _sec6_code = mo.accordion({
+        "🔍 Inspect PyTorch Implementation: Relative Margin Multi-Window Decoding": mo.md(r"""
+```python
+def decode_window_predictions(z_start, z_end, pass_mask, max_span_len=30):
+    # Computes relative margin delta_z = (z_start[i] + z_end[j]) - (z_start[0] + z_end[0]).
+    null_score = z_start[0] + z_end[0]  # [CLS] null token reference baseline
+    pass_indices = [i for i, m in enumerate(pass_mask) if m == 1]
+    if not pass_indices:
+        return []
+    p_min = pass_indices[0]
+    p_max = pass_indices[-1]
+
+    candidates = []
+    for i in pass_indices:
+        for j in range(i, min(p_max + 1, i + max_span_len)):
+            raw_score = z_start[i] + z_end[j]
+            rel_margin = raw_score - null_score  # Null-calibrated relative margin
+            candidates.append((i - p_min, j - p_min, rel_margin))
+    return candidates
+```
+"""),
+    })
+    mo.vstack([_sec6_md, _sec6_code])
     return
 
 
@@ -1623,20 +1748,23 @@ def _(mo, preset_dropdown):
 
     context_area = mo.ui.text_area(
         value=_ctx,
-        label="Context Passage (c)",
+        label="",
+        placeholder="Enter or select document passage...",
         rows=5,
         full_width=True,
     )
 
     q_input = mo.ui.text(
         value=_q,
-        label="Query (q)",
+        label="",
+        placeholder="Enter original query (q)...",
         full_width=True,
     )
 
     qp_input = mo.ui.text(
         value=_qp,
-        label="Paraphrase (q')",
+        label="",
+        placeholder="Enter paraphrase (q')...",
         full_width=True,
     )
 
