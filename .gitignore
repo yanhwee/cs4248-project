@@ -38,3 +38,21 @@ weights/
 # Cluster execution logs and step histories
 runs/
 !runs/ablation_summary.json
+
+# LaTeX auxiliary & build artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+missfont.log
+
+# Scratch & temporary testing directories
+scratch*/
+

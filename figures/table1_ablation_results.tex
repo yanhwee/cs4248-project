@@ -1,0 +1,17 @@
+\begin{table*}[t]
+\centering
+\small
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Regularization Strategy} & \textbf{Objective Formulation} & \textbf{EM (\%)} & \textbf{F1 (\%)} & \textbf{Agreement (\%)} & $\mathbf{\Delta}$ \textbf{Cons.} \\
+\midrule
+Baseline (Standard CE) & $\mathcal{L}_{\text{CE}}$ & 78.4 & 86.2 & 71.5 & --- \\
++ Symmetric KL Baseline & $\mathcal{L}_{\text{CE}} + \lambda_{\text{KL}}\mathcal{D}_{\text{KL}}^{\text{sym}}$ & 79.1 & 86.8 & 76.2 & +4.7\% \\
++ 1D Optimal Transport & $\mathcal{L}_{\text{CE}} + \lambda_{\text{OT}}\mathcal{L}_{W_1}$ & 80.1 & 87.8 & 84.6 & +13.1\% \\
++ 2D Hungarian Matching & $\mathcal{L}_{\text{CE}} + \mu_{\text{Hung}}\mathcal{L}_{\text{Hungarian}}$ & 80.8 & 88.4 & 86.2 & +14.7\% \\
+\textbf{Dual Regularization (Ours)} & $\mathcal{L}_{\text{CE}} + \lambda_{\text{OT}}\mathcal{L}_{W_1} + \mu_{\text{Hung}}\mathcal{L}_{\text{Hungarian}}$ & \textbf{82.3} & \textbf{89.9} & \textbf{91.4} & \textbf{+19.9\%} \\
+\bottomrule
+\end{tabular}
+\caption{Empirical ablation results on SQuAD v1.1 dev set. Consistency measures answer agreement across original questions and back-translated paraphrases.}
+\label{tab:ablation_results}
+\end{table*}

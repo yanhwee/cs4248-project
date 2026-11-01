@@ -92,7 +92,7 @@ For the complete, self-contained, first-principles machine learning specificatio
 * Combinatorial bipartite matching via the Hungarian algorithm with autograd stop-gradient mechanics.
 * Comprehensive mathematical symbol glossary and type signatures table.
 
-👉 **Please refer to the dedicated specification:** [**`docs/MATHEMATICAL_FOUNDATIONS.md`**](docs/MATHEMATICAL_FOUNDATIONS.md).
+👉 **Please refer to the dedicated specification:** [**`docs/math.md`**](docs/math.md).
 
 ---
 
@@ -102,7 +102,7 @@ For the complete, self-contained, first-principles machine learning specificatio
 cs4248-project-1/
 ├── README.md                      # Project Overview, Setup & Results
 ├── docs/
-│   └── MATHEMATICAL_FOUNDATIONS.md# Comprehensive First-Principles Math Specification
+│   └── math.md                    # Comprehensive First-Principles Math Specification
 ├── requirements.txt               # Pinned pip dependencies for Local and SoC Cluster
 ├── pyproject.toml                 # Workspace package configuration
 │
@@ -126,6 +126,13 @@ cs4248-project-1/
 │   ├── boundary_displacement.pdf / .png
 │   ├── table1_ablation_results.tex / .md
 │   └── table2_qualitative_cases.tex / .md
+│
+├── report/                        # Publication Manuscript: ACL 2026 Camera-Ready Paper
+│   ├── main.tex                   # LaTeX source (4-page main text + 1-page references)
+│   ├── main.pdf                   # Compiled publication-ready PDF (strictly <= 5 pages)
+│   ├── custom.bib                 # Comprehensive BibTeX literature references
+│   ├── acl.sty & acl_natbib.bst   # Official ACL formatting and bibliography style files
+│   └── figures/                   # Vector PDF graphics embedded in the paper
 │
 ├── runs/                          # Real-time training telemetry JSONs & Slurm logs
 └── weights/                       # Model checkpoint weights (.pt)
@@ -166,9 +173,6 @@ cs4248-project-1/
 
 ### 1. Environment Installation
 ```bash
-git clone https://github.com/CS4248-G17/cs4248-project-1.git
-cd cs4248-project-1
-
 # Standard Python venv
 python3 -m venv .venv
 source .venv/bin/activate
@@ -211,31 +215,68 @@ python visualize.py
 
 ## 🖥️ Cluster Reproduction Guide (NUS SoC Compute Cluster)
 
-The headless training pipeline is optimized for the NUS SoC Compute Cluster (`xlogin.comp.nus.edu.sg`).
+The headless training pipeline is optimized for the NUS SoC Compute Cluster (`xlogin.comp.nus.edu.sg`). Because external access to compute nodes is firewalled, all connections must route through the student bastion jump host (`stujump.comp.nus.edu.sg`).
 
-### 1. Connecting via Active SSH Multiplexing
+### 1. Copying Project Files to the Cluster (via Jump Host)
+Run from your local workstation:
+
 ```bash
-ssh -S /tmp/ssh-master-sock yanhwee@xlogin.comp.nus.edu.sg
-cd ~/cs4248
+# Recommended: rsync over SSH jump host (skips virtualenvs, caches, and large checkpoints)
+rsync -avz --progress \
+  --exclude={'.venv','.git','__pycache__','*.pt','*.pdf','scratch*'} \
+  -e "ssh -J <user-id>@stujump.comp.nus.edu.sg" \
+  ./ <user-id>@xlogin.comp.nus.edu.sg:~/cs4248-project-1/
+
+# Alternatively, using standard scp with ProxyJump:
+scp -o "ProxyJump <user-id>@stujump.comp.nus.edu.sg" -r . <user-id>@xlogin.comp.nus.edu.sg:~/cs4248-project-1
 ```
 
-### 2. Submitting the Full 5-Condition Ablation Suite
+### 2. Connecting via SSH Jump Host
+```bash
+# Direct SSH connection through jump host:
+ssh -J <user-id>@stujump.comp.nus.edu.sg <user-id>@xlogin.comp.nus.edu.sg
+
+# (Optional) Multiplexed session for fast instant reconnection:
+ssh -M -S ~/.ssh/soc-cm-%r@%h:%p -J <user-id>@stujump.comp.nus.edu.sg <user-id>@xlogin.comp.nus.edu.sg
+```
+
+### 3. Setting Up Pip Virtual Environment (No UV or Conda Required)
+Once logged into `xlogin`:
+
+```bash
+cd ~/cs4248-project-1
+
+# Create and activate standard Python 3 venv
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Upgrade pip and install pinned dependencies
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### 4. Submitting the Full 5-Condition Ablation Suite (Slurm)
+Submit the full benchmark job to Slurm:
+
 ```bash
 sbatch scripts/submit_all_ablations.sbatch
 ```
-Monitor job execution:
+
+Monitor job status and real-time execution logs:
 ```bash
 squeue -u $USER
 tail -f runs/slurm_all_<JOB_ID>.log
 ```
-> **GPU Scheduling Note**: The Slurm batch script excludes `xgpd[0-8]` (older TITAN V CC 7.0 nodes) to schedule automatically onto 16GB Tesla T4 (`xgpf[1-8]`, CC 7.5) or A100 nodes.
+
+> **GPU Architecture Note**: `scripts/submit_all_ablations.sbatch` automatically excludes `xgpd[0-8]` (older TITAN V CC 7.0 nodes) to schedule onto 16GB Tesla T4 (`xgpf[1-8]`, CC 7.5) or A100 nodes with full FP16 mixed precision support.
 
 ---
 
 ## 📝 ACL 2026 Short Paper Guide & Artifact Mapping
 
-This project maps directly into the 4-page ACL short paper format:
+The project report is authored in strict compliance with the **ACL camera-ready format** using the official `acl.sty` and `acl_natbib.bst` style sheets.
 
+### Paper Section & Artifact Mapping
 | Paper Section | Page Budget | Corresponding Code & Artifacts |
 | :--- | :---: | :--- |
 | **§1 Introduction** | 0.75 pages | Motivation: Fragility of QA models to lexical perturbations. Table 2 failure modes (boundary slip, antonym flip). |
@@ -245,6 +286,40 @@ This project maps directly into the 4-page ACL short paper format:
 | **§5 Empirical Results** | 1.0 page | **Table 1** (`table1_ablation_results.tex`), **Figure 1** (`loss_convergence.pdf`), **Figure 2** (`ablation_benchmark.pdf`), **Figure 3** (`boundary_displacement.pdf`). |
 | **§6 Qualitative Analysis** | 0.5 pages | **Table 2** (`table2_qualitative_cases.tex`), detailed failure taxonomy. |
 | **References** | 1.0 page (Extra) | Cited ACL literature. |
+
+### 🛠️ Compiling the LaTeX Paper PDF Locally
+All LaTeX source files reside in the `report/` directory:
+
+```bash
+cd report
+
+# Standard 4-step compilation pass for citations and cross-references:
+pdflatex -interaction=batchmode main.tex
+bibtex main
+pdflatex -interaction=batchmode main.tex
+pdflatex -interaction=batchmode main.tex
+
+# Or with latexmk (if installed):
+latexmk -pdf main.tex
+```
+
+The compiled manuscript will be output to [`report/main.pdf`](report/main.pdf).
+
+### ☁️ Compiling via Overleaf
+1. Create a new blank project on [Overleaf](https://www.overleaf.com/).
+2. Upload the contents of the `report/` directory:
+   - Source: `main.tex`, `custom.bib`, `acl.sty`, `acl_natbib.bst`
+   - LaTeX tables: `table1_ablation_results.tex`, `table2_qualitative_cases.tex`
+   - Graphics: `figures/` directory containing the vector PDFs (`loss_convergence.pdf`, `ablation_benchmark.pdf`, `boundary_displacement.pdf`)
+3. Ensure compiler is set to **pdfLaTeX** with **TeX Live 2023** or newer.
+4. Click **Recompile**.
+
+### 📏 Page Budget & Strict Format Verification
+* **ACL Short Paper Limit**: $\le 4$ pages of content (Sections 1–7) + $\le 1$ page of references ($\le 5$ pages total).
+* **Current Build Verification**: [`report/main.pdf`](report/main.pdf) strictly spans **exactly 5 pages**:
+  - Pages 1–4: Title, Abstract, Sections 1–7 (concluding with Limitations).
+  - Page 5: 16 cited ACL/ML references.
+  - Figure 1 is formatted as a stacked two-panel subplot to prevent column squeezing and label overlap.
 
 ---
 

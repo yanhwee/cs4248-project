@@ -89,7 +89,7 @@ def _():
     return (mo,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     # Mathematical Foundations of Extractive Question Answering & Paraphrase Consistency
@@ -103,20 +103,20 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.callout(
         mo.md(r"""
         **Interactive Reader & Code Exploration Guide**:
-        * **Collapsible Code Inspectors**: Under **Sections 3, 4, 5, and 6**, expand any `🔍 Inspect PyTorch Implementation` accordion to review self-contained tensor implementations and algorithms directly within this application view.
-        * **Marimo Code Toggle**: To view full live reactive code cells side-by-side with markdown, press <kbd>Cmd</kbd> + <kbd>.</kbd> (macOS) or <kbd>Ctrl</kbd> + <kbd>.</kbd> (Linux/Windows), or launch with `marimo run --include-code app.py` (or `marimo edit app.py`).
+        * **Code Inclusion in App View**: When running this application, launch with `marimo run --include-code app.py` (or press <kbd>Cmd</kbd> + <kbd>.</kbd> on macOS / <kbd>Ctrl</kbd> + <kbd>.</kbd> on Linux/Windows) to view live reactive code cells. Pure markdown cells are cleanly hidden (`hide_code=True`) so you can study the PyTorch models, loss algorithms, and training routines without raw markdown string overhead.
+        * **Interactive Training & Inference**: Run live 5-step dual training under **Section 8** and test custom query paraphrases with relative margin decoding under **Section 10**.
         """),
         kind="info",
     )
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(f"""
     **Compute Device Detected**: `{DEVICE}` ({'Apple Silicon Metal Acceleration' if DEVICE.type == 'mps' else 'CUDA / CPU'})
@@ -124,7 +124,7 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ---
@@ -193,7 +193,7 @@ def _():
     return dev_records_sample, train_records_sample
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(dev_records_sample, mo, train_records_sample):
     mo.md(f"""
     **Loaded Sample Dataset**:
@@ -205,7 +205,7 @@ def _(dev_records_sample, mo, train_records_sample):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ---
@@ -408,7 +408,7 @@ def compute_sbert_similarity(
     return cos_sim
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo, train_records_sample):
     paraphraser_instance = MarianParaphraser(device=DEVICE)
 
@@ -457,9 +457,9 @@ def _(mo, train_records_sample):
     return (paired_train_records,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
-    _sec3_md = mo.md(r"""
+    mo.md(r"""
     ---
     ## 3. Sliding Window Preprocessing & Coordinate Space Projection
     In document-level extractive QA, context passage length $m$ frequently exceeds the maximum sequence capacity $L$ of transformer models ($m \gg L$, e.g. $L = 256$ or $512$). To prevent naive truncation of candidate answers, contexts are partitioned via sliding windows with stride $S$:
@@ -470,30 +470,6 @@ def _(mo):
     **Null Anchor Calibration**:
     For windows $w \in \{1, \dots, W\}$ where the ground-truth span $[a_{\text{start}}, a_{\text{end}}]$ lies outside the active window boundary $[c_{\text{start}}^{(w)}, c_{\text{end}}^{(w)}]$, target labels are projected onto index $0$ ($\texttt{[CLS]}$). This trains the model to explicitly predict the null hypothesis $z_{\text{null}}^{(w)} = z_{\text{start}}^{(w)}[0] + z_{\text{end}}^{(w)}[0]$, establishing an inter-window reference baseline.
     """)
-    _sec3_code = mo.accordion({
-        "🔍 Inspect PyTorch & Tokenizer Implementation: Sliding Window & Offset Projection": mo.md(r"""
-```python
-def prepare_paired_sliding_windows(records, tokenizer, max_seq_len=256, doc_stride=96):
-    # Tokenizes paired queries (q, q') with sliding-window passage stride and [CLS] null projection.
-    paired_features = []
-    for rec in records:
-        context, ans_start, ans_text = rec["context"], rec["answer_start"], rec["answer_text"]
-        ans_end = ans_start + len(ans_text) if ans_text else -1
-        
-        # Tokenize (q, context) and (q', context) with sliding window stride
-        for q_key in ["question", "paraphrase"]:
-            enc = tokenizer(
-                rec[q_key], context,
-                max_length=max_seq_len, stride=doc_stride,
-                truncation="only_second", return_overflowing_tokens=True,
-                return_offsets_mapping=True, padding="max_length"
-            )
-            # Map character span [ans_start, ans_end] to token span [start_idx, end_idx]
-            # If answer is not within the current window, project to index 0 ([CLS] null token)
-```
-"""),
-    })
-    mo.vstack([_sec3_md, _sec3_code])
     return
 
 
@@ -631,9 +607,9 @@ def prepare_paired_sliding_windows(
     return features
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
-    _sec4_md = mo.md(r"""
+    mo.md(r"""
     ---
     ## 4. Model Architecture & Forward Computation Graph
     The architecture comprises a shared transformer backbone $\mathcal{E}_\theta$ (BERT / DeBERTa-v3) coupled to a linear span boundary projection layer $\mathbf{W}_{\text{span}} \in \mathbb{R}^{d \times 2}$. The forward computation graph bifurcates into two distinct output representations:
@@ -646,25 +622,6 @@ def _(mo):
        $$\mathbf{s} = \mathbf{z}_{\text{start}}[\mathbf{M}_{\text{pass}}], \quad \mathbf{e} = \mathbf{z}_{\text{end}}[\mathbf{M}_{\text{pass}}] \in \mathbb{R}^m$$
        Normalized passage distributions $P_{\text{start}}, P_{\text{end}} \in \Delta^{m-1}$ parameterize the consistency regularizers.
     """)
-    _sec4_code = mo.accordion({
-        "🔍 Inspect PyTorch Implementation: Bifurcated QA Model Architecture": mo.md(r"""
-```python
-class ParaphraseConsistentQAExtractor(nn.Module):
-    # Extractive QA Model with bifurcated output: CE sequence logits + passage distributions.
-    def __init__(self, model_name: str = "bert-base-uncased"):
-        super().__init__()
-        self.encoder = AutoModel.from_pretrained(model_name)
-        hidden_size = self.encoder.config.hidden_size
-        self.qa_outputs = nn.Linear(hidden_size, 2)
-
-    def forward(self, input_ids, attention_mask, pass_mask=None):
-        h = self.encoder(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state
-        logits = self.qa_outputs(h)
-        return {"z_start": logits[:, :, 0], "z_end": logits[:, :, 1], "hidden_states": h}
-```
-"""),
-    })
-    mo.vstack([_sec4_md, _sec4_code])
     return
 
 
@@ -704,16 +661,34 @@ class ParaphraseConsistentQAExtractor(nn.Module):
         return {"z_start": z_start, "z_end": z_end, "hidden_states": h}
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
-    _sec5_header = mo.md(r"""
+    mo.md(r"""
     ---
     ## 5. Mathematical Loss Formulations & Theoretical Comparison
 
     ### 5.1. Supervised Extractive Cross-Entropy Loss
     For each sliding window $w$ with ground-truth span indices $(s^{(w)}, e^{(w)}) \in \{0, \dots, L-1\}^2$ (where index $0$ denotes the unanswerable null token $\texttt{[CLS]}$), the supervised cross-entropy objective is:
     $$\mathcal{L}_{\text{CE}}(q) = -\frac{1}{2} \left[ \log P_{\text{start}}^{\text{seq}}\big(s^{(w)}\big) + \log P_{\text{end}}^{\text{seq}}\big(e^{(w)}\big) \right]$$
+    """)
+    return
 
+
+@app.function
+def compute_supervised_ce_loss(
+    z_start: torch.Tensor,
+    z_end: torch.Tensor,
+    start_labels: torch.Tensor,
+    end_labels: torch.Tensor,
+) -> torch.Tensor:
+    loss_s = F.cross_entropy(z_start, start_labels)
+    loss_e = F.cross_entropy(z_end, end_labels)
+    return 0.5 * (loss_s + loss_e)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    _sec5_kl = mo.md(r"""
     ---
     ### 5.2. Baseline Consistency: Symmetric Kullback-Leibler Divergence
     Given predicted passage distributions $P, Q \in \Delta^{m-1}$ for query $q$ and paraphrase $q'$ respectively, the symmetric KL divergence is defined as:
@@ -734,6 +709,28 @@ def _(mo):
         kind="warn",
     )
 
+    mo.vstack([_sec5_kl, _kl_box])
+    return
+
+
+@app.function
+def compute_symmetric_kl_loss(
+    p_dist: torch.Tensor, q_dist: torch.Tensor, eps: float = 1e-8
+) -> torch.Tensor:
+    """Computes Symmetric KL Divergence between two probability distributions over passage tokens.
+    
+    Formula: 0.5 * (KL(P || Q) + KL(Q || P)) = 0.5 * sum((P - Q) * (log P - log Q))
+    """
+    p = torch.clamp(p_dist, min=eps)
+    q = torch.clamp(q_dist, min=eps)
+    log_p = torch.log(p)
+    log_q = torch.log(q)
+    kl_sym = 0.5 * torch.sum((p - q) * (log_p - log_q), dim=-1)
+    return torch.mean(kl_sym)
+
+
+@app.cell(hide_code=True)
+def _(mo):
     _sec5_ot = mo.md(r"""
     ---
     ### 5.3. Proposed 1D Wasserstein-1 Optimal Transport ($W_1$) Regularization
@@ -756,74 +753,8 @@ def _(mo):
         kind="success",
     )
 
-    _sec5_hungarian = mo.md(r"""
-    ---
-    ### 5.4. Proposed 2D Hungarian Bipartite Span Matching Regularization
-    Because 1D marginals treat start and end distributions independently, they cannot prevent *cross-entity chimeric pairings* (e.g. matching the start token of Entity $A$ with the end token of Entity $B$). We extract the top-$k$ joint span candidates $\mathcal{S}_k = \{(s_a, e_a)\}_{a=1}^k$ for $q$ and $q'$, and construct a pairwise geometric and overlap cost matrix $\mathbf{C} \in \mathbb{R}^{k \times k}$:
-    $$C_{ab} = \frac{1}{2} D_{\text{pos}}(a, b) + \frac{1}{2} D_{\text{IoU}}(a, b)$$
-    $$D_{\text{pos}}(a, b) = \frac{\vert s_a - s_b \vert + \vert e_a - e_b \vert}{2m}, \qquad D_{\text{IoU}}(a, b) = 1 - \frac{\vert [s_a, e_a] \cap [s_b, e_b] \vert}{\vert [s_a, e_a] \cup [s_b, e_b] \vert}$$
-    The optimal bijective assignment $\pi^* = \arg\min_{\pi \in \mathcal{S}_k} \sum_{a=1}^k C_{a, \pi(a)}$ is solved in polynomial time $\mathcal{O}(k^3)$ via the Kuhn-Munkres algorithm:
-    $$\mathcal{L}_{\text{Hungarian}} = \frac{1}{2} \sum_{a=1}^k w_a \cdot \Big\vert p_a^{(q)} - p_{\pi^*(a)}^{(q')} \Big\vert + \sum_{a=1}^k C_{a, \pi^*(a)} \cdot \left( \frac{p_a^{(q)} + p_{\pi^*(a)}^{(q')}}{2} \right)$$
-    """)
-
-    _sec5_code = mo.accordion({
-        "🔍 Inspect PyTorch Implementation: 1D Optimal Transport, Hungarian Matching & Symmetric KL": mo.md(r"""
-```python
-def compute_1d_wasserstein_loss(p_dist: torch.Tensor, q_dist: torch.Tensor) -> torch.Tensor:
-    # Exact closed-form 1D Earth Mover Distance via cumulative distribution functions.
-    cdf_p = torch.cumsum(p_dist, dim=-1)
-    cdf_q = torch.cumsum(q_dist, dim=-1)
-    m = p_dist.shape[-1]
-    w1 = torch.sum(torch.abs(cdf_p - cdf_q), dim=-1) / float(max(1, m))
-    return torch.mean(w1)
-
-def compute_hungarian_span_loss(s_logits_q, e_logits_q, s_logits_qp, e_logits_qp, k=5):
-    # Joint candidate span extraction and Kuhn-Munkres bipartite matching with IoU cost.
-    # 1. Extracts top-k joint candidate spans (s_a, e_a) from 2D coordinate grid
-    # 2. Computes cost matrix C_ab = 0.5 * D_pos(a, b) + 0.5 * D_IoU(a, b)
-    # 3. Solves optimal assignment pi* in O(k^3) via scipy.optimize.linear_sum_assignment
-```
-"""),
-    })
-
-    _sec5_display = mo.vstack([
-        _sec5_header,
-        _kl_box,
-        _sec5_ot,
-        _ot_box,
-        _sec5_hungarian,
-        _sec5_code,
-    ])
-    _sec5_display
+    mo.vstack([_sec5_ot, _ot_box])
     return
-
-
-@app.function
-def compute_supervised_ce_loss(
-    z_start: torch.Tensor,
-    z_end: torch.Tensor,
-    start_labels: torch.Tensor,
-    end_labels: torch.Tensor,
-) -> torch.Tensor:
-    loss_s = F.cross_entropy(z_start, start_labels)
-    loss_e = F.cross_entropy(z_end, end_labels)
-    return 0.5 * (loss_s + loss_e)
-
-
-@app.function
-def compute_symmetric_kl_loss(
-    p_dist: torch.Tensor, q_dist: torch.Tensor, eps: float = 1e-8
-) -> torch.Tensor:
-    """Computes Symmetric KL Divergence between two probability distributions over passage tokens.
-    
-    Formula: 0.5 * (KL(P || Q) + KL(Q || P)) = 0.5 * sum((P - Q) * (log P - log Q))
-    """
-    p = torch.clamp(p_dist, min=eps)
-    q = torch.clamp(q_dist, min=eps)
-    log_p = torch.log(p)
-    log_q = torch.log(q)
-    kl_sym = 0.5 * torch.sum((p - q) * (log_p - log_q), dim=-1)
-    return torch.mean(kl_sym)
 
 
 @app.function
@@ -835,6 +766,20 @@ def compute_1d_wasserstein_loss(
     m = p_dist.shape[-1]
     w1 = torch.sum(torch.abs(cdf_p - cdf_q), dim=-1) / float(max(1, m))
     return torch.mean(w1)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ---
+    ### 5.4. Proposed 2D Hungarian Bipartite Span Matching Regularization
+    Because 1D marginals treat start and end distributions independently, they cannot prevent *cross-entity chimeric pairings* (e.g. matching the start token of Entity $A$ with the end token of Entity $B$). We extract the top-$k$ joint span candidates $\mathcal{S}_k = \{(s_a, e_a)\}_{a=1}^k$ for $q$ and $q'$, and construct a pairwise geometric and overlap cost matrix $\mathbf{C} \in \mathbb{R}^{k \times k}$:
+    $$C_{ab} = \frac{1}{2} D_{\text{pos}}(a, b) + \frac{1}{2} D_{\text{IoU}}(a, b)$$
+    $$D_{\text{pos}}(a, b) = \frac{\vert s_a - s_b \vert + \vert e_a - e_b \vert}{2m}, \qquad D_{\text{IoU}}(a, b) = 1 - \frac{\vert [s_a, e_a] \cap [s_b, e_b] \vert}{\vert [s_a, e_a] \cup [s_b, e_b] \vert}$$
+    The optimal bijective assignment $\pi^* = \arg\min_{\pi \in \mathcal{S}_k} \sum_{a=1}^k C_{a, \pi(a)}$ is solved in polynomial time $\mathcal{O}(k^3)$ via the Kuhn-Munkres algorithm:
+    $$\mathcal{L}_{\text{Hungarian}} = \frac{1}{2} \sum_{a=1}^k w_a \cdot \Big\vert p_a^{(q)} - p_{\pi^*(a)}^{(q')} \Big\vert + \sum_{a=1}^k C_{a, \pi^*(a)} \cdot \left( \frac{p_a^{(q)} + p_{\pi^*(a)}^{(q')}}{2} \right)$$
+    """)
+    return
 
 
 @app.function
@@ -926,9 +871,9 @@ def compute_hungarian_loss_single_sample(
     return term1 + term2
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
-    _sec6_md = mo.md(r"""
+    mo.md(r"""
     ---
     ## 6. MAP Decoding & Relative Margin Multi-Window Aggregation
     During sliding-window inference across documents $\mathcal{W}$, each local window $w$ computes candidate span scores alongside the unanswerable null baseline:
@@ -939,29 +884,6 @@ def _(mo):
     $$(i^*, j^*) = \arg\max_{(i_{\text{glob}}, j_{\text{glob}})} \max_{w \in \mathcal{W}} \Big( \text{score}^{(w)}(i, j) - \text{score}_{\text{null}}^{(w)} \Big)$$
     subject to span length constraint $0 \le j_{\text{glob}} - i_{\text{glob}} + 1 \le L_{\text{max\_span}}$.
     """)
-    _sec6_code = mo.accordion({
-        "🔍 Inspect PyTorch Implementation: Relative Margin Multi-Window Decoding": mo.md(r"""
-```python
-def decode_window_predictions(z_start, z_end, pass_mask, max_span_len=30):
-    # Computes relative margin delta_z = (z_start[i] + z_end[j]) - (z_start[0] + z_end[0]).
-    null_score = z_start[0] + z_end[0]  # [CLS] null token reference baseline
-    pass_indices = [i for i, m in enumerate(pass_mask) if m == 1]
-    if not pass_indices:
-        return []
-    p_min = pass_indices[0]
-    p_max = pass_indices[-1]
-
-    candidates = []
-    for i in pass_indices:
-        for j in range(i, min(p_max + 1, i + max_span_len)):
-            raw_score = z_start[i] + z_end[j]
-            rel_margin = raw_score - null_score  # Null-calibrated relative margin
-            candidates.append((i - p_min, j - p_min, rel_margin))
-    return candidates
-```
-"""),
-    })
-    mo.vstack([_sec6_md, _sec6_code])
     return
 
 
@@ -1058,7 +980,7 @@ def aggregate_multi_window_spans(
     return res["text"]
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ---
@@ -1132,7 +1054,7 @@ def compute_consistency_agreement(
     return 100.0 * sum(matches) / len(matches)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ---
@@ -1144,7 +1066,7 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     # Reactive Controls with Direct Numeric Visibility
     model_dropdown = mo.ui.dropdown(
@@ -1587,7 +1509,7 @@ def _(
     return trained_model, training_logs
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo, training_logs):
     if not training_logs:
         _output = mo.callout(
@@ -1653,7 +1575,7 @@ def _(mo, training_logs):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo, training_logs):
     if not training_logs or len(training_logs) < 2:
         _chart = mo.md("")
@@ -1691,7 +1613,7 @@ def _(mo, training_logs):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ---
@@ -1701,7 +1623,7 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     preset_dropdown = mo.ui.dropdown(
         options=[
@@ -1716,7 +1638,7 @@ def _(mo):
     return (preset_dropdown,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo, preset_dropdown):
     _sel = preset_dropdown.value
     if "Notre Dame" in _sel:
