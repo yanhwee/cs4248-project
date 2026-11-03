@@ -66,6 +66,10 @@ python train.py --run_name bert_kl  --loss_mode kl  --paraphrase_cache data/para
 
 # 3. reranker (trained on the held-out training articles only)
 python train_reranker.py --weights weights/bert_kl/best.pt --paraphrase_cache data/paraphrases/train.jsonl
+#    Targets are graded by default (--target_mode graded): exact-match candidates get relevance 1, partial-F1
+#    candidates get --partial_weight (0.3) x F1. Use --target_mode exact to train on EM candidates only, or
+#    --target_mode f1 for the old best-F1 fallback. Training logs and runs/<run>/reranker_summary.json report the
+#    reranker's ceilings: Recall@k EM and best-F1@k (evaluate.py also reports them under extractor.candidate_ceiling).
 
 # 4. evaluation with the official scorer, with and without the reranker
 #    (for dev/addsent/addonesent the consistency metric needs back-translated questions; evaluate.py generates and
