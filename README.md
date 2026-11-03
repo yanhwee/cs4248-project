@@ -1,333 +1,202 @@
-# Paraphrase-Consistent Extractive Question Answering
-### Resolving Distributional Fragility via 1D Optimal Transport and 2D Hungarian Span Matching
+# Paraphrase-Consistent Extractive QA with a Learned Span Reranker
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Framework: PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
-[![HuggingFace Transformers](https://img.shields.io/badge/🤗%20Transformers-4.38+-yellow.svg)](https://huggingface.co/)
-[![Marimo Reactive Notebook](https://img.shields.io/badge/marimo-reactive%20notebook-8A2BE2.svg)](https://marimo.io/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+**CS4248 Introduction to Large Language Models (AY2026/27 S1), National University of Singapore — Group G17**
+Chong Xin Wei, Ng Jian Yi, Soh Jun Ying Gavin, Wang Chengke, Yee Yan Hwee
 
-**National University of Singapore • School of Computing**  
-**CS4248: Introduction to Large Language Models (AY2026/2027)**  
-**Group G17**: Chong Xin Wei, Ng Jian Yi, Soh Jun Ying Gavin, Wang Chengke, Yee Yan Hwee  
+Topic: Extractive question answering on SQuAD v1.1. Proposal: `docs/CS4248 Project.pdf`.
 
----
+## What the system does
 
-## 📖 Table of Contents
-1. [Executive Summary & Benchmark Results](#-executive-summary--benchmark-results)
-2. [Theoretical Overview & Forward Architecture](#-theoretical-overview--forward-architecture)
-3. [Full Mathematical Foundations](#-full-mathematical-foundations)
-4. [Repository Architecture (4-Pillar Layout)](#-repository-architecture-4-pillar-layout)
-5. [Empirical Results & Publication Artifacts](#-empirical-results--publication-artifacts)
-6. [Getting Started: Local Setup & Marimo Playground](#-getting-started-local-setup--marimo-playground)
-7. [Cluster Reproduction Guide (NUS SoC Compute Cluster)](#-cluster-reproduction-guide-nus-soc-compute-cluster)
-8. [ACL 2026 Short Paper Guide & Artifact Mapping](#-acl-2026-short-paper-guide--artifact-mapping)
-9. [References & Citations](#-references--citations)
+1. **Extractor.** BERT-base (baseline) or DeBERTa-v3-base with a start/end span head over sliding windows. At
+   inference it keeps each question's **top-20 distinct spans**.
+2. **Paraphrase-consistency training.** Every training question is back-translated EN→DE→EN with open MarianMT
+   models and kept when its sentence-embedding similarity to the original is ≥ 0.85. Both versions are trained on the
+   same passage with
+   `loss = CE(q) + CE(q′) + λ · KL_sym(P_q, P_q′)` over passage-token start/end distributions.
+   1-D optimal-transport and Hungarian span-matching penalties are available as ablations of the KL term.
+3. **Learned span reranker.** A small MLP scores the top-k candidates from the extractor's own hidden states and
+   score features (including the paraphrase view's score for the same span) and picks one, so the answer is always
+   an exact passage span. It is trained only on the held-out training articles (about 3,300 questions), never on
+   the dev or test sets. **The system is reported in two versions: extractor only (top-1 span) and extractor +
+   reranker.** Every evaluation run produces both.
+4. **Protocol.** 5 % of the training *articles* are held out for model selection, λ tuning and reranker training;
+   the dev set is used only for final numbers, always via the official `evaluate-v2.0.py`. We report EM, F1 and
+   paraphrase agreement on SQuAD dev, on the paraphrased test sets of Gan & Ng (2019) and on Adversarial SQuAD
+   (Jia & Liang, 2017).
 
----
+There are **no stored result numbers** in this repository: every table and figure is generated from `runs/` by
+`visualize.py` after the experiments have been run.
 
-## 🚀 Executive Summary & Benchmark Results
+## Setup
 
-Extractive Question Answering (QA) models such as BERT and DeBERTa achieve state-of-the-art accuracy on reading comprehension benchmarks like SQuAD v1.1. However, standard models suffer from severe **distributional fragility**: semantically equivalent reformulations of the same question frequently trigger divergent passage span predictions or catastrophic distractor capture.
-
-Existing consistency regularizers commonly minimize **Symmetric Kullback-Leibler (KL) divergence** across question pairs. We prove that KL divergence is mathematically pathological for sequential span extraction because it treats tokens as unordered categorical classes, producing identical gradient explosions whether the boundary slips by a single token or jumps eighty tokens into an irrelevant passage.
-
-To solve this geometric limitation, this project introduces a **dual-level geometric regularization framework**:
-1. **1D Optimal Transport ($W_1$ Wasserstein Distance)**: Exploits the natural 1D ordered metric of token sequences $\mathcal{P} = \{0, \dots, m-1\}$, providing smooth, linearly bounded coordinate subgradients via a closed-form CDF discrepancy integral.
-2. **2D Hungarian Bipartite Span Matching**: Aligns joint top-$K$ candidate phrase predictions $(s, e)$ via combinatorial bipartite matching, preventing multi-entity cross-pairing.
-
-### 🏆 Key Empirical Findings (SQuAD v1.1 Dev Set)
-* **Exact Match (EM %)**: **82.3%** (+3.9% over standard supervised baseline).
-* **F1 Score (%)**: **89.9%** (+3.7% over standard supervised baseline).
-* **Paraphrase Agreement (%)**: **91.4%** (**+19.9% relative gain** in semantic consistency).
-
----
-
-## 📐 Theoretical Overview & Forward Architecture
-
-### Bifurcated Forward Computation Graph
-
-The forward inference and prediction process is formally expressed as a bifurcated computation graph that serves both supervised training (with null-label calibration) and metric consistency regularization:
-
-$$
-\begin{array}{c}
-\boxed{\mathbf{x} = \big[ \texttt{[CLS]}, \; q_1, \dots, q_r, \; \texttt{[SEP]}, \; c_0, \dots, c_{m-1}, \; \texttt{[SEP]} \big] \;\in\; V^L} \\[6pt]
-\Bigg\downarrow \;\; \text{\small \textbf{Transformer Encoder} } \mathcal{E}_\theta \;\; (\text{DeBERTa-v3 / BERT}) \\[6pt]
-\boxed{\mathbf{H} = \mathcal{E}_\theta(\mathbf{x}) = [\mathbf{h}_0, \mathbf{h}_1, \dots, \mathbf{h}_{L-1}]^\top \;\in\; \mathbb{R}^{L \times d}} \\[6pt]
-\Bigg\downarrow \;\; \text{\small \textbf{Linear Span Projection Head} } (\mathbf{W} \in \mathbb{R}^{d \times 2}, \; \mathbf{b} \in \mathbb{R}^2) \\[6pt]
-\boxed{[\mathbf{z}_{\text{start}}, \; \mathbf{z}_{\text{end}}] = \mathbf{H}\mathbf{W} + \mathbf{1}_L \mathbf{b}^\top \;\in\; \mathbb{R}^{L \times 2}} \\[10pt]
-\swarrow \qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad \searrow \\[8pt]
-\textbf{\small (A) Supervised Classification Pathway} \qquad\qquad\qquad \textbf{\small (B) Consistency Regularization Pathway} \\[4pt]
-\boxed{P_{\text{start}}^{\text{seq}}, P_{\text{end}}^{\text{seq}} = \mathrm{softmax}(\mathbf{z}) \;\in\; \Delta^{L-1}} \qquad\qquad\qquad \boxed{\mathbf{s} = \mathbf{z}_{\text{start}}[\mathcal{P}], \; \mathbf{e} = \mathbf{z}_{\text{end}}[\mathcal{P}] \;\in\; \mathbb{R}^m} \\[6pt]
-\Bigg\downarrow \qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad \Bigg\downarrow \\[4pt]
-\boxed{\mathcal{L}_{\text{CE}} \text{ over sequence indices (including [CLS])}} \qquad\qquad \boxed{P_{\text{start}}, P_{\text{end}} = \mathrm{softmax} \;\in\; \Delta^{m-1} \to \mathcal{L}_{\text{OT}}, \mathcal{L}_{\text{Hung}}}
-\end{array}
-$$
-
-### Core Theoretical Propositions
-
-> **Proposition 1 (Topological Invariance & Gradient Explosion of KL Divergence)**:  
-> *Let $P, Q \in \Delta^{m-1}$ be probability distributions over passage tokens $\{0, \dots, m-1\}$. The Kullback-Leibler divergence is invariant under coordinate permutations $\Pi \in \mathcal{S}_m$:*
-> $$\mathcal{D}_{\text{KL}}(\Pi P \parallel \Pi Q) \equiv \mathcal{D}_{\text{KL}}(P \parallel Q)$$
-> *If $P$ places mass on token $i$ and $Q$ places mass on token $j \neq i$, $\mathcal{D}_{\text{KL}}(P \parallel Q) \to \infty$ whenever $\text{supp}(P) \not\subseteq \text{supp}(Q)$.*  
-> *Consequently, the gradient $\Vert \nabla_{\theta} \mathcal{D}_{\text{KL}} \Vert_2 \to \infty$ explodes identically whether the boundary slips by 1 adjacent subword or jumps 80 tokens into an irrelevant distractor paragraph.*
-
-> **Proposition 2 (Exact 1D Closed-Form via CDF Prefix Sums)**:  
-> *For distributions $P, Q \in \Delta^{m-1}$ on an ordered line with ground cost $C_{ij} = \frac{\vert i - j \vert}{m}$, the Wasserstein-1 distance admits an exact closed form computable in $\mathcal{O}(m)$ time via Cumulative Distribution Functions:*
-> $$W_1(P, Q) = \frac{1}{m} \sum_{i=0}^{m-1} \Big\vert \text{CDF}_P(i) - \text{CDF}_Q(i) \Big\vert$$
-> *where $\text{CDF}_P(i) = \sum_{t=0}^i P(t)$. The subgradient with respect to cumulative mass is strictly bounded:*
-> $$\left\vert \frac{\partial W_1}{\partial \text{CDF}_P(i)} \right\vert \le \frac{1}{m}$$
-> *preventing gradient explosion during backpropagation.*
-
----
-
-## 📚 Full Mathematical Foundations
-
-For the complete, self-contained, first-principles machine learning specification—including:
-* The raw string Unicode space and character-to-token offset mapping $\phi$.
-* Sliding window chunking and the exact Likelihood-Ratio partition function cancellation derivation.
-* Proof of equivalence between joint MAP decoding and unnormalized logit summation $\arg\max(s_i + e_j)$.
-* Sentence-BERT attention-masked centroid pooling for semantic equivalence gating.
-* The 5-token toy passage numerical walkthrough table.
-* Combinatorial bipartite matching via the Hungarian algorithm with autograd stop-gradient mechanics.
-* Comprehensive mathematical symbol glossary and type signatures table.
-
-👉 **Please refer to the dedicated specification:** [**`docs/math.md`**](docs/math.md).
-
----
-
-## 🏛️ Repository Architecture (4-Pillar Layout)
-
-```
-cs4248-project-1/
-├── README.md                      # Project Overview, Setup & Results
-├── docs/
-│   └── math.md                    # Comprehensive First-Principles Math Specification
-├── requirements.txt               # Pinned pip dependencies for Local and SoC Cluster
-├── pyproject.toml                 # Workspace package configuration
-│
-├── app.py                         # Pillar 2: Core Architecture & Interactive Marimo Playground
-│                                  #          (Pedagogical math cards, interactive training,
-│                                  #           span-highlighted inference playground)
-│
-├── train.py                       # Pillar 3: Headless CLI Cluster Training Engine
-│                                  #          (Pure Python, CUDA FP16 AMP, real-time JSON flush)
-├── evaluate.py                    # Dev Set Benchmark Evaluation Pipeline (data/dev-v1.1.json)
-├── scripts/
-│   ├── run_cluster.sbatch         # Slurm script for single training runs
-│   ├── run_all_ablations.sh       # Local sequential 5-condition ablation suite
-│   └── submit_all_ablations.sbatch# Cluster Slurm batch job runner (all 5 ablations)
-│
-├── visualize.py                   # Pillar 4: Publication Artifact & LaTeX Table Generator
-│                                  #          (Produces 300 DPI PNGs, vector PDFs, & LaTeX tables)
-├── figures/                       # Generated publication figures and LaTeX tables
-│   ├── loss_convergence.pdf / .png
-│   ├── ablation_benchmark.pdf / .png
-│   ├── boundary_displacement.pdf / .png
-│   ├── table1_ablation_results.tex / .md
-│   └── table2_qualitative_cases.tex / .md
-│
-├── report/                        # Publication Manuscript: ACL 2026 Camera-Ready Paper
-│   ├── main.tex                   # LaTeX source (4-page main text + 1-page references)
-│   ├── main.pdf                   # Compiled publication-ready PDF (strictly <= 5 pages)
-│   ├── custom.bib                 # Comprehensive BibTeX literature references
-│   ├── acl.sty & acl_natbib.bst   # Official ACL formatting and bibliography style files
-│   └── figures/                   # Vector PDF graphics embedded in the paper
-│
-├── runs/                          # Real-time training telemetry JSONs & Slurm logs
-└── weights/                       # Model checkpoint weights (.pt)
-```
-
----
-
-## 📊 Empirical Results & Publication Artifacts
-
-### Table 1: Empirical Ablation Benchmark on SQuAD v1.1
-*(Source: `figures/table1_ablation_results.tex` & `figures/table1_ablation_results.md`)*
-
-| Regularization Strategy | Objective Loss Formulation | Exact Match (EM %) | F1 Score (%) | Paraphrase Agreement (%) | $\Delta$ Consistency |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **Baseline (Standard CE)** | $\mathcal{L}_{\text{CE}}$ | 78.4 | 86.2 | 71.5 | — |
-| **+ Symmetric KL Baseline** | $\mathcal{L}_{\text{CE}} + \lambda_{\text{KL}}\mathcal{D}_{\text{KL}}^{\text{sym}}$ | 79.1 | 86.8 | 76.2 | +4.7% |
-| **+ 1D Optimal Transport** | $\mathcal{L}_{\text{CE}} + \lambda_{\text{OT}}\mathcal{L}_{W_1}$ | 80.1 | 87.8 | 84.6 | +13.1% |
-| **+ 2D Hungarian Matching** | $\mathcal{L}_{\text{CE}} + \mu_{\text{Hung}}\mathcal{L}_{\text{Hungarian}}$ | 80.8 | 88.4 | 86.2 | +14.7% |
-| **Proposed Dual Regularization** | $\mathcal{L}_{\text{CE}} + \lambda_{\text{OT}}\mathcal{L}_{W_1} + \mu_{\text{Hung}}\mathcal{L}_{\text{Hungarian}}$ | **82.3** | **89.9** | **91.4** | **+19.9%** |
-
-### Table 2: Qualitative Paraphrase Invariance Case Studies
-*(Source: `figures/table2_qualitative_cases.tex` & `figures/table2_qualitative_cases.md`)*
-
-| Context Passage Excerpt | Query Formulations | Baseline Answer | Proposed Dual Answer | Ground Truth |
-| :--- | :--- | :--- | :--- | :--- |
-| *"...founded on November 26, 1842 by Rev. Edward Sorin..."* | **q:** When was the university founded?<br>**q':** In what year was the institution established? | **q:** November 26, 1842<br>**q':** 1842 ❌ *(Boundary Shift)* | **q:** 1842<br>**q':** 1842 ✅ *(Consistent)* | 1842 |
-| *"...allegedly appeared to Bernadette Soubirous in 1858 in Lourdes..."* | **q:** To whom did the Virgin Mary appear in 1858?<br>**q':** Who allegedly witnessed the 1858 Marian apparitions? | **q:** Bernadette Soubirous<br>**q':** Lourdes ❌ *(Semantic Flip)* | **q:** Bernadette Soubirous<br>**q':** Bernadette Soubirous ✅ *(Consistent)* | Bernadette Soubirous |
-| *"...Denver Broncos defeated the Carolina Panthers 24–10..."* | **q:** Which team won Super Bowl 50?<br>**q':** Who were the champions of Super Bowl 50? | **q:** Denver Broncos<br>**q':** Carolina Panthers ❌ *(Antonym Flip)* | **q:** Denver Broncos<br>**q':** Denver Broncos ✅ *(Consistent)* | Denver Broncos |
-
-### Publication Figures (Available in `figures/`)
-* **`loss_convergence.png` / `.pdf`**: Displays smooth monotonic descent of total composite loss alongside supervised CE and subgradient stability of OT and Hungarian regularization terms.
-* **`ablation_benchmark.png` / `.pdf`**: Grouped bar chart documenting accuracy gains and substantial closure of the paraphrase consistency gap.
-* **`boundary_displacement.png` / `.pdf`**: Empirical probability density distribution of token displacement $\Delta = \vert s_q - s_{q'} \vert + \vert e_q - e_{q'} \vert$, showing collapse of the baseline heavy error tail into a Dirac-like concentration at displacement 0.
-
----
-
-## 💻 Getting Started: Local Setup & Marimo Playground
-
-### 1. Environment Installation
 ```bash
-# Standard Python venv
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate      # Python >= 3.10
 pip install -r requirements.txt
-
-# Or with uv (fastest)
-uv sync
+# course data (from Canvas): provided/train-v1.1.json, provided/dev-v1.1.json, provided/evaluate-v2.0.py
+python download_eval_sets.py                             # Gan & Ng paraphrased sets + Adversarial SQuAD -> data/external/
+python tests/test_core.py                                # ~1 min, checks metrics against the official scorer etc.
+bash scripts/smoke_test_cpu.sh                           # ~5 min on a laptop CPU: the whole pipeline with a tiny BERT
 ```
 
-### 2. Launching the Interactive Marimo Notebook (Pillar 2)
-```bash
-# Interactive editing mode:
-uv run marimo edit app.py
+## Running the experiments
 
-# Read-only standalone app view:
-uv run marimo run app.py
-```
-Open `http://localhost:2718` to explore interactive math explanations, sliding-window tokenization cards, training sandbox, and the dual-query inference playground.
-
-### 3. Running Headless CLI Training (Pillar 3)
-```bash
-# Fast 50-sample smoke test
-python train.py --samples 50 --epochs 1 --batch_size 4
-
-# Train Proposed Dual Model with CUDA FP16
-python train.py --loss_type dual --samples 1000 --epochs 2 --batch_size 16 --fp16
-```
-
-### 4. Evaluating Checkpoints on Held-Out Dev Set
-```bash
-python evaluate.py --weights weights/best_model.pt --samples 200
-```
-
-### 5. Re-generating Publication Artifacts & LaTeX Tables (Pillar 4)
-```bash
-python visualize.py
-```
-
----
-
-## 🖥️ Cluster Reproduction Guide (NUS SoC Compute Cluster)
-
-The headless training pipeline is optimized for the NUS SoC Compute Cluster (`xlogin.comp.nus.edu.sg`). Because external access to compute nodes is firewalled, all connections must route through the student bastion jump host (`stujump.comp.nus.edu.sg`).
-
-### 1. Copying Project Files to the Cluster (via Jump Host)
-Run from your local workstation:
+The one-shot version (sequential; GPU, Apple MPS or CPU):
 
 ```bash
-# Recommended: rsync over SSH jump host (skips virtualenvs, caches, and large checkpoints)
-rsync -avz --progress \
-  --exclude={'.venv','.git','__pycache__','*.pt','*.pdf','scratch*'} \
-  -e "ssh -J <user-id>@stujump.comp.nus.edu.sg" \
-  ./ <user-id>@xlogin.comp.nus.edu.sg:~/cs4248-project-1/
-
-# Alternatively, using standard scp with ProxyJump:
-scp -o "ProxyJump <user-id>@stujump.comp.nus.edu.sg" -r . <user-id>@xlogin.comp.nus.edu.sg:~/cs4248-project-1
+MODEL=bert-base-uncased MODES="ce aug kl" bash scripts/run_pipeline.sh
+MODEL=microsoft/deberta-v3-base RUN_PREFIX=deb MODES="kl" PRECISION=bf16 bash scripts/run_pipeline.sh
 ```
 
-### 2. Connecting via SSH Jump Host
-```bash
-# Direct SSH connection through jump host:
-ssh -J <user-id>@stujump.comp.nus.edu.sg <user-id>@xlogin.comp.nus.edu.sg
-
-# (Optional) Multiplexed session for fast instant reconnection:
-ssh -M -S ~/.ssh/soc-cm-%r@%h:%p -J <user-id>@stujump.comp.nus.edu.sg <user-id>@xlogin.comp.nus.edu.sg
-```
-
-### 3. Setting Up Pip Virtual Environment (No UV or Conda Required)
-Once logged into `xlogin`:
+The same steps by hand:
 
 ```bash
-cd ~/cs4248-project-1
+# 1. paraphrase caches (resumable; MarianMT + similarity filter)
+python prepare_paraphrases.py --input provided/train-v1.1.json --output data/paraphrases/train.jsonl
+python prepare_paraphrases.py --input provided/dev-v1.1.json   --output data/paraphrases/dev.jsonl
 
-# Create and activate standard Python 3 venv
-python3 -m venv .venv
-source .venv/bin/activate
+# 2. extractors (best validation-F1 checkpoint -> weights/<run>/best.pt)
+python train.py --run_name bert_ce  --loss_mode ce  --paraphrase_cache data/paraphrases/train.jsonl   # cache only used for validation agreement
+python train.py --run_name bert_aug --loss_mode aug --paraphrase_cache data/paraphrases/train.jsonl
+python train.py --run_name bert_kl  --loss_mode kl  --paraphrase_cache data/paraphrases/train.jsonl --lambda_kl 1.0
+#    Validation reports F1 *and* paraphrase agreement on the held-out articles for every run (pass the cache to the
+#    ce run too, so the baseline's agreement is measured). Tune lambda with e.g. --lambda_kl 0.5 / 1.0 / 2.0
+#    (or KL_LAMBDAS="0.5 1.0 2.0" in scripts/run_pipeline.sh) and choose the largest lambda whose validation F1
+#    stays within a small tolerance (e.g. 0.5) of the best: see runs/<run>/train_summary.json
+#    (best_val_f1, best_val_agreement_em) or, after visualize.py, figures/table_lambda.md and lambda_sweep.pdf.
 
-# Upgrade pip and install pinned dependencies
-pip install --upgrade pip
-pip install -r requirements.txt
+# 3. reranker (trained on the held-out training articles only)
+python train_reranker.py --weights weights/bert_kl/best.pt --paraphrase_cache data/paraphrases/train.jsonl
+
+# 4. evaluation with the official scorer, with and without the reranker
+#    (for dev/addsent/addonesent the consistency metric needs back-translated questions; evaluate.py generates and
+#     caches them under data/paraphrases/ on first use, ~16 min on CPU for dev; --paraphrase_method none skips it)
+for S in dev gan_dev gan_adv addsent addonesent; do
+  python evaluate.py --weights weights/bert_kl/best.pt --eval_set $S --reranker weights/bert_kl/reranker.pt
+done
+
+# 5. figures / tables for the report, t-SNE of paraphrase pairs
+python visualize.py --best bert_kl            # all runs under runs/ except smoke*; or --runs bert_ce bert_aug bert_kl
+python tsne_pairs.py --weights weights/bert_ce/best.pt --paraphrase_cache data/paraphrases/dev.jsonl
+python tsne_pairs.py --weights weights/bert_kl/best.pt --paraphrase_cache data/paraphrases/dev.jsonl
+cp figures/tsne_bert_*.pdf report/figures/    # main.tex includes figures/tsne_bert_ce.pdf and tsne_bert_kl.pdf
 ```
 
-### 4. Submitting the Full 5-Condition Ablation Suite (Slurm)
-Submit the full benchmark job to Slurm:
+Loss modes (`--loss_mode`):
+
+| mode | objective | role |
+| :-- | :-- | :-- |
+| `ce` | CE(q) | plain extractor |
+| `aug` | CE(q) + CE(q′) | paraphrase augmentation only (Gan & Ng style) |
+| `kl` | CE(q) + CE(q′) + λ·KL_sym | **proposed** consistency training |
+| `ot` / `hungarian` / `dual` | CE(q) + CE(q′) + 1-D Wasserstein and/or Hungarian span matching | ablation (proposal item 2a) |
+
+Useful flags: `--precision fp16|bf16` (GPU), `--max_examples N` (subset), `--eval_every N`, `--device cpu|mps|cuda`.
+
+### SoC compute cluster (Slurm)
+
+The scripts follow the course quick-start guide (`docs/SoC_Cluster_Guide.pdf`): Conda on a compute node, the
+`job_template.sbatch` layout (`gpu-long` partition, `--gpus=h100-47:1`, logs in `logs/slurm/<job>-<id>.out`), and
+`sbatch` from the repository root on `xlogin`. Use a plain terminal SSH client (no VS Code Remote-SSH).
 
 ```bash
-sbatch scripts/submit_all_ablations.sbatch
+# 1. copy the project (code + provided/ data) to the cluster, then log in through StuJump
+rsync -avz --exclude={'.venv','.git','weights','runs','logs','data','__pycache__'} \
+  -e "ssh -J <soc_username>@stujump.comp.nus.edu.sg" ./ <soc_username>@xlogin.comp.nus.edu.sg:~/cs4248-project/
+ssh -J <soc_username>@stujump.comp.nus.edu.sg <soc_username>@xlogin.comp.nus.edu.sg
+
+# 2. one-off environment setup ON A COMPUTE NODE (xlogin cannot run conda): Miniconda, env "cs4248",
+#    requirements, external eval sets, model downloads, unit tests
+salloc -t 120
+srun --pty bash
+cd ~/cs4248-project && bash scripts/setup_env_cluster.sh
+exit; exit
+
+# 3. submit jobs from the repository root on xlogin
+bash scripts/submit_all_ablations.sh          # paraphrase-cache job, then one GPU job per (backbone, objective)
+#   or single jobs:
+sbatch scripts/job.sbatch                     # bert-base: ce, aug, kl -> reranker -> all evaluations
+sbatch --job-name=g17_deb --export=ALL,MODEL=microsoft/deberta-v3-base,RUN_PREFIX=deb,MODES="kl" scripts/job.sbatch
+sbatch --gpus=a100-40:1 scripts/job.sbatch    # another GPU type (check availability with gpufree / squeue)
+
+# 4. monitor
+squeue --me
+tail -f logs/slurm/g17_pipeline-<job_id>.out
 ```
 
-Monitor job status and real-time execution logs:
-```bash
-squeue -u $USER
-tail -f runs/slurm_all_<JOB_ID>.log
+`scripts/job.sbatch` activates the conda env and runs `scripts/run_pipeline.sh`; `STAGES`, `MODEL`, `MODES`,
+`RUN_PREFIX`, `KL_LAMBDAS`, `PRECISION` (bf16 on H100/A100, fp16 on T4/V100) are passed with `--export=ALL,...`.
+Every stage is skipped when its output already exists, so a job can simply be resubmitted after a time-out. Model
+caches live in `~/.cache/huggingface`; if home space runs short, move `weights/` and `data/` to the 500 GB scratch
+area (`/mnt/scratch/${USER:0:1}/$USER`) and symlink them.
+
+## Can this run locally on a CPU?
+
+Measured with `python scripts/benchmark_cpu.py` on an Apple M2 Pro (12 cores, 16 GB), `bert-base-uncased`,
+L = 384, stride 128 (88,641 training windows, 10,833 dev windows):
+
+| Task | CPU only | Apple-silicon GPU (`--device mps`) |
+| :-- | :-- | :-- |
+| Extractor training, `ce` (1 forward/step), one epoch | 8.0 s/step (batch 16) → ≈ 12 h | 0.44 s/step (batch 8) → ≈ 1.4 h |
+| Extractor training, `kl` (2 forwards/step), one epoch | 26 s/step → ≈ 40 h | 1.07 s/step → ≈ 3.3 h |
+| Dev-set inference (×2 when paraphrases are evaluated) | ≈ 6.5 min | ≈ 2 min |
+| MarianMT back-translation of all 87.6k training questions (one-off, cached, resumable); ≈ 88 % of a 128-question dev sample passed the 0.85 filter | 11 q/s → ≈ 2.2 h | 23 q/s → ≈ 1.1 h |
+| Similarity filter | 370 q/s | 660 q/s |
+| Reranker (feature extraction on ≈ 4.1k held-out questions + MLP) | minutes | minutes |
+| Tiny-model smoke test of the whole pipeline | ≈ 5 min | — |
+
+What this means:
+
+- **CPU only** is fine for the smoke test, building the paraphrase caches, evaluating trained checkpoints on every
+  test set, training the reranker and producing figures. Full fine-tuning is not practical: one 2-epoch `ce` run
+  needs about a day and one `kl` run several days.
+- **Apple-silicon GPU** (`--device mps --batch_size 8 --grad_accum 2`): a 2-epoch BERT-base `ce` run is ≈ 3 h and a
+  `kl` run ≈ 7 h, so single BERT-base runs are feasible overnight on a 16 GB Mac. Batch 16 runs out of GPU memory in
+  paired modes, and DeBERTa-v3-base is roughly twice as slow and may not fit.
+- The **full grid** (BERT `ce`/`aug`/`kl`, DeBERTa-v3 `ce`/`kl`, optional OT ablations, λ sweep) belongs on the SoC
+  cluster; a T4 or A100 with fp16/bf16 is several times faster than MPS and runs the jobs in parallel.
+
+## Outputs
+
+```
+runs/<run>/config.json, history.json, val_history.json, train_summary.json   training telemetry
+runs/<run>/reranker_summary.json                                             reranker before/after on held-out articles
+runs/<run>/eval_<set>/results.json          EM/F1 (official scorer), consistency, per-question-type, config
+runs/<run>/eval_<set>/official_eval*.json   raw output of evaluate-v2.0.py (top-1 / reranked / paired view)
+runs/<run>/eval_<set>/predictions*.json     {id: answer} files that were scored
+runs/<run>/eval_<set>/candidates.jsonl      top-k distinct spans with scores
+runs/<run>/eval_<set>/disagreements.jsonl   question/paraphrase pairs with different answers (qualitative table)
+weights/<run>/best.pt, last.pt, reranker.pt
+figures/*.pdf|png|md, report/tables/*.tex, report/figures/*.pdf
 ```
 
-> **GPU Architecture Note**: `scripts/submit_all_ablations.sbatch` automatically excludes `xgpd[0-8]` (older TITAN V CC 7.0 nodes) to schedule onto 16GB Tesla T4 (`xgpf[1-8]`, CC 7.5) or A100 nodes with full FP16 mixed precision support.
+## Repository layout
 
----
-
-## 📝 ACL 2026 Short Paper Guide & Artifact Mapping
-
-The project report is authored in strict compliance with the **ACL camera-ready format** using the official `acl.sty` and `acl_natbib.bst` style sheets.
-
-### Paper Section & Artifact Mapping
-| Paper Section | Page Budget | Corresponding Code & Artifacts |
-| :--- | :---: | :--- |
-| **§1 Introduction** | 0.75 pages | Motivation: Fragility of QA models to lexical perturbations. Table 2 failure modes (boundary slip, antonym flip). |
-| **§2 Related Work** | 0.5 pages | Paraphrase robustness, consistency regularization, Optimal Transport in NLP. |
-| **§3 Methodology** | 1.25 pages | **Proposition 1** (KL divergence pathology) vs. **Proposition 2** (1D Wasserstein closed-form CDF integral). 2D Hungarian span matching. |
-| **§4 Experimental Setup** | 0.5 pages | SQuAD v1.1, sliding window tokenization, BERT-base, AdamW, decoupled learning rates, $\lambda_{\text{OT}} = 0.5, \mu_{\text{Hung}} = 0.1$. |
-| **§5 Empirical Results** | 1.0 page | **Table 1** (`table1_ablation_results.tex`), **Figure 1** (`loss_convergence.pdf`), **Figure 2** (`ablation_benchmark.pdf`), **Figure 3** (`boundary_displacement.pdf`). |
-| **§6 Qualitative Analysis** | 0.5 pages | **Table 2** (`table2_qualitative_cases.tex`), detailed failure taxonomy. |
-| **References** | 1.0 page (Extra) | Cited ACL literature. |
-
-### 🛠️ Compiling the LaTeX Paper PDF Locally
-All LaTeX source files reside in the `report/` directory:
-
-```bash
-cd report
-
-# Standard 4-step compilation pass for citations and cross-references:
-pdflatex -interaction=batchmode main.tex
-bibtex main
-pdflatex -interaction=batchmode main.tex
-pdflatex -interaction=batchmode main.tex
-
-# Or with latexmk (if installed):
-latexmk -pdf main.tex
+```
+g17qa/              core package (data, paraphrase, model, losses, decode, reranker, metrics, utils)
+prepare_paraphrases.py  train.py  train_reranker.py  evaluate.py  visualize.py  tsne_pairs.py  download_eval_sets.py
+scripts/            smoke_test_cpu.sh, run_pipeline.sh, job.sbatch, submit_all_ablations.sh, setup_env_cluster.sh, benchmark_cpu.py
+tests/test_core.py  unit tests (metrics vs official scorer, windows/labels, losses, decoding)
+provided/           course data + official scorer (not in git)
+data/external/      Gan & Ng paraphrased sets, Adversarial SQuAD (download_eval_sets.py)
+data/paraphrases/   paraphrase caches (prepare_paraphrases.py)
+report/             ACL-format paper (main.tex), bib, style files; tables/ and figures/ are generated
+docs/               proposal, course requirements, status review, change notes, maths notes
+app.py              legacy marimo demo notebook (not used for any reported number)
 ```
 
-The compiled manuscript will be output to [`report/main.pdf`](report/main.pdf).
+## Contributions and external code
 
-### ☁️ Compiling via Overleaf
-1. Create a new blank project on [Overleaf](https://www.overleaf.com/).
-2. Upload the contents of the `report/` directory:
-   - Source: `main.tex`, `custom.bib`, `acl.sty`, `acl_natbib.bst`
-   - LaTeX tables: `table1_ablation_results.tex`, `table2_qualitative_cases.tex`
-   - Graphics: `figures/` directory containing the vector PDFs (`loss_convergence.pdf`, `ablation_benchmark.pdf`, `boundary_displacement.pdf`)
-3. Ensure compiler is set to **pdfLaTeX** with **TeX Live 2023** or newer.
-4. Click **Recompile**.
+Written by the group: paraphrase generation and filtering pipeline, sliding-window features, the consistency
+objective and its OT/Hungarian variants, top-k candidate decoding, the learned span reranker, evaluation, analysis
+and plotting code. External: PyTorch, Hugging Face Transformers (BERT, DeBERTa-v3, MarianMT weights),
+sentence-transformers (MiniLM), scikit-learn, SciPy, the official SQuAD scorer, and the released test sets of
+Gan & Ng (2019) and Jia & Liang (2017). No closed-source models or APIs are used anywhere.
 
-### 📏 Page Budget & Strict Format Verification
-* **ACL Short Paper Limit**: $\le 4$ pages of content (Sections 1–7) + $\le 1$ page of references ($\le 5$ pages total).
-* **Current Build Verification**: [`report/main.pdf`](report/main.pdf) strictly spans **exactly 5 pages**:
-  - Pages 1–4: Title, Abstract, Sections 1–7 (concluding with Limitations).
-  - Page 5: 16 cited ACL/ML references.
-  - Figure 1 is formatted as a stacked two-panel subplot to prevent column squeezing and label overlap.
+## References
 
----
-
-## 📚 References & Citations
-
-1. **Rajpurkar, P., Zhang, J., Lopyrev, K., & Liang, P.** (2016). *SQuAD: 100,000+ Questions for Machine Comprehension of Text.* EMNLP.
-2. **Devlin, J., Chang, M. W., Lee, K., & Toutanova, K.** (2019). *BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.* NAACL-HLT.
-3. **Gan, W. C., & Ng, H. T.** (2019). *Improving the Robustness of Question Answering Systems to Question Paraphrasing.* ACL.
-4. **Xie, Q., Dai, Z., Hovy, E., Luong, T., & Le, Q.** (2020). *Unsupervised Data Augmentation for Consistency Training.* NeurIPS.
-5. **Carion, N., Massa, F., Synnaeve, G., Usunier, N., Kirillov, A., & Zagoruyko, S.** (2020). *End-to-End Object Detection with Transformers.* ECCV.
-6. **Peyré, G., & Cuturi, M.** (2019). *Computational Optimal Transport: With Applications to Data Science.* Foundations and Trends in Machine Learning.
+- Rajpurkar et al. 2016. SQuAD: 100,000+ Questions for Machine Comprehension of Text. EMNLP.
+- Devlin et al. 2019. BERT. NAACL. — He et al. 2021/2023. DeBERTa / DeBERTaV3. ICLR.
+- Gan & Ng 2019. Improving the Robustness of Question Answering Systems to Question Paraphrasing. ACL.
+- Jia & Liang 2017. Adversarial Examples for Evaluating Reading Comprehension Systems. EMNLP.
+- Xie et al. 2020. Unsupervised Data Augmentation for Consistency Training. NeurIPS.
+- Tiedemann & Thottingal 2020. OPUS-MT. EAMT. — Reimers & Gurevych 2019. Sentence-BERT. EMNLP.

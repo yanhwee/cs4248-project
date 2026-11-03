@@ -1,219 +1,196 @@
 #!/usr/bin/env python3
-"""
-CS4248 Group G17: SQuAD v1.1 Dev Set Evaluation Pipeline
-Evaluates fine-tuned checkpoints on the held-out development set (data/dev-v1.1.json)
-computing Exact Match (EM), F1 Score, Paraphrase Consistency Agreement, and Token Displacement.
+"""Evaluate a trained extractor (optionally with the reranker) with the official scorer.
 
-Usage Examples:
-  # Quick 100-sample dev set evaluation:
-  python evaluate.py --weights weights/best_model.pt --samples 100
+Evaluation sets (--eval_set)
+  dev          provided/dev-v1.1.json; paraphrase consistency uses back-translated questions
+               (data/paraphrases/dev.jsonl, generated on the fly with MarianMT if missing: ~16 min on CPU, cached)
+  gan_dev      Gan & Ng (2019) non-adversarial paraphrased dev questions (1,062); the paired view is the
+               original question, so "consistency" = agreement between paraphrased and original questions
+  gan_adv      Gan & Ng (2019) adversarial paraphrases (56)
+  addsent      Adversarial SQuAD AddSent (3,560)       (Jia & Liang, 2017); consistency via back-translated
+  addonesent   Adversarial SQuAD AddOneSent (1,787)    questions as for dev (pass --paraphrase_method none to skip)
+  custom       --data_file (and optionally --orig_file for a Gan & Ng-style pairing)
 
-  # Full dev set evaluation on GPU:
-  python evaluate.py --weights weights/model_dual.pt --samples 0 --fp16
+Outputs in --out_dir (default runs/<run>/eval_<set>/): predictions.json, official_eval.json (the scorer's own
+output), predictions_rerank.json + official_eval_rerank.json when a reranker is given, candidates.jsonl
+(top-k distinct spans), disagreements.jsonl, and results.json (everything, incl. per-question-type metrics).
+
+Examples
+  python evaluate.py --weights weights/bert_kl/best.pt --eval_set dev --reranker weights/bert_kl/reranker.pt
+  python evaluate.py --weights weights/bert_kl/best.pt --eval_set addsent
 """
+
+from __future__ import annotations
 
 import argparse
 import json
 import os
-import sys
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, Optional
 
-import numpy as np
-import torch
-from tqdm import tqdm
-from transformers import AutoTokenizer
-from transformers import logging as tf_logging
-from transformers.utils.logging import disable_progress_bar
 
-tf_logging.set_verbosity_error()
-disable_progress_bar()
+from g17qa.data import attach_paraphrases, gold_answers, load_paired_files, load_squad, write_squad_subset
+from g17qa.decode import QuestionOutput, run_extractor
+from g17qa.metrics import consistency_metrics, per_bucket_metrics, question_type, run_official_scorer
+from g17qa.model import load_checkpoint
+from g17qa.paraphrase import generate_paraphrase_cache
+from g17qa.reranker import apply_reranker, load_reranker
+from g17qa.utils import PROJECT_ROOT, amp_dtype_for, ensure_dir, get_device, write_json
 
-# Reusable components from core codebase
-from app import (
-    DEVICE,
-    MarianParaphraser,
-    ParaphraseConsistentQAExtractor,
-    compute_exact_match,
-    compute_f1,
-    load_squad_data,
-    predict_answer_pair_detailed,
-)
+EVAL_SETS: Dict[str, Dict[str, Optional[str]]] = {
+    "dev": {"file": "provided/dev-v1.1.json", "orig": None, "cache": "data/paraphrases/dev.jsonl"},
+    "gan_dev": {"file": "data/external/gan_ng/dev_para.json", "orig": "data/external/gan_ng/dev_orig.json", "cache": None},
+    "gan_adv": {"file": "data/external/gan_ng/adv_para.json", "orig": "data/external/gan_ng/adv_orig.json", "cache": None},
+    "addsent": {"file": "data/external/adversarial_squad/AddSent.json", "orig": None, "cache": "data/paraphrases/addsent.jsonl"},
+    "addonesent": {"file": "data/external/adversarial_squad/AddOneSent.json", "orig": None, "cache": "data/paraphrases/addonesent.jsonl"},
+}
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Evaluate SQuAD v1.1 Checkpoints on Dev Set (CS4248 Group G17)",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument(
-        "--weights",
-        type=str,
-        default="weights/best_model.pt",
-        help="Path to trained PyTorch model checkpoint (.pt)",
-    )
-    parser.add_argument(
-        "--data_file",
-        type=str,
-        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "dev-v1.1.json"),
-        help="Path to SQuAD dev-v1.1.json file",
-    )
-    parser.add_argument(
-        "--model_name",
-        type=str,
-        default="google-bert/bert-base-uncased",
-        help="Base model architecture",
-    )
-    parser.add_argument(
-        "--samples",
-        type=int,
-        default=100,
-        help="Number of dev samples to evaluate (0 = all dev records)",
-    )
-    parser.add_argument(
-        "--output_file",
-        type=str,
-        default="runs/evaluation_results.json",
-        help="Path to save evaluation summary metrics",
-    )
-    parser.add_argument(
-        "--fp16",
-        action="store_true",
-        default=False,
-        help="Enable CUDA FP16 inference",
-    )
-    return parser.parse_args()
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--weights", required=True)
+    p.add_argument("--eval_set", choices=list(EVAL_SETS) + ["custom"], default="dev")
+    p.add_argument("--data_file", default=None, help="for --eval_set custom")
+    p.add_argument("--orig_file", default=None, help="for --eval_set custom: original-question file aligned with --data_file")
+    p.add_argument("--paraphrase_cache", default=None, help="JSONL cache for the paired view (defaults per eval set)")
+    p.add_argument("--paraphrase_method", choices=["marian", "heuristic", "none"], default="marian",
+                   help="how to create missing paraphrases for the consistency metric (cached under data/paraphrases/); "
+                        "'none' skips the paired view. Ignored for the Gan & Ng sets, whose pair is the original question")
+    p.add_argument("--paraphrase_threshold", type=float, default=0.85)
+    p.add_argument("--reranker", default=None, help="weights/<run>/reranker.pt")
+    p.add_argument("--rerank_margin", type=float, default=None, help="only rerank candidates within this score of the top-1")
+    p.add_argument("--top_k", type=int, default=20)
+    p.add_argument("--max_examples", type=int, default=0)
+    p.add_argument("--batch_size", type=int, default=32)
+    p.add_argument("--precision", choices=["fp32", "fp16", "bf16"], default="fp32")
+    p.add_argument("--device", default="auto")
+    p.add_argument("--out_dir", default=None)
+    p.add_argument("--official_script", default=os.path.join(PROJECT_ROOT, "provided", "evaluate-v2.0.py"))
+    p.add_argument("--n_disagreements", type=int, default=200)
+    return p.parse_args()
 
 
-def load_checkpoint_model(weights_path: str, model_name: str, device: torch.device):
-    model = ParaphraseConsistentQAExtractor(model_name=model_name).to(device)
-    if os.path.exists(weights_path):
-        print(f"Loading checkpoint weights from: {weights_path}")
-        ckpt = torch.load(weights_path, map_location=device)
-        if isinstance(ckpt, dict) and "model_state_dict" in ckpt:
-            model.load_state_dict(ckpt["model_state_dict"])
-        elif isinstance(ckpt, dict):
-            model.load_state_dict(ckpt)
-        else:
-            print(f"Warning: Unexpected checkpoint format, using initialized model.")
-    else:
-        print(f"Warning: Weights file {weights_path} not found. Running with base pretrained weights.")
-    model.eval()
-    return model
+def resolve_set(args: argparse.Namespace):
+    if args.eval_set == "custom":
+        if not args.data_file:
+            raise SystemExit("--eval_set custom needs --data_file")
+        return args.data_file, args.orig_file, args.paraphrase_cache
+    spec = EVAL_SETS[args.eval_set]
+    return spec["file"], spec["orig"], (args.paraphrase_cache or spec["cache"])
 
 
 def main() -> None:
     args = parse_args()
+    device = get_device(args.device)
+    amp = amp_dtype_for(device, args.precision)
+    t0 = time.time()
+    data_file, orig_file, cache = resolve_set(args)
+    for pth in [data_file] + ([orig_file] if orig_file else []):
+        if not os.path.exists(pth):
+            raise SystemExit(f"missing {pth}; run download_eval_sets.py (external sets) or check the path")
 
-    print("=" * 72)
-    print("CS4248 SQuAD v1.1 Dev Set Evaluation & Paraphrase Consistency Engine")
-    print(f"Device:       {DEVICE}")
-    print(f"Weights:      {args.weights}")
-    print(f"Dev Set:      {args.data_file}")
-    print(f"Max Samples:  {'All' if args.samples == 0 else args.samples}")
-    print("=" * 72)
+    model, tokenizer, cfg = load_checkpoint(args.weights, device)
+    run_name = cfg.get("run_name") or os.path.basename(os.path.dirname(os.path.abspath(args.weights)))
+    out_dir = ensure_dir(args.out_dir or os.path.join("runs", run_name, f"eval_{args.eval_set}"))
+    print(f"extractor {args.weights} ({cfg.get('model')}) | set {args.eval_set} ({data_file}) | device {device} | out {out_dir}")
 
-    if not os.path.exists(args.data_file):
-        print(f"ERROR: Dev dataset file not found at: {args.data_file}")
-        sys.exit(1)
+    # ---- examples and the paired view -------------------------------------------------------
+    id_map: Dict[str, str] = {}
+    if orig_file:
+        examples, id_map = load_paired_files(data_file, orig_file)
+        paired = True
+        pair_kind = "original question"
+    else:
+        examples = load_squad(data_file)
+        paired = False
+        pair_kind = "back-translated paraphrase"
+    if args.max_examples:
+        examples = examples[: args.max_examples]
+    if not orig_file:
+        method = args.paraphrase_method
+        if cache and method != "none":
+            generate_paraphrase_cache(examples, cache, device, method=method, threshold=args.paraphrase_threshold)
+        if cache and os.path.exists(cache):
+            st = attach_paraphrases(examples, cache)
+            paired = st["attached"] > 0
+            print(f"paraphrases attached to {st['attached']} / {st['total']} questions ({pair_kind})")
+    golds = gold_answers(examples)
+    qtypes = {ex.qid: question_type(ex.question) for ex in examples}
 
-    # 1. Load dev records
-    max_rec = None if args.samples == 0 else args.samples
-    print(f"Loading dev records from {args.data_file}...")
-    dev_records = load_squad_data(args.data_file, max_records=max_rec)
-    print(f"Loaded {len(dev_records)} evaluation instances.")
+    reranker = load_reranker(args.reranker, device) if args.reranker else None
+    outputs: Dict[str, QuestionOutput] = run_extractor(
+        model, tokenizer, examples, device, batch_size=args.batch_size, max_seq_len=cfg.get("max_seq_len", 384),
+        doc_stride=cfg.get("doc_stride", 128), max_query_len=cfg.get("max_query_len", 64), top_k=args.top_k,
+        max_answer_len=cfg.get("max_answer_len", 30), with_pairs=paired, want_vecs=reranker is not None, amp_dtype=amp,
+    )
+    preds = {q: o.pred for q, o in outputs.items()}
+    preds_p = {q: o.pred_p for q, o in outputs.items() if o.paired}
 
-    # 2. Back-translate queries to obtain paraphrases
-    print("Generating/verifying evaluation paraphrases in memory...")
-    paraphraser = MarianParaphraser(device=DEVICE)
-    questions = [rec["question"] for rec in dev_records]
-    paraphrases = paraphraser.batch_back_translate(questions)
+    # ---- official scorer ----------------------------------------------------------------------
+    # The scorer needs a prediction for every question in the data file, so it is always given a copy of the data
+    # file restricted to the questions that were evaluated (identical to the original when --max_examples is 0).
+    scored_main = os.path.join(out_dir, "scored_data.json")
+    write_squad_subset(data_file, [e.qid for e in examples], scored_main)
+    scored_orig = None
+    if orig_file:
+        scored_orig = os.path.join(out_dir, "scored_data_orig.json")
+        write_squad_subset(orig_file, [id_map[e.qid] for e in examples], scored_orig)
 
-    # 3. Initialize Model and Tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
-    model = load_checkpoint_model(args.weights, args.model_name, DEVICE)
+    def score(pred_map: Dict[str, str], tag: str, data_path: str, remap: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        pm = {remap.get(k, k): v for k, v in pred_map.items()} if remap else pred_map
+        pred_path = os.path.join(out_dir, f"predictions{tag}.json")
+        write_json(pm, pred_path)
+        return run_official_scorer(data_path, pred_path, os.path.join(out_dir, f"official_eval{tag}.json"), args.official_script)
 
-    # 4. Evaluation Loop
-    em_scores: List[float] = []
-    f1_scores: List[float] = []
-    consistency_matches: List[bool] = []
-    displacements: List[int] = []
-
-    print("\nRunning inference and evaluation across dev records...")
-    start_time = time.time()
-
-    for idx, (rec, qp) in enumerate(tqdm(zip(dev_records, paraphrases), total=len(dev_records))):
-        context = rec["context"]
-        q = rec["question"]
-        gold_ans = rec.get("answer_text", "")
-
-        try:
-            with torch.amp.autocast("cuda", enabled=args.fp16 and torch.cuda.is_available()):
-                res = predict_answer_pair_detailed(
-                    model=model,
-                    tokenizer=tokenizer,
-                    context=context,
-                    question=q,
-                    paraphrase=qp,
-                    device=DEVICE,
-                )
-        except Exception as e:
-            continue
-
-        pred_q = res["ans_q"]
-        pred_qp = res["ans_qp"]
-        is_cons = res["is_consistent"]
-
-        # EM and F1 evaluated on original question against gold standard
-        em_val = compute_exact_match(pred_q, gold_ans)
-        f1_val = compute_f1(pred_q, gold_ans)
-
-        # Token displacement between original and paraphrased boundary predictions
-        span_q = res.get("detail_q", {}).get("span", (0, 0))
-        span_qp = res.get("detail_qp", {}).get("span", (0, 0))
-        disp = abs(span_q[0] - span_qp[0]) + abs(span_q[1] - span_qp[1])
-
-        em_scores.append(em_val)
-        f1_scores.append(f1_val)
-        consistency_matches.append(is_cons)
-        displacements.append(disp)
-
-    elapsed = time.time() - start_time
-    total_eval = len(em_scores)
-
-    if total_eval == 0:
-        print("ERROR: No evaluation instances completed successfully.")
-        return
-
-    mean_em = 100.0 * np.mean(em_scores)
-    mean_f1 = 100.0 * np.mean(f1_scores)
-    agreement = 100.0 * np.mean(consistency_matches)
-    mean_disp = float(np.mean(displacements))
-
-    print("\n" + "=" * 72)
-    print("CS4248 DEV SET EVALUATION BENCHMARK RESULTS")
-    print(f"Total Evaluated Samples: {total_eval} | Time: {elapsed:.1f}s ({total_eval/elapsed:.1f} samples/s)")
-    print(f"Exact Match (EM):        {mean_em:.2f}%")
-    print(f"F1 Score:                {mean_f1:.2f}%")
-    print(f"Paraphrase Agreement:    {agreement:.2f}%")
-    print(f"Mean Token Displacement: {mean_disp:.2f} tokens")
-    print("=" * 72)
-
-    os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
-    summary = {
-        "weights": args.weights,
-        "dev_samples": total_eval,
-        "exact_match": round(mean_em, 2),
-        "f1": round(mean_f1, 2),
-        "consistency_agreement": round(agreement, 2),
-        "mean_token_displacement": round(mean_disp, 2),
-        "elapsed_seconds": round(elapsed, 2),
+    results: Dict[str, Any] = {
+        "eval_set": args.eval_set, "data_file": data_file, "orig_file": orig_file, "weights": args.weights, "model": cfg.get("model"),
+        "loss_mode": cfg.get("loss_mode"), "reranker_path": args.reranker, "rerank_margin": args.rerank_margin, "top_k": args.top_k,
+        "n_questions": len(examples), "paired_view": pair_kind if paired else None,
+        "n_pairs": sum(1 for o in outputs.values() if o.paired), "official_scorer": args.official_script,
     }
+    ext: Dict[str, Any] = {"official": score(preds, "", scored_main)}
+    ext["by_question_type"] = per_bucket_metrics(preds, golds, qtypes)
+    if paired:
+        ext["consistency"] = consistency_metrics(preds, preds_p)
+        if orig_file:
+            ext["paired_view_official_on_orig_file"] = score(preds_p, "_orig", scored_orig, id_map)
+    results["extractor"] = ext
+    print(f"extractor  | official EM {ext['official']['exact']:.2f} F1 {ext['official']['f1']:.2f} (n={ext['official']['total']})"
+          + (f" | consistency EM-agreement {ext['consistency']['agreement_em']:.2f} over {ext['consistency']['pairs']} pairs" if paired else ""))
 
-    with open(args.output_file, "w", encoding="utf-8") as f:
-        json.dump(summary, f, indent=2)
+    if reranker is not None:
+        rp, rpp = apply_reranker(reranker, outputs, device, args.rerank_margin)
+        rr: Dict[str, Any] = {"official": score(rp, "_rerank", scored_main)}
+        rr["by_question_type"] = per_bucket_metrics(rp, golds, qtypes)
+        if paired:
+            rr["consistency"] = consistency_metrics(rp, rpp)
+            if orig_file:
+                rr["paired_view_official_on_orig_file"] = score(rpp, "_rerank_orig", scored_orig, id_map)
+        results["reranker"] = rr
+        print(f"+reranker  | official EM {rr['official']['exact']:.2f} F1 {rr['official']['f1']:.2f}"
+              + (f" | consistency EM-agreement {rr['consistency']['agreement_em']:.2f}" if paired else ""))
 
-    print(f"Saved evaluation metrics to: {args.output_file}")
+    # ---- candidate dump and qualitative disagreements -------------------------------------------
+    with open(os.path.join(out_dir, "candidates.jsonl"), "w", encoding="utf-8") as f:
+        for q, o in outputs.items():
+            f.write(json.dumps({"id": q, "n_windows": o.n_windows, "candidates": [c.to_json() for c in o.candidates],
+                                "candidates_paraphrase": [c.to_json() for c in o.candidates_p]}, ensure_ascii=False) + "\n")
+    if paired:
+        ex_by = {e.qid: e for e in examples}
+        rows = []
+        for q, o in outputs.items():
+            if o.paired and o.pred != o.pred_p:
+                e = ex_by[q]
+                rows.append({"id": q, "question": e.question, "paraphrase": e.paraphrase, "pred": o.pred, "pred_paraphrase": o.pred_p, "gold": e.answers, "type": qtypes[q]})
+                if len(rows) >= args.n_disagreements:
+                    break
+        with open(os.path.join(out_dir, "disagreements.jsonl"), "w", encoding="utf-8") as f:
+            for r in rows:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    results["elapsed_sec"] = round(time.time() - t0, 1)
+    results["extractor_config"] = {k: cfg.get(k) for k in ("model", "loss_mode", "lambda_kl", "lambda_ot", "mu_hung", "max_seq_len", "doc_stride", "epochs", "lr", "val_frac", "split_seed")}
+    write_json(results, os.path.join(out_dir, "results.json"))
+    print(f"wrote {os.path.join(out_dir, 'results.json')} ({results['elapsed_sec']}s)")
 
 
 if __name__ == "__main__":

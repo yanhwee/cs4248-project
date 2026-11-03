@@ -94,6 +94,13 @@ def _(mo):
     mo.md(r"""
     # Mathematical Foundations of Extractive Question Answering & Paraphrase Consistency
     ### CS4248 Project (Group G17)
+
+    > **Status (Nov 2026): legacy teaching demo.** The pipeline used for every reported experiment lives in the
+    > `g17qa/` package with `prepare_paraphrases.py`, `train.py`, `train_reranker.py` and `evaluate.py` (see the README).
+    > This notebook keeps a self-contained, interactive illustration of the loss functions from an earlier iteration;
+    > its own training sandbox omits the paraphrase cross-entropy term, the validation split, the official scorer and the
+    > reranker, and its paraphrases are rule-based. Do not quote numbers from this notebook.
+
     **Core Research Focus**: Dual-Level Paraphrase Consistency Regularization for Extractive Question Answering on SQuAD v1.1.
 
     * **1D Optimal Transport ($W_1$ Metric)**: Enforces boundary probability mass proximity via exact closed-form CDF integration, tolerating minor off-by-one boundary shifts without gradient explosion.
@@ -1954,13 +1961,18 @@ def _(context_area, infer_button, mo, q_input, qp_input, trained_model):
             context_area.value, _detail_q, _detail_qp, _is_consistent
         )
 
+        _legend = (
+            "🟢 <b>Green Highlight</b>: Consensus invariant span extracted for both query formulations"
+            if _is_consistent
+            else "🔵 <b>Blue [q]</b>: Span extracted for original query &nbsp;|&nbsp; 🟠 <b>Amber [q']</b>: Span extracted for paraphrase"
+        )
         _passage_visualizer = mo.md(f"""
         #### 📄 Document Passage with Projected Extractive Spans
         <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px 18px; line-height: 1.7; font-size: 0.95rem; color: #1e293b;">
           {_highlighted_html}
         </div>
         <div style="margin-top: 6px; font-size: 0.82rem; color: #64748b;">
-          {'🟢 <b>Green Highlight</b>: Consensus invariant span extracted for both query formulations' if _is_consistent else '🔵 <b>Blue [q]</b>: Span extracted for original query &nbsp;|&nbsp; 🟠 <b>Amber [q\']</b>: Span extracted for paraphrase'}
+          {_legend}
         </div>
         """)
 

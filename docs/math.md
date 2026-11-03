@@ -1,6 +1,12 @@
 # Mathematical Foundations of Extractive Question Answering & Paraphrase Consistency
 ## A Self-Contained, First-Principles Machine Learning Specification
 
+> **Status (Nov 2026).** This document was written for an earlier iteration whose primary consistency loss was
+> 1-D optimal transport. In the current project (see `docs/CS4248 Project.pdf` and the README) the primary objective is
+> CE(q) + CE(q′) + λ·symmetric-KL over passage tokens, with the optimal-transport and Hungarian penalties kept as an
+> ablation, plus a learned span reranker. The derivations below remain valid for the ablation; the framing of KL as
+> "the baseline to beat" does not reflect the current method.
+
 ---
 
 ## Table of Contents

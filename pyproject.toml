@@ -1,16 +1,26 @@
 [project]
-name = "cs4284-project-1"
-version = "0.1.0"
-requires-python = ">=3.15"
+name = "g17-extractive-qa"
+version = "0.2.0"
+description = "CS4248 G17: paraphrase-consistent extractive QA on SQuAD v1.1 with a learned span reranker"
+requires-python = ">=3.10"
 dependencies = [
-    "accelerate>=1.15.0",
-    "datasets>=5.1.0",
-    "marimo>=0.25.2",
-    "matplotlib>=3.11.2",
-    "numpy>=2.5.4",
-    "scipy>=1.18.1",
-    "sentence-transformers>=6.2.0",
-    "torch>=2.15.0",
-    "tqdm>=4.70.1",
-    "transformers>=5.22.1",
+    "torch>=2.1",
+    "transformers>=4.40",
+    "tokenizers",
+    "sentencepiece",
+    "tiktoken",
+    "protobuf",
+    "sacremoses",
+    "sentence-transformers>=2.2",
+    "scikit-learn",
+    "scipy",
+    "numpy",
+    "tqdm",
+    "matplotlib",
 ]
+
+[project.optional-dependencies]
+notebook = ["marimo>=0.13"]
+
+[tool.setuptools]
+packages = ["g17qa"]

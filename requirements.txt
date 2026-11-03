@@ -1,13 +1,17 @@
-# CS4248 Project 1: Paraphrase-Consistent Extractive Question Answering
-# Python >= 3.10, compatible with NUS SoC Compute Cluster (Ubuntu Linux) and macOS
-
-torch>=2.1.0
-transformers>=4.38.0
-datasets>=2.16.0
-marimo>=0.25.0
-matplotlib>=3.8.0
-numpy>=1.24.0
-scipy>=1.11.0
-tqdm>=4.66.0
-sentencepiece>=0.1.99
-accelerate>=0.26.0
+# CS4248 G17 — paraphrase-consistent extractive QA with a learned span reranker
+# Python >= 3.10. Tested with Python 3.11 / torch 2.15 / transformers 5.22 on macOS (CPU, MPS) and Linux.
+torch>=2.1
+transformers>=4.40
+tokenizers
+sentencepiece          # MarianMT / DeBERTa-v3 tokenizers
+tiktoken               # needed by transformers>=5 to convert the DeBERTa-v3 sentencepiece model
+protobuf
+sacremoses             # MarianMT tokenizer
+sentence-transformers>=2.2   # paraphrase similarity filter
+scikit-learn           # t-SNE figure
+scipy                  # Hungarian assignment (optimal-transport ablation)
+numpy
+tqdm
+matplotlib
+# optional: the legacy interactive notebook only
+# marimo

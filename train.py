@@ -1,428 +1,267 @@
 #!/usr/bin/env python3
+"""Train the span extractor (proposal items 1 and 2).
+
+Protocol
+  * 5% of the training *articles* are held out (--val_frac, --split_seed) for model selection and tuning; the
+    official dev set is never touched here.
+  * --loss_mode selects the objective (see g17qa/losses.py):
+        ce         CE(q)                                plain extractor, paraphrases unused
+        aug        CE(q) + CE(q')                       paraphrase augmentation only
+        kl         CE(q) + CE(q') + lambda_kl * KL_sym  proposed consistency training
+        ot | hungarian | dual                           1-D optimal-transport / span-matching variants (item 2a)
+  * The checkpoint with the best validation F1 is kept as weights/<run_name>/best.pt.
+
+Examples
+  python train.py --run_name bert_ce  --loss_mode ce
+  python train.py --run_name bert_kl  --loss_mode kl --paraphrase_cache data/paraphrases/train.jsonl --lambda_kl 1.0
+  python train.py --run_name deb_kl   --model microsoft/deberta-v3-base --loss_mode kl \
+      --paraphrase_cache data/paraphrases/train.jsonl --precision bf16
+  # CPU smoke test
+  python train.py --run_name smoke --model google/bert_uncased_L-2_H-128_A-2 --loss_mode kl \
+      --paraphrase_cache data/paraphrases/smoke.jsonl --max_examples 300 --epochs 1 --batch_size 8
 """
-CS4248 Group G17: Paraphrase-Consistent Extractive Question Answering
-Standalone Cluster Training Pipeline & CLI Engine
 
-This script runs headless training on local workstations or cluster GPU nodes.
-It imports the core model architecture and loss functions from app.py, executes
-the optimization loop with CUDA FP16 AMP, and flushes real-time telemetry to disk.
-
-Usage Examples:
-  # Quick 50-sample local smoke test:
-  python train.py --samples 50 --epochs 1 --batch_size 4
-
-  # Full cluster training run with Proposed Dual Regularization:
-  python train.py --loss_type dual --epochs 2 --batch_size 16 --fp16
-
-  # Baseline run for ablation study:
-  python train.py --loss_type ce_only --epochs 2 --batch_size 16 --fp16
-"""
+from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
-import sys
-import time
-from typing import Any, Dict, List, Optional
+import random
+from typing import Any, Dict, List
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from tqdm import tqdm
-from transformers import AutoTokenizer
-from transformers import logging as tf_logging
-from transformers.utils.logging import disable_progress_bar
+from transformers import get_linear_schedule_with_warmup
 
-# Suppress Hugging Face verbosity
-tf_logging.set_verbosity_error()
-disable_progress_bar()
-
-# Reusable imports from core academic codebase
-from app import (
-    DEVICE,
-    MarianParaphraser,
-    PairedQAFeatureDataset,
-    ParaphraseConsistentQAExtractor,
-    compute_1d_wasserstein_loss,
-    compute_exact_match,
-    compute_f1,
-    compute_hungarian_loss_single_sample,
-    compute_supervised_ce_loss,
-    compute_symmetric_kl_loss,
-    load_squad_data,
-    paired_collate_fn,
-    prepare_paired_sliding_windows,
-)
+from g17qa.data import WindowDataset, attach_paraphrases, build_features, gold_answers, load_squad, make_collate_fn, split_by_article
+from g17qa.decode import run_extractor
+from g17qa.losses import LOSS_MODES, PAIRED_MODES, compute_total_loss
+from g17qa.metrics import summarize_outputs
+from g17qa.model import SpanExtractor, load_tokenizer, save_checkpoint, tokenizer_uses_token_type_ids
+from g17qa.utils import Timer, amp_dtype_for, count_trainable_parameters, ensure_dir, get_device, set_seed, write_json
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Train Paraphrase-Consistent Extractive QA Models (CS4248 Group G17)",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    # Model architecture
-    parser.add_argument(
-        "--model",
-        type=str,
-        default="google-bert/bert-base-uncased",
-        help="Pretrained HuggingFace encoder backbone",
-    )
-    # Loss formulation
-    parser.add_argument(
-        "--loss_type",
-        type=str,
-        choices=["dual", "kl", "ot", "hungarian", "ce_only"],
-        default="dual",
-        help="Ablation loss objective: dual | kl | ot | hungarian | ce_only",
-    )
-    # Hyperparameters
-    parser.add_argument(
-        "--samples",
-        type=int,
-        default=0,
-        help="Number of training samples (0 = full SQuAD dataset)",
-    )
-    parser.add_argument(
-        "--epochs",
-        type=int,
-        default=2,
-        help="Number of training epochs",
-    )
-    parser.add_argument(
-        "--batch_size",
-        type=int,
-        default=16,
-        help="Batch size per device",
-    )
-    parser.add_argument(
-        "--lr",
-        type=float,
-        default=3e-5,
-        help="Encoder backbone learning rate",
-    )
-    parser.add_argument(
-        "--lambda_ot",
-        type=float,
-        default=0.5,
-        help="Weight multiplier for 1D Optimal Transport loss",
-    )
-    parser.add_argument(
-        "--lambda_kl",
-        type=float,
-        default=0.5,
-        help="Weight multiplier for Symmetric KL Divergence loss",
-    )
-    parser.add_argument(
-        "--mu_hung",
-        type=float,
-        default=0.1,
-        help="Weight multiplier for Hungarian bipartite span matching loss",
-    )
-    parser.add_argument(
-        "--top_k",
-        type=int,
-        default=3,
-        help="Number of top spans matched via Hungarian algorithm",
-    )
-    parser.add_argument(
-        "--max_seq_len",
-        type=int,
-        default=256,
-        help="Maximum token sequence length per sliding window",
-    )
-    parser.add_argument(
-        "--doc_stride",
-        type=int,
-        default=96,
-        help="Sliding window token stride overlap",
-    )
-    # Optimization & Hardware
-    parser.add_argument(
-        "--fp16",
-        action="store_true",
-        default=False,
-        help="Enable CUDA Automatic Mixed Precision (AMP FP16)",
-    )
-    parser.add_argument(
-        "--seed",
-        type=int,
-        default=42,
-        help="Random seed for reproducibility",
-    )
-    # Logging & Paths
-    parser.add_argument(
-        "--data_dir",
-        type=str,
-        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "data"),
-        help="Path to directory containing train-v1.1.json and dev-v1.1.json",
-    )
-    parser.add_argument(
-        "--runs_dir",
-        type=str,
-        default="runs",
-        help="Directory to save step telemetry JSON logs",
-    )
-    parser.add_argument(
-        "--weights_dir",
-        type=str,
-        default="weights",
-        help="Directory to save model checkpoint weights",
-    )
-    parser.add_argument(
-        "--log_interval",
-        type=int,
-        default=10,
-        help="Interval of steps for console printing and disk flush",
-    )
-
-    return parser.parse_args()
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--run_name", required=True)
+    p.add_argument("--model", default="bert-base-uncased", help="HF encoder: bert-base-uncased | microsoft/deberta-v3-base | ...")
+    p.add_argument("--train_file", default="provided/train-v1.1.json")
+    p.add_argument("--paraphrase_cache", default=None, help="JSONL from prepare_paraphrases.py (required for paired modes)")
+    p.add_argument("--loss_mode", choices=LOSS_MODES, default="kl")
+    p.add_argument("--lambda_kl", type=float, default=1.0)
+    p.add_argument("--lambda_ot", type=float, default=0.5)
+    p.add_argument("--mu_hung", type=float, default=0.1)
+    p.add_argument("--hung_topk", type=int, default=5)
+    p.add_argument("--max_seq_len", type=int, default=384)
+    p.add_argument("--doc_stride", type=int, default=128, help="step between window starts (BERT run_squad convention)")
+    p.add_argument("--max_query_len", type=int, default=64)
+    p.add_argument("--max_answer_len", type=int, default=30)
+    p.add_argument("--epochs", type=int, default=2)
+    p.add_argument("--batch_size", type=int, default=16)
+    p.add_argument("--grad_accum", type=int, default=1)
+    p.add_argument("--lr", type=float, default=3e-5)
+    p.add_argument("--weight_decay", type=float, default=0.01)
+    p.add_argument("--warmup_ratio", type=float, default=0.1)
+    p.add_argument("--max_grad_norm", type=float, default=1.0)
+    p.add_argument("--max_examples", type=int, default=0, help="cap on training questions after the split (0 = all)")
+    p.add_argument("--val_frac", type=float, default=0.05, help="fraction of training articles held out for validation")
+    p.add_argument("--split_seed", type=int, default=42)
+    p.add_argument("--val_max_examples", type=int, default=2000, help="validation questions used during training (0 = all)")
+    p.add_argument("--eval_every", type=int, default=0, help="validate every N optimizer steps (0 = once per epoch)")
+    p.add_argument("--precision", choices=["fp32", "fp16", "bf16"], default="fp32")
+    p.add_argument("--device", default="auto")
+    p.add_argument("--seed", type=int, default=42)
+    p.add_argument("--num_workers", type=int, default=0)
+    p.add_argument("--runs_dir", default="runs")
+    p.add_argument("--weights_dir", default="weights")
+    p.add_argument("--log_interval", type=int, default=20)
+    return p.parse_args()
 
 
-def set_seed(seed: int) -> None:
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
+def validate(model, tokenizer, examples, device, args, amp_dtype) -> Dict[str, float]:
+    """EM / F1 on the held-out questions and, when their paraphrases are attached, paraphrase agreement
+    (both views decoded), so that lambda can be chosen on accuracy *and* consistency."""
+    with_pairs = any(e.has_pair for e in examples)
+    outputs = run_extractor(
+        model, tokenizer, examples, device, batch_size=max(8, args.batch_size * 2), max_seq_len=args.max_seq_len,
+        doc_stride=args.doc_stride, max_query_len=args.max_query_len, top_k=5, max_answer_len=args.max_answer_len,
+        with_pairs=with_pairs, want_vecs=False, amp_dtype=amp_dtype, progress=False, num_workers=args.num_workers,
+    )
+    model.train()
+    return summarize_outputs(outputs, gold_answers(examples))
 
 
 def main() -> None:
     args = parse_args()
     set_seed(args.seed)
+    device = get_device(args.device)
+    amp_dtype = amp_dtype_for(device, args.precision)
+    run_dir = ensure_dir(os.path.join(args.runs_dir, args.run_name))
+    wdir = ensure_dir(os.path.join(args.weights_dir, args.run_name))
+    timer = Timer()
+    paired = args.loss_mode in PAIRED_MODES
 
-    os.makedirs(args.runs_dir, exist_ok=True)
-    os.makedirs(args.weights_dir, exist_ok=True)
+    print("=" * 78)
+    print(f"G17 extractor training | run={args.run_name} | model={args.model} | loss={args.loss_mode} | device={device} | precision={args.precision if amp_dtype else 'fp32'}")
+    print("=" * 78)
 
-    print("=" * 72)
-    print("CS4248 SQuAD Paraphrase-Consistent Extractive QA Training Engine")
-    print(f"Device:       {DEVICE}")
-    print(f"Model:        {args.model}")
-    print(f"Loss Type:    {args.loss_type}")
-    print(f"Epochs:       {args.epochs} | Batch Size: {args.batch_size} | LR: {args.lr}")
-    print(f"Weights:      lambda_ot={args.lambda_ot}, lambda_kl={args.lambda_kl}, mu_hung={args.mu_hung}")
-    print(f"AMP FP16:     {args.fp16 and torch.cuda.is_available()}")
-    print("=" * 72)
+    # ---- data ------------------------------------------------------------------------------
+    all_ex = load_squad(args.train_file)
+    train_ex, val_ex = split_by_article(all_ex, args.val_frac, args.split_seed)
+    if args.max_examples:
+        train_ex = train_ex[: args.max_examples]
+    if args.val_max_examples and len(val_ex) > args.val_max_examples:
+        val_eval = list(val_ex)
+        random.Random(args.split_seed).shuffle(val_eval)  # a sample across the held-out articles, not the first few
+        val_eval = val_eval[: args.val_max_examples]
+    else:
+        val_eval = val_ex
+    print(f"articles: {len({e.title for e in all_ex})} | train questions {len(train_ex)} | val questions {len(val_ex)} (using {len(val_eval)} during training)")
 
-    # 1. Dataset Loading
-    train_path = os.path.join(args.data_dir, "train-v1.1.json")
-    if not os.path.exists(train_path):
-        print(f"ERROR: Dataset not found at {train_path}")
-        sys.exit(1)
+    pair_stats: Dict[str, int] = {}
+    cache_ok = bool(args.paraphrase_cache) and os.path.exists(args.paraphrase_cache)
+    if paired and not cache_ok:
+        raise SystemExit(f"--loss_mode {args.loss_mode} needs --paraphrase_cache (run prepare_paraphrases.py first)")
+    if cache_ok:
+        # Held-out questions get their paraphrases in every mode (including the plain baseline) so that validation
+        # reports paraphrase agreement comparably across runs; training questions only in the paired modes.
+        val_stats = attach_paraphrases(val_ex, args.paraphrase_cache)
+        print(f"validation paraphrases: attached {val_stats['attached']} / {val_stats['total']} (for the agreement metric)")
+        if paired:
+            pair_stats = attach_paraphrases(train_ex, args.paraphrase_cache)
+            print(f"training paraphrases: attached {pair_stats['attached']} / {pair_stats['total']} (rejected {pair_stats['rejected']}, missing {pair_stats['missing']})")
+            if pair_stats["attached"] == 0:
+                raise SystemExit("no accepted paraphrases for the training questions; check the cache / threshold")
+    elif args.loss_mode == "ce":
+        print("note: no --paraphrase_cache given, so validation will report EM/F1 only (no paraphrase agreement)")
 
-    print(f"Loading raw SQuAD records from {train_path}...")
-    max_rec = None if args.samples == 0 else args.samples
-    raw_train = load_squad_data(train_path, max_records=max_rec)
-    print(f"Loaded {len(raw_train)} training records.")
+    tokenizer = load_tokenizer(args.model)
+    use_tt = tokenizer_uses_token_type_ids(tokenizer)
+    feats, _ = build_features(train_ex, tokenizer, args.max_seq_len, args.doc_stride, args.max_query_len, with_pairs=paired)
+    loader = DataLoader(
+        WindowDataset(feats), batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers,
+        collate_fn=make_collate_fn(tokenizer.pad_token_id, use_tt), drop_last=False,
+    )
+    n_pair_feats = sum(f.has_pair for f in feats)
+    print(f"features: {len(feats)} windows ({n_pair_feats} with a paraphrase view) | {len(loader)} batches/epoch")
 
-    # 2. In-Memory Paraphrase Pairing
-    print("Generating/verifying question paraphrase pairs in memory...")
-    paraphraser = MarianParaphraser(device=DEVICE)
-    questions = [item["question"] for item in raw_train]
-    paraphrases = paraphraser.batch_back_translate(questions)
-    paired_records = [
-        {**rec, "paraphrase": p} for rec, p in zip(raw_train, paraphrases)
+    # ---- model / optimiser -------------------------------------------------------------------
+    model = SpanExtractor(args.model).to(device)
+    print(f"parameters: {count_trainable_parameters(model) / 1e6:.1f}M trainable")
+    no_decay = ("bias", "LayerNorm.weight", "layer_norm.weight")
+    groups = [
+        {"params": [p for n, p in model.named_parameters() if not any(k in n for k in no_decay)], "weight_decay": args.weight_decay},
+        {"params": [p for n, p in model.named_parameters() if any(k in n for k in no_decay)], "weight_decay": 0.0},
     ]
-    print(f"Successfully paired {len(paired_records)} queries with back-translations.")
+    optimizer = torch.optim.AdamW(groups, lr=args.lr)
+    steps_per_epoch = math.ceil(len(loader) / args.grad_accum)
+    total_steps = steps_per_epoch * args.epochs
+    scheduler = get_linear_schedule_with_warmup(optimizer, int(args.warmup_ratio * total_steps), total_steps)
+    use_scaler = amp_dtype == torch.float16 and device.type == "cuda"
+    scaler = torch.amp.GradScaler("cuda", enabled=use_scaler)
 
-    # 3. Tokenization & Sliding Windows
-    print(f"Tokenizing with {args.model} (seq_len={args.max_seq_len}, stride={args.doc_stride})...")
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
-    features = prepare_paired_sliding_windows(
-        paired_records,
-        tokenizer,
-        max_seq_len=args.max_seq_len,
-        doc_stride=args.doc_stride,
-    )
-    dataset = PairedQAFeatureDataset(features)
-    dataloader = DataLoader(
-        dataset,
-        batch_size=args.batch_size,
-        shuffle=True,
-        collate_fn=paired_collate_fn,
-    )
+    config: Dict[str, Any] = {**vars(args), "n_train_questions": len(train_ex), "n_val_questions": len(val_ex), "n_features": len(feats), "pair_stats": pair_stats, "total_steps": total_steps}
+    write_json(config, os.path.join(run_dir, "config.json"))
 
-    total_batches = len(dataloader)
-    total_steps = total_batches * args.epochs
-    print(f"Features ready: {len(features)} sliding windows across {total_batches} batches/epoch.")
-
-    # 4. Model & Optimizer Initialization
-    print(f"Initializing ParaphraseConsistentQAExtractor with {args.model}...")
-    model = ParaphraseConsistentQAExtractor(model_name=args.model).to(DEVICE)
-
-    backbone_params = [p for _, p in model.encoder.named_parameters()]
-    head_params = [p for _, p in model.qa_outputs.named_parameters()]
-
-    optimizer = torch.optim.AdamW(
-        [
-            {"params": backbone_params, "lr": args.lr, "weight_decay": 0.01},
-            {"params": head_params, "lr": args.lr * 3.3, "weight_decay": 0.0},
-        ]
-    )
-
-    use_cuda_fp16 = args.fp16 and torch.cuda.is_available()
-    scaler = torch.amp.GradScaler("cuda", enabled=use_cuda_fp16)
-
-    # Telemetry tracking files
-    history_file_specific = os.path.join(args.runs_dir, f"history_{args.loss_type}.json")
-    history_file_latest = os.path.join(args.runs_dir, "history.json")
-
-    training_logs: List[Dict[str, Any]] = []
-    start_time = time.time()
+    history: List[Dict[str, Any]] = []
+    val_history: List[Dict[str, Any]] = []
+    best_f1 = -1.0
+    best_entry: Dict[str, Any] = {}
     global_step = 0
 
+    def do_validation(tag: str) -> None:
+        nonlocal best_f1, best_entry
+        if not val_eval:
+            return
+        m = validate(model, tokenizer, val_eval, device, args, amp_dtype)
+        entry = {
+            "step": global_step, "tag": tag, "exact": round(m["exact"], 3), "f1": round(m["f1"], 3), "n": m["total"],
+            "pairs": m["pairs"], "agreement_em": round(m["agreement_em"], 3), "agreement_f1": round(m["agreement_f1"], 3),
+            "elapsed_sec": round(timer.elapsed(), 1),
+        }
+        val_history.append(entry)
+        write_json(val_history, os.path.join(run_dir, "val_history.json"))
+        improved = m["f1"] > best_f1  # checkpoint selection within a run is by F1; lambda is chosen across runs
+        if improved:
+            best_f1 = m["f1"]
+            best_entry = entry
+            save_checkpoint(model, os.path.join(wdir, "best.pt"), config, {"val": entry})
+        agr = f" | agreement {m['agreement_em']:.2f} over {m['pairs']} pairs" if m["pairs"] else ""
+        print(f"  [val @ step {global_step} ({tag})] EM {m['exact']:.2f} | F1 {m['f1']:.2f} | n={m['total']}{agr}{'  *best*' if improved else ''}")
+
+    # ---- training loop -----------------------------------------------------------------------
     model.train()
-    print("\nStarting training loop...")
-
-    for epoch in range(args.epochs):
-        epoch_start = time.time()
-        for step, batch in enumerate(dataloader):
-            global_step += 1
-            optimizer.zero_grad()
-
-            device_type = "cuda" if torch.cuda.is_available() else "cpu"
-            with torch.amp.autocast(device_type=device_type, enabled=use_cuda_fp16):
-                out_q = model(
-                    input_ids=batch["input_ids_q"].to(DEVICE),
-                    attention_mask=batch["attn_q"].to(DEVICE),
-                    pass_mask=batch["pass_mask_q"].to(DEVICE),
+    optimizer.zero_grad(set_to_none=True)
+    for epoch in range(1, args.epochs + 1):
+        for i, batch in enumerate(loader):
+            kw = {"input_ids": batch["input_ids"].to(device), "attention_mask": batch["attention_mask"].to(device)}
+            if use_tt:
+                kw["token_type_ids"] = batch["token_type_ids"].to(device)
+            bt = {k: (v.to(device) if torch.is_tensor(v) else v) for k, v in batch.items()}
+            with torch.autocast(device_type=device.type, dtype=amp_dtype, enabled=amp_dtype is not None):
+                out_q = model(**kw)
+                out_p = None
+                if paired and "input_ids_p" in batch:
+                    kwp = {"input_ids": bt["input_ids_p"], "attention_mask": bt["attention_mask_p"]}
+                    if use_tt:
+                        kwp["token_type_ids"] = bt["token_type_ids_p"]
+                    out_p = model(**kwp)
+                comps = compute_total_loss(
+                    args.loss_mode, out_q, bt, out_p, lambda_kl=args.lambda_kl, lambda_ot=args.lambda_ot,
+                    mu_hung=args.mu_hung, hung_topk=args.hung_topk, max_answer_len=args.max_answer_len,
                 )
-                out_qp = model(
-                    input_ids=batch["input_ids_qp"].to(DEVICE),
-                    attention_mask=batch["attn_qp"].to(DEVICE),
-                    pass_mask=batch["pass_mask_qp"].to(DEVICE),
-                )
+                loss = comps["total"] / args.grad_accum
+            scaler.scale(loss).backward()
 
-                loss_ce = compute_supervised_ce_loss(
-                    out_q["z_start"],
-                    out_q["z_end"],
-                    batch["s_pos_q"].to(DEVICE),
-                    batch["e_pos_q"].to(DEVICE),
-                )
+            if (i + 1) % args.grad_accum == 0 or (i + 1) == len(loader):
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
+                scaler.step(optimizer)
+                scaler.update()
+                scheduler.step()
+                optimizer.zero_grad(set_to_none=True)
+                global_step += 1
 
-                b_size = batch["input_ids_q"].shape[0]
-                batch_ot = torch.tensor(0.0, device=DEVICE)
-                batch_kl = torch.tensor(0.0, device=DEVICE)
-                batch_hung = torch.tensor(0.0, device=DEVICE)
+                entry = {"step": global_step, "epoch": epoch, "lr": scheduler.get_last_lr()[0], "elapsed_sec": round(timer.elapsed(), 1)}
+                entry.update({k: round(float(v.item()), 5) for k, v in comps.items()})
+                history.append(entry)
+                if global_step % args.log_interval == 0 or global_step == total_steps:
+                    parts = " | ".join(f"{k} {entry[k]:.4f}" for k in ("total", "ce_q", "ce_p", "kl", "ot", "hung") if k in entry)
+                    rate = global_step / max(1e-6, timer.elapsed())
+                    eta = (total_steps - global_step) / max(1e-6, rate)
+                    print(f"ep {epoch} step {global_step}/{total_steps} | {parts} | lr {entry['lr']:.2e} | {rate:.2f} it/s | eta {eta / 60:.1f} min")
+                    with open(os.path.join(run_dir, "history.json"), "w", encoding="utf-8") as f:
+                        json.dump(history, f)
+                if args.eval_every and global_step % args.eval_every == 0:
+                    do_validation("periodic")
+        do_validation(f"epoch{epoch}")
 
-                for b in range(b_size):
-                    m_len = batch["pass_lens"][b]
-                    p_mask_q = batch["pass_mask_q"][b] == 1
-                    p_mask_qp = batch["pass_mask_qp"][b] == 1
-
-                    s_q = out_q["z_start"][b, p_mask_q][:m_len]
-                    e_q = out_q["z_end"][b, p_mask_q][:m_len]
-                    s_qp = out_qp["z_start"][b, p_mask_qp][:m_len]
-                    e_qp = out_qp["z_end"][b, p_mask_qp][:m_len]
-
-                    if s_q.shape[0] == m_len and s_qp.shape[0] == m_len and m_len > 1:
-                        p_start_q = F.softmax(s_q, dim=0).unsqueeze(0)
-                        p_start_qp = F.softmax(s_qp, dim=0).unsqueeze(0)
-                        p_end_q = F.softmax(e_q, dim=0).unsqueeze(0)
-                        p_end_qp = F.softmax(e_qp, dim=0).unsqueeze(0)
-
-                        if "ot" in args.loss_type or "dual" in args.loss_type:
-                            ot_s = compute_1d_wasserstein_loss(p_start_q, p_start_qp)
-                            ot_e = compute_1d_wasserstein_loss(p_end_q, p_end_qp)
-                            batch_ot = batch_ot + 0.5 * (ot_s + ot_e)
-
-                        if "kl" in args.loss_type:
-                            kl_s = compute_symmetric_kl_loss(p_start_q, p_start_qp)
-                            kl_e = compute_symmetric_kl_loss(p_end_q, p_end_qp)
-                            batch_kl = batch_kl + 0.5 * (kl_s + kl_e)
-
-                        if "hungarian" in args.loss_type or "dual" in args.loss_type:
-                            h_loss = compute_hungarian_loss_single_sample(
-                                s_q, e_q, s_qp, e_qp, k=args.top_k, max_span_len=30
-                            )
-                            batch_hung = batch_hung + h_loss
-
-                l_ot = batch_ot / float(max(1, b_size))
-                l_kl = batch_kl / float(max(1, b_size))
-                l_hung = batch_hung / float(max(1, b_size))
-
-                # Composite loss selection
-                if args.loss_type == "ce_only":
-                    loss_tot = loss_ce
-                elif args.loss_type == "kl":
-                    loss_tot = loss_ce + args.lambda_kl * l_kl
-                elif args.loss_type == "ot":
-                    loss_tot = loss_ce + args.lambda_ot * l_ot
-                elif args.loss_type == "hungarian":
-                    loss_tot = loss_ce + args.mu_hung * l_hung
-                else:  # dual (1D OT + 2D Hungarian)
-                    loss_tot = loss_ce + args.lambda_ot * l_ot + args.mu_hung * l_hung
-
-            scaler.scale(loss_tot).backward()
-            scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            scaler.step(optimizer)
-            scaler.update()
-
-            entry = {
-                "step": global_step,
-                "epoch": epoch + 1,
-                "loss_total": round(loss_tot.item(), 4),
-                "loss_ce": round(loss_ce.item(), 4),
-                "loss_ot": round(l_ot.item(), 4),
-                "loss_kl": round(l_kl.item(), 4),
-                "loss_hung": round(l_hung.item(), 4),
-                "elapsed_sec": round(time.time() - start_time, 2),
-            }
-            training_logs.append(entry)
-
-            # Periodic console output & incremental disk flush
-            if global_step % args.log_interval == 0 or step == total_batches - 1:
-                elapsed_cur = time.time() - start_time
-                steps_per_sec = global_step / max(0.1, elapsed_cur)
-                print(
-                    f"Epoch [{epoch+1}/{args.epochs}] Step [{step+1}/{total_batches}] "
-                    f"({global_step}/{total_steps}) | "
-                    f"Total: {loss_tot.item():.4f} | CE: {loss_ce.item():.4f} | "
-                    f"OT: {l_ot.item():.4f} | KL: {l_kl.item():.4f} | Hung: {l_hung.item():.4f} | "
-                    f"{steps_per_sec:.1f} steps/s"
-                )
-
-                # Incremental flush so external monitors / notebooks can watch live
-                try:
-                    with open(history_file_specific, "w", encoding="utf-8") as f:
-                        json.dump(training_logs, f, indent=2)
-                    with open(history_file_latest, "w", encoding="utf-8") as f:
-                        json.dump(training_logs, f, indent=2)
-                except Exception as e:
-                    print(f"Warning: Failed to flush telemetry to disk: {e}")
-
-        epoch_dur = time.time() - epoch_start
-        print(f"--- Epoch {epoch+1}/{args.epochs} completed in {epoch_dur:.1f}s ---")
-
-    total_duration = time.time() - start_time
-    print("\n" + "=" * 72)
-    print(f"Training completed successfully in {total_duration:.1f}s!")
-
-    # 5. Save Final Checkpoint
-    checkpoint_specific = os.path.join(args.weights_dir, f"model_{args.loss_type}.pt")
-    checkpoint_best = os.path.join(args.weights_dir, "best_model.pt")
-
-    ckpt_payload = {
-        "model_state_dict": model.state_dict(),
-        "model_name": args.model,
-        "loss_type": args.loss_type,
-        "hyperparameters": vars(args),
-        "elapsed_seconds": total_duration,
-        "final_step": global_step,
-        "training_logs": training_logs,
+    # ---- wrap-up --------------------------------------------------------------------------------
+    save_checkpoint(model, os.path.join(wdir, "last.pt"), config)
+    with open(os.path.join(run_dir, "history.json"), "w", encoding="utf-8") as f:
+        json.dump(history, f)
+    final = {}
+    if val_ex and (args.val_max_examples and len(val_ex) > len(val_eval)):
+        print(f"final validation on all {len(val_ex)} held-out questions with the best checkpoint ...")
+        best_path = os.path.join(wdir, "best.pt")
+        if os.path.exists(best_path):
+            state = torch.load(best_path, map_location="cpu", weights_only=False)["state_dict"]
+            model.load_state_dict(state)
+        final = validate(model, tokenizer, val_ex, device, args, amp_dtype)
+        agr = f" | agreement {final['agreement_em']:.2f} over {final['pairs']} pairs" if final["pairs"] else ""
+        print(f"  full val: EM {final['exact']:.2f} | F1 {final['f1']:.2f}{agr}")
+    summary = {
+        "run_name": args.run_name, "model": args.model, "loss_mode": args.loss_mode, "lambda_kl": args.lambda_kl,
+        "best_val_f1": round(best_f1, 3), "best_val_exact": best_entry.get("exact"),
+        "best_val_agreement_em": best_entry.get("agreement_em"), "best_val_agreement_f1": best_entry.get("agreement_f1"),
+        "best_val_pairs": best_entry.get("pairs"), "selection_note": "best checkpoint within the run by validation F1; choose lambda across runs on validation F1 and agreement",
+        "val_history": val_history, "final_full_val": final, "train_time_sec": round(timer.elapsed(), 1),
+        "steps": global_step, "best_checkpoint": os.path.join(wdir, "best.pt"), "last_checkpoint": os.path.join(wdir, "last.pt"),
     }
-
-    print(f"Saving model checkpoint to {checkpoint_specific} and {checkpoint_best}...")
-    torch.save(ckpt_payload, checkpoint_specific)
-    torch.save(ckpt_payload, checkpoint_best)
-
-    # Final telemetry dump
-    with open(history_file_specific, "w", encoding="utf-8") as f:
-        json.dump(training_logs, f, indent=2)
-    with open(history_file_latest, "w", encoding="utf-8") as f:
-        json.dump(training_logs, f, indent=2)
-
-    print(f"All logs saved to {history_file_specific}")
-    print("=" * 72)
+    write_json(summary, os.path.join(run_dir, "train_summary.json"))
+    agr = f" | agreement {best_entry['agreement_em']:.2f}" if best_entry.get("pairs") else ""
+    print(f"done in {timer.elapsed() / 60:.1f} min | best val F1 {best_f1:.2f}{agr} | checkpoints in {wdir}")
 
 
 if __name__ == "__main__":
