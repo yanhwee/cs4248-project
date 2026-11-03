@@ -1,0 +1,8 @@
+{
+  "run": "bert_ce",
+  "weights": "weights/bert_ce/best.pt",
+  "n_pairs": 300,
+  "mean_cosine_distance": 0.008757944218814373,
+  "median_cosine_distance": 0.003900855779647827,
+  "answer_agreement": 91.66666666666666
+}

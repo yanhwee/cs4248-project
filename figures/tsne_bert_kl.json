@@ -1,0 +1,8 @@
+{
+  "run": "bert_kl_lam1.0",
+  "weights": "weights/bert_kl_lam1.0/best.pt",
+  "n_pairs": 300,
+  "mean_cosine_distance": 0.006294553168118,
+  "median_cosine_distance": 0.0019447505474090576,
+  "answer_agreement": 92.66666666666666
+}
