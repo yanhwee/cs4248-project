@@ -107,20 +107,23 @@ ssh -J <soc_username>@stujump.comp.nus.edu.sg <soc_username>@xlogin.comp.nus.edu
 # 2. one-off environment setup ON A COMPUTE NODE (xlogin cannot run conda): Miniconda, env "cs4248",
 #    requirements, external eval sets, model downloads, unit tests
 salloc -t 120
-srun --pty bash
-cd ~/cs4248-project && bash scripts/setup_env_cluster.sh
+srun --pty bash                               # if this fails with "Unable to satisfy cpu bind request": srun --cpu-bind=none --pty bash
+cd ~/cs4248-project && bash scripts/setup_env_cluster.sh   # installs the CUDA-12 PyTorch build the cluster driver needs
 exit; exit
+#    (a GPU-less salloc shows "cuda available: False"; verify with  salloc -G h100-47 -t 10  if you want to see True)
 
 # 3. submit jobs from the repository root on xlogin
-bash scripts/submit_all_ablations.sh          # paraphrase-cache job, then one GPU job per (backbone, objective)
+bash scripts/submit_all_ablations.sh          # paraphrase-cache job, then one GPU job per run:
+                                              #   bert ce / aug / kl (one job per lambda) / ot / dual, deberta ce / kl
 #   or single jobs:
-sbatch scripts/job.sbatch                     # bert-base: ce, aug, kl -> reranker -> all evaluations
+sbatch scripts/job.sbatch                     # bert-base: ce, aug, kl -> reranker -> all evaluations, in one job
 sbatch --job-name=g17_deb --export=ALL,MODEL=microsoft/deberta-v3-base,RUN_PREFIX=deb,MODES="kl" scripts/job.sbatch
 sbatch --gpus=a100-40:1 scripts/job.sbatch    # another GPU type (check availability with gpufree / squeue)
 
-# 4. monitor
-squeue --me
-tail -f logs/slurm/g17_pipeline-<job_id>.out
+# 4. monitor (job names: g17_para, g17_bert_ce, g17_bert_kl_lam1.0, g17_deb_kl, ...; a bare job is g17_pipeline)
+squeue --me -o "%.10i %.24j %.3t %.8M %.12R"
+tail -f logs/slurm/<job-name>-<job_id>.out
+wc -l data/paraphrases/train.jsonl            # liveness check during the paraphrase stage (grows to 87,599)
 ```
 
 `scripts/job.sbatch` activates the conda env and runs `scripts/run_pipeline.sh`; `STAGES`, `MODEL`, `MODES`,
@@ -176,12 +179,13 @@ g17qa/              core package (data, paraphrase, model, losses, decode, reran
 prepare_paraphrases.py  train.py  train_reranker.py  evaluate.py  visualize.py  tsne_pairs.py  download_eval_sets.py
 scripts/            smoke_test_cpu.sh, run_pipeline.sh, job.sbatch, submit_all_ablations.sh, setup_env_cluster.sh, benchmark_cpu.py
 tests/test_core.py  unit tests (metrics vs official scorer, windows/labels, losses, decoding)
-provided/           course data + official scorer (not in git)
-data/external/      Gan & Ng paraphrased sets, Adversarial SQuAD (download_eval_sets.py)
-data/paraphrases/   paraphrase caches (prepare_paraphrases.py)
-report/             ACL-format paper (main.tex), bib, style files; tables/ and figures/ are generated
-docs/               proposal, course requirements, status review, change notes, maths notes
-app.py              legacy marimo demo notebook (not used for any reported number)
+provided/           official scorer evaluate-v2.0.py (in git) + train/dev JSON from Canvas (not in git)
+data/external/      Gan & Ng paraphrased sets, Adversarial SQuAD (download_eval_sets.py; not in git)
+data/paraphrases/   paraphrase caches (prepare_paraphrases.py; not in git)
+report/             ACL-format paper (main.tex), bib, style files; tables/ and figures/ are generated, not committed
+docs/               proposal (CS4248 Project.pdf), course requirements, SoC cluster guide, CHANGES.md (what was
+                    changed and why), status_review (snapshot of the repo before the rebuild), math.md (earlier notes)
+app.py              legacy marimo demo notebook from the first iteration (not used for any reported number)
 ```
 
 ## Contributions and external code
