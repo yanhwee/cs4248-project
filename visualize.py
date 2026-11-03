@@ -189,26 +189,29 @@ def _lambda_runs(runs):
     for r in runs.values():
         cfg, sm = r["config"], r.get("summary")
         if cfg.get("loss_mode") == "kl" and sm and sm.get("best_val_f1") is not None:
-            rows.append((float(cfg.get("lambda_kl", 0.0)), r["name"], sm, _dev_numbers(r)))
+            rows.append((cfg.get("model", "?").split("/")[-1], float(cfg.get("lambda_kl", 0.0)), r["name"], sm, _dev_numbers(r)))
     return sorted(rows)
 
 
 def fig_lambda_sweep(runs, out_dirs) -> bool:
     rows = _lambda_runs(runs)
-    if len(rows) < 2:
+    models = sorted({x[0] for x in rows})
+    series = {m: [x for x in rows if x[0] == m] for m in models}
+    series = {m: v for m, v in series.items() if len(v) >= 2}  # a sweep needs at least two lambdas
+    if not series:
         return False
-    lams = [x[0] for x in rows]
-    f1 = [x[2]["best_val_f1"] for x in rows]
-    agr = [x[2].get("best_val_agreement_em") for x in rows]
     fig, ax1 = plt.subplots(figsize=(3.3, 2.3))
-    ax1.plot(lams, f1, marker="o", color="#1b4965", label="val F1")
+    ax2 = ax1.twinx()
+    for i, (m, v) in enumerate(series.items()):
+        lams = [x[1] for x in v]
+        ax1.plot(lams, [x[3]["best_val_f1"] for x in v], marker="o", color="#1b4965", ls=["-", "--", ":"][i % 3], label=f"val F1 ({m})")
+        agr = [x[3].get("best_val_agreement_em") for x in v]
+        if all(a is not None for a in agr):
+            ax2.plot(lams, agr, marker="s", color="#2a9d8f", ls=["-", "--", ":"][i % 3], label=f"val agreement ({m})")
     ax1.set_xlabel(r"$\lambda$ (consistency weight)")
     ax1.set_ylabel("held-out F1 (%)", color="#1b4965")
+    ax2.set_ylabel("paraphrase agreement (%)", color="#2a9d8f")
     ax1.grid(True, ls=":", alpha=0.5)
-    if all(a is not None for a in agr):
-        ax2 = ax1.twinx()
-        ax2.plot(lams, agr, marker="s", color="#2a9d8f", label="val agreement")
-        ax2.set_ylabel("paraphrase agreement (%)", color="#2a9d8f")
     ax1.set_title("Accuracy / consistency trade-off on held-out articles", fontsize=8)
     fig.tight_layout()
     _save(fig, out_dirs, "lambda_sweep")
@@ -219,14 +222,14 @@ def table_lambda(runs, fig_dir, tab_dir) -> bool:
     rows = _lambda_runs(runs)
     if not rows:
         return False
-    tex = ["\\begin{table}[t]", "\\centering\\small", "\\begin{tabular}{lcccc}", "\\toprule",
-           "$\\lambda$ & \\textbf{Val F1} & \\textbf{Val Agr.} & \\textbf{Dev F1} & \\textbf{Dev Agr.} \\\\", "\\midrule"]
-    md = ["| λ | run | Val F1 | Val Agreement | Dev F1 | Dev Agreement |", "| --: | :-- | --: | --: | --: | --: |"]
-    for lam, name, sm, d in rows:
+    tex = ["\\begin{table}[t]", "\\centering\\small", "\\begin{tabular}{llcccc}", "\\toprule",
+           "\\textbf{Model} & $\\lambda$ & \\textbf{Val F1} & \\textbf{Val Agr.} & \\textbf{Dev F1} & \\textbf{Dev Agr.} \\\\", "\\midrule"]
+    md = ["| Model | λ | run | Val F1 | Val Agreement | Dev F1 | Dev Agreement |", "| :-- | --: | :-- | --: | --: | --: | --: |"]
+    for model, lam, name, sm, d in rows:
         dev_f1 = d["f1"] if d else None
         dev_agr = d.get("cons") if d else None
-        tex.append(f"{lam:g} & {_f(sm['best_val_f1'])} & {_f(sm.get('best_val_agreement_em'))} & {_f(dev_f1)} & {_f(dev_agr)} \\\\")
-        md.append(f"| {lam:g} | {name} | {_f(sm['best_val_f1'])} | {_f(sm.get('best_val_agreement_em'))} | {_f(dev_f1)} | {_f(dev_agr)} |")
+        tex.append(f"{_tex(model)} & {lam:g} & {_f(sm['best_val_f1'])} & {_f(sm.get('best_val_agreement_em'))} & {_f(dev_f1)} & {_f(dev_agr)} \\\\")
+        md.append(f"| {model} | {lam:g} | {name} | {_f(sm['best_val_f1'])} | {_f(sm.get('best_val_agreement_em'))} | {_f(dev_f1)} | {_f(dev_agr)} |")
     tex += ["\\bottomrule", "\\end{tabular}", "\\caption{Consistency weight $\\lambda$: F1 and paraphrase agreement on the held-out training articles (used to choose $\\lambda$) and on the dev set.}", "\\label{tab:lambda}", "\\end{table}"]
     _write(os.path.join(tab_dir, "table_lambda.tex"), "\n".join(tex))
     _write(os.path.join(fig_dir, "table_lambda.md"), "\n".join(md))

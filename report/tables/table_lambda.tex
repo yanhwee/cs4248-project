@@ -1,0 +1,15 @@
+\begin{table}[t]
+\centering\small
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Model} & $\lambda$ & \textbf{Val F1} & \textbf{Val Agr.} & \textbf{Dev F1} & \textbf{Dev Agr.} \\
+\midrule
+bert-base-uncased & 0.5 & 82.5 & 89.5 & 88.5 & 87.6 \\
+bert-base-uncased & 1 & 82.1 & 90.6 & 88.6 & 87.9 \\
+bert-base-uncased & 2 & 81.7 & 91.0 & 88.4 & 88.8 \\
+deberta-v3-base & 1 & 88.2 & 93.6 & 93.7 & 91.8 \\
+\bottomrule
+\end{tabular}
+\caption{Consistency weight $\lambda$: F1 and paraphrase agreement on the held-out training articles (used to choose $\lambda$) and on the dev set.}
+\label{tab:lambda}
+\end{table}

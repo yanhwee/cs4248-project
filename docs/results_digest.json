@@ -1,0 +1,5343 @@
+{
+  "generated": "2026-11-04T01:17:53",
+  "selected": "bert_kl_lam1.0",
+  "tolerance": 0.5,
+  "rule_pick_sample": "bert_kl_lam1.0",
+  "rule_pick_full": "bert_kl_lam1.0",
+  "best_val_f1_sample_raw": 82.49,
+  "best_val_f1_full_raw": 81.99901876259733,
+  "best_full_run": "bert_kl_lam1.0",
+  "tolerance_gaps_sample_raw": {
+    "0.5": 0.0,
+    "1.0": 0.44,
+    "2.0": 0.82
+  },
+  "tolerance_gaps_full_raw": {
+    "0.5": 0.08,
+    "1.0": 0.0,
+    "2.0": 0.53
+  },
+  "deltas": {
+    "kl_vs_ce_agr": 4.6000000000000085,
+    "aug_vs_ce_agr": 3.200000000000003,
+    "kl_vs_aug_agr": 1.4000000000000057,
+    "kl2_vs_aug_agr": 2.299999999999997,
+    "kl_vs_ce_em": 0.30000000000001137,
+    "kl_vs_ce_f1": 0.09999999999999432,
+    "deb_kl_vs_ce_agr": 3.799999999999997,
+    "deb_kl_vs_ce_f1": -0.20000000000000284,
+    "rr_dev_f1": -0.8999999999999915,
+    "rr_dev_em": -1.4000000000000057,
+    "rr_dev_agr": 5.0,
+    "se_dev_em": 0.3808060464765661,
+    "se_dev_agr": 0.4016767801058175,
+    "ot_vs_aug_agr": -0.20000000000000284,
+    "dual_vs_aug_agr": 0.20000000000000284,
+    "se_dev_agr_diff": 0.5680567501160025,
+    "kl_vs_ce_agr_in_se": 8.097782482226723,
+    "kl_vs_aug_agr_in_se": 2.4645424945907473
+  },
+  "robustness": {
+    "addsent": {
+      "n": 3560,
+      "pairs": 3007,
+      "ce_f1": 64.9,
+      "kl_f1": 66.1,
+      "aug_f1": 65.9,
+      "delta_f1": 1.1999999999999886,
+      "aug_delta_f1": 1.0,
+      "ce_agr": 77.9,
+      "kl_agr": 84.1,
+      "delta_agr": 6.199999999999989,
+      "drop_from_dev_ce": 23.599999999999994,
+      "drop_from_dev_kl": 22.5
+    },
+    "addonesent": {
+      "n": 1787,
+      "pairs": 1491,
+      "ce_f1": 73.9,
+      "kl_f1": 74.5,
+      "aug_f1": 73.8,
+      "delta_f1": 0.5999999999999943,
+      "aug_delta_f1": -0.10000000000000853,
+      "ce_agr": 80.3,
+      "kl_agr": 84.4,
+      "delta_agr": 4.1000000000000085,
+      "drop_from_dev_ce": 14.599999999999994,
+      "drop_from_dev_kl": 14.099999999999994
+    },
+    "gan_dev": {
+      "n": 1062,
+      "pairs": 1061,
+      "ce_f1": 85.6,
+      "kl_f1": 86.1,
+      "aug_f1": 85.7,
+      "delta_f1": 0.5,
+      "aug_delta_f1": 0.10000000000000853,
+      "ce_agr": 89.1,
+      "kl_agr": 91.0,
+      "delta_agr": 1.9000000000000057,
+      "drop_from_dev_ce": 2.9000000000000057,
+      "drop_from_dev_kl": 2.5
+    },
+    "gan_adv": {
+      "n": 56,
+      "pairs": 56,
+      "ce_f1": 58.6,
+      "kl_f1": 63.6,
+      "aug_f1": 54.1,
+      "delta_f1": 5.0,
+      "aug_delta_f1": -4.5,
+      "ce_agr": 58.9,
+      "kl_agr": 62.5,
+      "delta_agr": 3.6000000000000014,
+      "drop_from_dev_ce": 29.9,
+      "drop_from_dev_kl": 24.999999999999993
+    }
+  },
+  "addsent_bert_ranking": [
+    [
+      66.1,
+      "bert_kl_lam1.0"
+    ],
+    [
+      66.0,
+      "bert_dual"
+    ],
+    [
+      65.9,
+      "bert_aug"
+    ],
+    [
+      65.8,
+      "bert_ot"
+    ],
+    [
+      65.8,
+      "bert_kl_lam0.5"
+    ],
+    [
+      65.7,
+      "bert_kl_lam2.0"
+    ],
+    [
+      64.9,
+      "bert_ce"
+    ]
+  ],
+  "reranker_overfit_points": {
+    "bert_ce": 5.1,
+    "bert_aug": 3.6,
+    "bert_kl_lam0.5": 3.1,
+    "bert_kl_lam1.0": 2.7,
+    "bert_kl_lam2.0": 2.6,
+    "bert_ot": 0.8,
+    "bert_dual": 2.1,
+    "deb_ce": 1.9,
+    "deb_kl": 3.2
+  },
+  "n_features_by_model": {
+    "bert-base-uncased": [
+      84504,
+      84507
+    ],
+    "microsoft/deberta-v3-base": [
+      84286,
+      84289
+    ]
+  },
+  "runs": {
+    "bert_aug": {
+      "run": "bert_aug",
+      "model": "bert-base-uncased",
+      "mode": "aug",
+      "lambda_kl": null,
+      "epochs": 2,
+      "batch_size": 16,
+      "lr": 3e-05,
+      "max_seq_len": 384,
+      "doc_stride": 128,
+      "n_train_questions": 83484,
+      "n_val_questions": 4115,
+      "n_features": 84507,
+      "val_max_examples": 2000,
+      "pair_stats": {
+        "attached": 68439,
+        "rejected": 15045,
+        "missing": 0,
+        "total": 83484
+      },
+      "steps": 10564,
+      "train_time_min": 19.141666666666666,
+      "val_f1": 81.5,
+      "val_f1_raw": 81.51,
+      "val_exact": 68.0,
+      "val_agreement": 88.7,
+      "val_pairs": 1683,
+      "val_n": 2000,
+      "full_val_f1": 81.9,
+      "full_val_f1_raw": 81.87383735864456,
+      "full_val_exact": 68.4,
+      "full_val_agreement": 88.3,
+      "full_val_n": 4115,
+      "full_val_pairs": 3447,
+      "reranker": {
+        "train_items": 6156,
+        "dev_items": 758,
+        "pair_features": true,
+        "top1": {
+          "n": 758,
+          "exact": 70.7,
+          "f1": 82.7,
+          "oracle_exact": 97.2
+        },
+        "reranked": {
+          "n": 758,
+          "exact": 71.1,
+          "f1": 82.6,
+          "oracle_exact": 97.2
+        },
+        "n_epochs": 20,
+        "best_epoch": 5,
+        "last_epoch_f1": 79.0
+      },
+      "sets": {
+        "dev": {
+          "n": 10570,
+          "pairs": 8622,
+          "paired_view": "back-translated paraphrase",
+          "em": 81.0,
+          "f1": 88.2,
+          "agr": 86.5,
+          "agr_f1": 91.0,
+          "rr_em": 80.6,
+          "rr_f1": 87.5,
+          "rr_agr": 93.4,
+          "by_type": {
+            "how": {
+              "n": 301,
+              "exact": 60.5,
+              "f1": 77.7
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 85.8,
+              "f1": 91.5
+            },
+            "other": {
+              "n": 94,
+              "exact": 57.4,
+              "f1": 74.3
+            },
+            "what": {
+              "n": 5812,
+              "exact": 79.4,
+              "f1": 87.2
+            },
+            "when": {
+              "n": 924,
+              "exact": 92.7,
+              "f1": 95.1
+            },
+            "where": {
+              "n": 511,
+              "exact": 75.7,
+              "f1": 86.1
+            },
+            "which": {
+              "n": 646,
+              "exact": 81.7,
+              "f1": 87.5
+            },
+            "who": {
+              "n": 1204,
+              "exact": 88.1,
+              "f1": 91.6
+            },
+            "why": {
+              "n": 155,
+              "exact": 54.8,
+              "f1": 76.6
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 301,
+              "exact": 61.1,
+              "f1": 77.0
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 83.4,
+              "f1": 89.9
+            },
+            "other": {
+              "n": 94,
+              "exact": 59.6,
+              "f1": 71.2
+            },
+            "what": {
+              "n": 5812,
+              "exact": 79.3,
+              "f1": 86.7
+            },
+            "when": {
+              "n": 924,
+              "exact": 92.1,
+              "f1": 94.7
+            },
+            "where": {
+              "n": 511,
+              "exact": 76.7,
+              "f1": 85.8
+            },
+            "which": {
+              "n": 646,
+              "exact": 81.7,
+              "f1": 87.0
+            },
+            "who": {
+              "n": 1204,
+              "exact": 87.4,
+              "f1": 90.6
+            },
+            "why": {
+              "n": 155,
+              "exact": 52.3,
+              "f1": 74.6
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_aug/eval_dev/results.json"
+        },
+        "gan_dev": {
+          "n": 1062,
+          "pairs": 1061,
+          "paired_view": "original question",
+          "em": 78.4,
+          "f1": 85.7,
+          "agr": 91.4,
+          "agr_f1": 94.2,
+          "rr_em": 79.5,
+          "rr_f1": 86.5,
+          "rr_agr": 94.3,
+          "by_type": {
+            "how": {
+              "n": 17,
+              "exact": 29.4,
+              "f1": 55.1
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 90.1,
+              "f1": 94.7
+            },
+            "other": {
+              "n": 31,
+              "exact": 54.8,
+              "f1": 66.3
+            },
+            "what": {
+              "n": 598,
+              "exact": 77.8,
+              "f1": 85.4
+            },
+            "when": {
+              "n": 84,
+              "exact": 90.5,
+              "f1": 93.9
+            },
+            "where": {
+              "n": 29,
+              "exact": 79.3,
+              "f1": 86.8
+            },
+            "which": {
+              "n": 102,
+              "exact": 74.5,
+              "f1": 80.2
+            },
+            "who": {
+              "n": 110,
+              "exact": 89.1,
+              "f1": 92.1
+            },
+            "why": {
+              "n": 20,
+              "exact": 45.0,
+              "f1": 75.1
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 17,
+              "exact": 41.2,
+              "f1": 63.0
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 87.3,
+              "f1": 93.5
+            },
+            "other": {
+              "n": 31,
+              "exact": 51.6,
+              "f1": 63.1
+            },
+            "what": {
+              "n": 598,
+              "exact": 79.3,
+              "f1": 86.3
+            },
+            "when": {
+              "n": 84,
+              "exact": 91.7,
+              "f1": 95.8
+            },
+            "where": {
+              "n": 29,
+              "exact": 65.5,
+              "f1": 78.5
+            },
+            "which": {
+              "n": 102,
+              "exact": 78.4,
+              "f1": 83.3
+            },
+            "who": {
+              "n": 110,
+              "exact": 89.1,
+              "f1": 92.4
+            },
+            "why": {
+              "n": 20,
+              "exact": 55.0,
+              "f1": 81.7
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_aug/eval_gan_dev/results.json",
+          "orig_em": 80.3,
+          "orig_f1": 87.4,
+          "rr_orig_f1": 87.7
+        },
+        "gan_adv": {
+          "n": 56,
+          "pairs": 56,
+          "paired_view": "original question",
+          "em": 48.2,
+          "f1": 54.1,
+          "agr": 51.8,
+          "agr_f1": 56.8,
+          "rr_em": 73.2,
+          "rr_f1": 79.5,
+          "rr_agr": 85.7,
+          "by_type": {
+            "how": {
+              "n": 1,
+              "exact": 0.0,
+              "f1": 0.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 44.4,
+              "f1": 53.5
+            },
+            "what": {
+              "n": 17,
+              "exact": 58.8,
+              "f1": 67.6
+            },
+            "when": {
+              "n": 11,
+              "exact": 54.5,
+              "f1": 54.5
+            },
+            "where": {
+              "n": 4,
+              "exact": 50.0,
+              "f1": 50.0
+            },
+            "which": {
+              "n": 7,
+              "exact": 14.3,
+              "f1": 26.2
+            },
+            "who": {
+              "n": 7,
+              "exact": 57.1,
+              "f1": 59.3
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 1,
+              "exact": 0.0,
+              "f1": 0.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 88.9,
+              "f1": 88.9
+            },
+            "what": {
+              "n": 17,
+              "exact": 64.7,
+              "f1": 77.6
+            },
+            "when": {
+              "n": 11,
+              "exact": 90.9,
+              "f1": 90.9
+            },
+            "where": {
+              "n": 4,
+              "exact": 75.0,
+              "f1": 75.0
+            },
+            "which": {
+              "n": 7,
+              "exact": 42.9,
+              "f1": 59.5
+            },
+            "who": {
+              "n": 7,
+              "exact": 85.7,
+              "f1": 87.9
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_aug/eval_gan_adv/results.json",
+          "orig_em": 80.4,
+          "orig_f1": 85.9,
+          "rr_orig_f1": 84.3
+        },
+        "addsent": {
+          "n": 3560,
+          "pairs": 3007,
+          "paired_view": "back-translated paraphrase",
+          "em": 59.4,
+          "f1": 65.9,
+          "agr": 82.1,
+          "agr_f1": 86.2,
+          "rr_em": 58.9,
+          "rr_f1": 65.2,
+          "rr_agr": 91.3,
+          "by_type": {
+            "how": {
+              "n": 102,
+              "exact": 42.2,
+              "f1": 58.3
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 66.1,
+              "f1": 72.3
+            },
+            "other": {
+              "n": 13,
+              "exact": 30.8,
+              "f1": 41.3
+            },
+            "what": {
+              "n": 2108,
+              "exact": 58.3,
+              "f1": 64.5
+            },
+            "when": {
+              "n": 278,
+              "exact": 70.5,
+              "f1": 73.8
+            },
+            "where": {
+              "n": 143,
+              "exact": 68.5,
+              "f1": 72.9
+            },
+            "which": {
+              "n": 230,
+              "exact": 54.8,
+              "f1": 62.3
+            },
+            "who": {
+              "n": 310,
+              "exact": 61.9,
+              "f1": 64.4
+            },
+            "why": {
+              "n": 69,
+              "exact": 33.3,
+              "f1": 69.9
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 102,
+              "exact": 44.1,
+              "f1": 55.4
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 62.5,
+              "f1": 68.8
+            },
+            "other": {
+              "n": 13,
+              "exact": 30.8,
+              "f1": 38.8
+            },
+            "what": {
+              "n": 2108,
+              "exact": 57.9,
+              "f1": 64.3
+            },
+            "when": {
+              "n": 278,
+              "exact": 69.1,
+              "f1": 72.1
+            },
+            "where": {
+              "n": 143,
+              "exact": 69.9,
+              "f1": 73.1
+            },
+            "which": {
+              "n": 230,
+              "exact": 57.0,
+              "f1": 62.4
+            },
+            "who": {
+              "n": 310,
+              "exact": 60.3,
+              "f1": 63.7
+            },
+            "why": {
+              "n": 69,
+              "exact": 34.8,
+              "f1": 69.7
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_aug/eval_addsent/results.json"
+        },
+        "addonesent": {
+          "n": 1787,
+          "pairs": 1491,
+          "paired_view": "back-translated paraphrase",
+          "em": 67.3,
+          "f1": 73.8,
+          "agr": 83.5,
+          "agr_f1": 87.9,
+          "rr_em": 67.5,
+          "rr_f1": 73.8,
+          "rr_agr": 92.0,
+          "by_type": {
+            "how": {
+              "n": 48,
+              "exact": 47.9,
+              "f1": 61.8
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 69.5,
+              "f1": 75.1
+            },
+            "other": {
+              "n": 9,
+              "exact": 44.4,
+              "f1": 56.0
+            },
+            "what": {
+              "n": 1009,
+              "exact": 66.7,
+              "f1": 73.3
+            },
+            "when": {
+              "n": 151,
+              "exact": 79.5,
+              "f1": 81.6
+            },
+            "where": {
+              "n": 73,
+              "exact": 72.6,
+              "f1": 80.1
+            },
+            "which": {
+              "n": 111,
+              "exact": 59.5,
+              "f1": 66.5
+            },
+            "who": {
+              "n": 198,
+              "exact": 72.7,
+              "f1": 75.5
+            },
+            "why": {
+              "n": 34,
+              "exact": 35.3,
+              "f1": 71.8
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 48,
+              "exact": 52.1,
+              "f1": 64.0
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 66.2,
+              "f1": 71.4
+            },
+            "other": {
+              "n": 9,
+              "exact": 44.4,
+              "f1": 56.0
+            },
+            "what": {
+              "n": 1009,
+              "exact": 66.9,
+              "f1": 73.5
+            },
+            "when": {
+              "n": 151,
+              "exact": 78.1,
+              "f1": 80.7
+            },
+            "where": {
+              "n": 73,
+              "exact": 75.3,
+              "f1": 79.9
+            },
+            "which": {
+              "n": 111,
+              "exact": 65.8,
+              "f1": 70.1
+            },
+            "who": {
+              "n": 198,
+              "exact": 71.7,
+              "f1": 75.1
+            },
+            "why": {
+              "n": 34,
+              "exact": 35.3,
+              "f1": 71.3
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_aug/eval_addonesent/results.json"
+        }
+      }
+    },
+    "bert_ce": {
+      "run": "bert_ce",
+      "model": "bert-base-uncased",
+      "mode": "ce",
+      "lambda_kl": null,
+      "epochs": 2,
+      "batch_size": 16,
+      "lr": 3e-05,
+      "max_seq_len": 384,
+      "doc_stride": 128,
+      "n_train_questions": 83484,
+      "n_val_questions": 4115,
+      "n_features": 84504,
+      "val_max_examples": 2000,
+      "pair_stats": {},
+      "steps": 10564,
+      "train_time_min": 14.833333333333334,
+      "val_f1": 82.0,
+      "val_f1_raw": 81.966,
+      "val_exact": 69.0,
+      "val_agreement": 86.9,
+      "val_pairs": 1683,
+      "val_n": 2000,
+      "full_val_f1": 81.6,
+      "full_val_f1_raw": 81.57888624512778,
+      "full_val_exact": 68.3,
+      "full_val_agreement": 87.3,
+      "full_val_n": 4115,
+      "full_val_pairs": 3447,
+      "reranker": {
+        "train_items": 6156,
+        "dev_items": 758,
+        "pair_features": true,
+        "top1": {
+          "n": 758,
+          "exact": 72.2,
+          "f1": 83.6,
+          "oracle_exact": 96.0
+        },
+        "reranked": {
+          "n": 758,
+          "exact": 72.7,
+          "f1": 84.0,
+          "oracle_exact": 96.0
+        },
+        "n_epochs": 20,
+        "best_epoch": 1,
+        "last_epoch_f1": 78.9
+      },
+      "sets": {
+        "dev": {
+          "n": 10570,
+          "pairs": 8622,
+          "paired_view": "back-translated paraphrase",
+          "em": 81.1,
+          "f1": 88.5,
+          "agr": 83.3,
+          "agr_f1": 88.9,
+          "rr_em": 81.4,
+          "rr_f1": 88.3,
+          "rr_agr": 86.3,
+          "by_type": {
+            "how": {
+              "n": 301,
+              "exact": 61.1,
+              "f1": 78.5
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 84.8,
+              "f1": 90.7
+            },
+            "other": {
+              "n": 94,
+              "exact": 55.3,
+              "f1": 75.4
+            },
+            "what": {
+              "n": 5812,
+              "exact": 79.5,
+              "f1": 87.5
+            },
+            "when": {
+              "n": 924,
+              "exact": 93.4,
+              "f1": 95.5
+            },
+            "where": {
+              "n": 511,
+              "exact": 77.3,
+              "f1": 87.0
+            },
+            "which": {
+              "n": 646,
+              "exact": 80.2,
+              "f1": 87.1
+            },
+            "who": {
+              "n": 1204,
+              "exact": 88.9,
+              "f1": 92.2
+            },
+            "why": {
+              "n": 155,
+              "exact": 53.5,
+              "f1": 77.0
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 301,
+              "exact": 63.8,
+              "f1": 78.9
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 84.2,
+              "f1": 90.3
+            },
+            "other": {
+              "n": 94,
+              "exact": 56.4,
+              "f1": 73.8
+            },
+            "what": {
+              "n": 5812,
+              "exact": 79.8,
+              "f1": 87.3
+            },
+            "when": {
+              "n": 924,
+              "exact": 93.1,
+              "f1": 95.3
+            },
+            "where": {
+              "n": 511,
+              "exact": 77.9,
+              "f1": 86.8
+            },
+            "which": {
+              "n": 646,
+              "exact": 81.4,
+              "f1": 87.5
+            },
+            "who": {
+              "n": 1204,
+              "exact": 89.1,
+              "f1": 92.0
+            },
+            "why": {
+              "n": 155,
+              "exact": 53.5,
+              "f1": 76.2
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ce/eval_dev/results.json"
+        },
+        "gan_dev": {
+          "n": 1062,
+          "pairs": 1061,
+          "paired_view": "original question",
+          "em": 77.7,
+          "f1": 85.6,
+          "agr": 89.1,
+          "agr_f1": 93.0,
+          "rr_em": 78.3,
+          "rr_f1": 86.0,
+          "rr_agr": 90.4,
+          "by_type": {
+            "how": {
+              "n": 17,
+              "exact": 35.3,
+              "f1": 65.6
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 87.3,
+              "f1": 93.9
+            },
+            "other": {
+              "n": 31,
+              "exact": 51.6,
+              "f1": 63.0
+            },
+            "what": {
+              "n": 598,
+              "exact": 76.6,
+              "f1": 84.8
+            },
+            "when": {
+              "n": 84,
+              "exact": 91.7,
+              "f1": 94.4
+            },
+            "where": {
+              "n": 29,
+              "exact": 65.5,
+              "f1": 80.7
+            },
+            "which": {
+              "n": 102,
+              "exact": 73.5,
+              "f1": 80.0
+            },
+            "who": {
+              "n": 110,
+              "exact": 90.9,
+              "f1": 94.2
+            },
+            "why": {
+              "n": 20,
+              "exact": 60.0,
+              "f1": 80.8
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 17,
+              "exact": 35.3,
+              "f1": 68.0
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 87.3,
+              "f1": 94.1
+            },
+            "other": {
+              "n": 31,
+              "exact": 58.1,
+              "f1": 70.6
+            },
+            "what": {
+              "n": 598,
+              "exact": 76.8,
+              "f1": 84.6
+            },
+            "when": {
+              "n": 84,
+              "exact": 95.2,
+              "f1": 97.5
+            },
+            "where": {
+              "n": 29,
+              "exact": 65.5,
+              "f1": 79.6
+            },
+            "which": {
+              "n": 102,
+              "exact": 76.5,
+              "f1": 81.4
+            },
+            "who": {
+              "n": 110,
+              "exact": 90.0,
+              "f1": 93.0
+            },
+            "why": {
+              "n": 20,
+              "exact": 55.0,
+              "f1": 81.3
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ce/eval_gan_dev/results.json",
+          "orig_em": 80.7,
+          "orig_f1": 88.4,
+          "rr_orig_f1": 87.6
+        },
+        "gan_adv": {
+          "n": 56,
+          "pairs": 56,
+          "paired_view": "original question",
+          "em": 51.8,
+          "f1": 58.6,
+          "agr": 58.9,
+          "agr_f1": 62.9,
+          "rr_em": 57.1,
+          "rr_f1": 63.4,
+          "rr_agr": 62.5,
+          "by_type": {
+            "how": {
+              "n": 1,
+              "exact": 0.0,
+              "f1": 0.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 66.7,
+              "f1": 72.2
+            },
+            "what": {
+              "n": 17,
+              "exact": 52.9,
+              "f1": 67.0
+            },
+            "when": {
+              "n": 11,
+              "exact": 54.5,
+              "f1": 54.5
+            },
+            "where": {
+              "n": 4,
+              "exact": 75.0,
+              "f1": 75.0
+            },
+            "which": {
+              "n": 7,
+              "exact": 28.6,
+              "f1": 35.7
+            },
+            "who": {
+              "n": 7,
+              "exact": 42.9,
+              "f1": 48.6
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 1,
+              "exact": 0.0,
+              "f1": 0.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 66.7,
+              "f1": 72.2
+            },
+            "what": {
+              "n": 17,
+              "exact": 58.8,
+              "f1": 71.2
+            },
+            "when": {
+              "n": 11,
+              "exact": 63.6,
+              "f1": 63.6
+            },
+            "where": {
+              "n": 4,
+              "exact": 75.0,
+              "f1": 75.0
+            },
+            "which": {
+              "n": 7,
+              "exact": 28.6,
+              "f1": 35.7
+            },
+            "who": {
+              "n": 7,
+              "exact": 57.1,
+              "f1": 62.9
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ce/eval_gan_adv/results.json",
+          "orig_em": 78.6,
+          "orig_f1": 85.1,
+          "rr_orig_f1": 84.7
+        },
+        "addsent": {
+          "n": 3560,
+          "pairs": 3007,
+          "paired_view": "back-translated paraphrase",
+          "em": 58.5,
+          "f1": 64.9,
+          "agr": 77.9,
+          "agr_f1": 82.4,
+          "rr_em": 58.7,
+          "rr_f1": 64.8,
+          "rr_agr": 81.3,
+          "by_type": {
+            "how": {
+              "n": 102,
+              "exact": 47.1,
+              "f1": 56.5
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 63.2,
+              "f1": 70.5
+            },
+            "other": {
+              "n": 13,
+              "exact": 38.5,
+              "f1": 48.1
+            },
+            "what": {
+              "n": 2108,
+              "exact": 57.3,
+              "f1": 63.7
+            },
+            "when": {
+              "n": 278,
+              "exact": 67.3,
+              "f1": 70.3
+            },
+            "where": {
+              "n": 143,
+              "exact": 69.9,
+              "f1": 72.4
+            },
+            "which": {
+              "n": 230,
+              "exact": 58.7,
+              "f1": 65.0
+            },
+            "who": {
+              "n": 310,
+              "exact": 59.0,
+              "f1": 62.3
+            },
+            "why": {
+              "n": 69,
+              "exact": 30.4,
+              "f1": 66.1
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 102,
+              "exact": 49.0,
+              "f1": 58.4
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 62.9,
+              "f1": 68.8
+            },
+            "other": {
+              "n": 13,
+              "exact": 30.8,
+              "f1": 44.5
+            },
+            "what": {
+              "n": 2108,
+              "exact": 57.7,
+              "f1": 63.9
+            },
+            "when": {
+              "n": 278,
+              "exact": 65.5,
+              "f1": 68.5
+            },
+            "where": {
+              "n": 143,
+              "exact": 67.8,
+              "f1": 71.7
+            },
+            "which": {
+              "n": 230,
+              "exact": 58.7,
+              "f1": 64.7
+            },
+            "who": {
+              "n": 310,
+              "exact": 61.0,
+              "f1": 63.5
+            },
+            "why": {
+              "n": 69,
+              "exact": 33.3,
+              "f1": 66.1
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ce/eval_addsent/results.json"
+        },
+        "addonesent": {
+          "n": 1787,
+          "pairs": 1491,
+          "paired_view": "back-translated paraphrase",
+          "em": 67.1,
+          "f1": 73.9,
+          "agr": 80.3,
+          "agr_f1": 85.1,
+          "rr_em": 67.3,
+          "rr_f1": 73.7,
+          "rr_agr": 84.2,
+          "by_type": {
+            "how": {
+              "n": 48,
+              "exact": 45.8,
+              "f1": 59.4
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 65.6,
+              "f1": 72.4
+            },
+            "other": {
+              "n": 9,
+              "exact": 55.6,
+              "f1": 69.4
+            },
+            "what": {
+              "n": 1009,
+              "exact": 67.1,
+              "f1": 74.4
+            },
+            "when": {
+              "n": 151,
+              "exact": 76.8,
+              "f1": 79.1
+            },
+            "where": {
+              "n": 73,
+              "exact": 79.5,
+              "f1": 81.5
+            },
+            "which": {
+              "n": 111,
+              "exact": 66.7,
+              "f1": 71.7
+            },
+            "who": {
+              "n": 198,
+              "exact": 69.2,
+              "f1": 72.6
+            },
+            "why": {
+              "n": 34,
+              "exact": 26.5,
+              "f1": 65.3
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 48,
+              "exact": 47.9,
+              "f1": 61.6
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 65.6,
+              "f1": 71.3
+            },
+            "other": {
+              "n": 9,
+              "exact": 44.4,
+              "f1": 64.3
+            },
+            "what": {
+              "n": 1009,
+              "exact": 67.4,
+              "f1": 74.2
+            },
+            "when": {
+              "n": 151,
+              "exact": 74.8,
+              "f1": 77.2
+            },
+            "where": {
+              "n": 73,
+              "exact": 75.3,
+              "f1": 80.1
+            },
+            "which": {
+              "n": 111,
+              "exact": 65.8,
+              "f1": 70.3
+            },
+            "who": {
+              "n": 198,
+              "exact": 71.7,
+              "f1": 74.1
+            },
+            "why": {
+              "n": 34,
+              "exact": 32.4,
+              "f1": 66.9
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ce/eval_addonesent/results.json"
+        }
+      }
+    },
+    "bert_dual": {
+      "run": "bert_dual",
+      "model": "bert-base-uncased",
+      "mode": "dual",
+      "lambda_kl": null,
+      "epochs": 2,
+      "batch_size": 16,
+      "lr": 3e-05,
+      "max_seq_len": 384,
+      "doc_stride": 128,
+      "n_train_questions": 83484,
+      "n_val_questions": 4115,
+      "n_features": 84507,
+      "val_max_examples": 2000,
+      "pair_stats": {
+        "attached": 68439,
+        "rejected": 15045,
+        "missing": 0,
+        "total": 83484
+      },
+      "steps": 10564,
+      "train_time_min": 21.721666666666668,
+      "val_f1": 81.8,
+      "val_f1_raw": 81.762,
+      "val_exact": 68.2,
+      "val_agreement": 89.4,
+      "val_pairs": 1683,
+      "val_n": 2000,
+      "full_val_f1": 81.7,
+      "full_val_f1_raw": 81.70447250129764,
+      "full_val_exact": 68.4,
+      "full_val_agreement": 89.3,
+      "full_val_n": 4115,
+      "full_val_pairs": 3447,
+      "reranker": {
+        "train_items": 6156,
+        "dev_items": 758,
+        "pair_features": true,
+        "top1": {
+          "n": 758,
+          "exact": 70.7,
+          "f1": 82.4,
+          "oracle_exact": 97.0
+        },
+        "reranked": {
+          "n": 758,
+          "exact": 71.4,
+          "f1": 82.7,
+          "oracle_exact": 97.0
+        },
+        "n_epochs": 20,
+        "best_epoch": 2,
+        "last_epoch_f1": 80.6
+      },
+      "sets": {
+        "dev": {
+          "n": 10570,
+          "pairs": 8622,
+          "paired_view": "back-translated paraphrase",
+          "em": 81.1,
+          "f1": 88.3,
+          "agr": 86.7,
+          "agr_f1": 91.1,
+          "rr_em": 81.1,
+          "rr_f1": 88.1,
+          "rr_agr": 90.0,
+          "by_type": {
+            "how": {
+              "n": 301,
+              "exact": 60.5,
+              "f1": 77.5
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 86.2,
+              "f1": 91.8
+            },
+            "other": {
+              "n": 94,
+              "exact": 56.4,
+              "f1": 73.5
+            },
+            "what": {
+              "n": 5812,
+              "exact": 79.6,
+              "f1": 87.4
+            },
+            "when": {
+              "n": 924,
+              "exact": 92.7,
+              "f1": 95.3
+            },
+            "where": {
+              "n": 511,
+              "exact": 75.5,
+              "f1": 85.9
+            },
+            "which": {
+              "n": 646,
+              "exact": 81.7,
+              "f1": 87.5
+            },
+            "who": {
+              "n": 1204,
+              "exact": 88.3,
+              "f1": 91.6
+            },
+            "why": {
+              "n": 155,
+              "exact": 53.5,
+              "f1": 76.6
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 301,
+              "exact": 60.5,
+              "f1": 77.4
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 84.2,
+              "f1": 90.8
+            },
+            "other": {
+              "n": 94,
+              "exact": 59.6,
+              "f1": 74.7
+            },
+            "what": {
+              "n": 5812,
+              "exact": 79.9,
+              "f1": 87.3
+            },
+            "when": {
+              "n": 924,
+              "exact": 92.5,
+              "f1": 95.0
+            },
+            "where": {
+              "n": 511,
+              "exact": 77.3,
+              "f1": 86.7
+            },
+            "which": {
+              "n": 646,
+              "exact": 81.7,
+              "f1": 87.3
+            },
+            "who": {
+              "n": 1204,
+              "exact": 87.8,
+              "f1": 91.2
+            },
+            "why": {
+              "n": 155,
+              "exact": 54.8,
+              "f1": 75.5
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_dual/eval_dev/results.json"
+        },
+        "gan_dev": {
+          "n": 1062,
+          "pairs": 1061,
+          "paired_view": "original question",
+          "em": 78.4,
+          "f1": 85.7,
+          "agr": 90.0,
+          "agr_f1": 93.3,
+          "rr_em": 79.1,
+          "rr_f1": 86.2,
+          "rr_agr": 92.6,
+          "by_type": {
+            "how": {
+              "n": 17,
+              "exact": 41.2,
+              "f1": 58.3
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 90.1,
+              "f1": 94.7
+            },
+            "other": {
+              "n": 31,
+              "exact": 51.6,
+              "f1": 64.5
+            },
+            "what": {
+              "n": 598,
+              "exact": 77.8,
+              "f1": 85.4
+            },
+            "when": {
+              "n": 84,
+              "exact": 90.5,
+              "f1": 93.9
+            },
+            "where": {
+              "n": 29,
+              "exact": 72.4,
+              "f1": 80.3
+            },
+            "which": {
+              "n": 102,
+              "exact": 75.5,
+              "f1": 81.1
+            },
+            "who": {
+              "n": 110,
+              "exact": 89.1,
+              "f1": 92.5
+            },
+            "why": {
+              "n": 20,
+              "exact": 45.0,
+              "f1": 79.5
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 17,
+              "exact": 41.2,
+              "f1": 60.9
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 90.1,
+              "f1": 95.4
+            },
+            "other": {
+              "n": 31,
+              "exact": 58.1,
+              "f1": 67.4
+            },
+            "what": {
+              "n": 598,
+              "exact": 77.8,
+              "f1": 85.3
+            },
+            "when": {
+              "n": 84,
+              "exact": 90.5,
+              "f1": 94.6
+            },
+            "where": {
+              "n": 29,
+              "exact": 65.5,
+              "f1": 79.6
+            },
+            "which": {
+              "n": 102,
+              "exact": 79.4,
+              "f1": 84.2
+            },
+            "who": {
+              "n": 110,
+              "exact": 89.1,
+              "f1": 91.9
+            },
+            "why": {
+              "n": 20,
+              "exact": 60.0,
+              "f1": 85.2
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_dual/eval_gan_dev/results.json",
+          "orig_em": 80.3,
+          "orig_f1": 87.5,
+          "rr_orig_f1": 87.8
+        },
+        "gan_adv": {
+          "n": 56,
+          "pairs": 56,
+          "paired_view": "original question",
+          "em": 50.0,
+          "f1": 55.6,
+          "agr": 55.4,
+          "agr_f1": 59.6,
+          "rr_em": 60.7,
+          "rr_f1": 66.1,
+          "rr_agr": 69.6,
+          "by_type": {
+            "how": {
+              "n": 1,
+              "exact": 0.0,
+              "f1": 0.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 44.4,
+              "f1": 55.8
+            },
+            "what": {
+              "n": 17,
+              "exact": 58.8,
+              "f1": 67.6
+            },
+            "when": {
+              "n": 11,
+              "exact": 54.5,
+              "f1": 54.5
+            },
+            "where": {
+              "n": 4,
+              "exact": 50.0,
+              "f1": 50.0
+            },
+            "which": {
+              "n": 7,
+              "exact": 28.6,
+              "f1": 35.7
+            },
+            "who": {
+              "n": 7,
+              "exact": 57.1,
+              "f1": 59.3
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 1,
+              "exact": 0.0,
+              "f1": 0.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 77.8,
+              "f1": 83.3
+            },
+            "what": {
+              "n": 17,
+              "exact": 58.8,
+              "f1": 65.9
+            },
+            "when": {
+              "n": 11,
+              "exact": 72.7,
+              "f1": 72.7
+            },
+            "where": {
+              "n": 4,
+              "exact": 75.0,
+              "f1": 75.0
+            },
+            "which": {
+              "n": 7,
+              "exact": 28.6,
+              "f1": 45.2
+            },
+            "who": {
+              "n": 7,
+              "exact": 57.1,
+              "f1": 59.3
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_dual/eval_gan_adv/results.json",
+          "orig_em": 80.4,
+          "orig_f1": 85.8,
+          "rr_orig_f1": 87.2
+        },
+        "addsent": {
+          "n": 3560,
+          "pairs": 3007,
+          "paired_view": "back-translated paraphrase",
+          "em": 59.6,
+          "f1": 66.0,
+          "agr": 81.9,
+          "agr_f1": 86.3,
+          "rr_em": 60.1,
+          "rr_f1": 66.0,
+          "rr_agr": 86.2,
+          "by_type": {
+            "how": {
+              "n": 102,
+              "exact": 39.2,
+              "f1": 54.5
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 66.8,
+              "f1": 72.0
+            },
+            "other": {
+              "n": 13,
+              "exact": 30.8,
+              "f1": 41.3
+            },
+            "what": {
+              "n": 2108,
+              "exact": 58.4,
+              "f1": 64.6
+            },
+            "when": {
+              "n": 278,
+              "exact": 71.2,
+              "f1": 74.2
+            },
+            "where": {
+              "n": 143,
+              "exact": 68.5,
+              "f1": 73.3
+            },
+            "which": {
+              "n": 230,
+              "exact": 55.2,
+              "f1": 62.8
+            },
+            "who": {
+              "n": 310,
+              "exact": 62.9,
+              "f1": 65.4
+            },
+            "why": {
+              "n": 69,
+              "exact": 34.8,
+              "f1": 71.4
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 102,
+              "exact": 48.0,
+              "f1": 58.3
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 63.8,
+              "f1": 69.1
+            },
+            "other": {
+              "n": 13,
+              "exact": 30.8,
+              "f1": 38.8
+            },
+            "what": {
+              "n": 2108,
+              "exact": 59.2,
+              "f1": 65.1
+            },
+            "when": {
+              "n": 278,
+              "exact": 69.8,
+              "f1": 72.4
+            },
+            "where": {
+              "n": 143,
+              "exact": 69.9,
+              "f1": 73.2
+            },
+            "which": {
+              "n": 230,
+              "exact": 55.7,
+              "f1": 62.5
+            },
+            "who": {
+              "n": 310,
+              "exact": 62.9,
+              "f1": 65.0
+            },
+            "why": {
+              "n": 69,
+              "exact": 37.7,
+              "f1": 72.2
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_dual/eval_addsent/results.json"
+        },
+        "addonesent": {
+          "n": 1787,
+          "pairs": 1491,
+          "paired_view": "back-translated paraphrase",
+          "em": 67.7,
+          "f1": 74.2,
+          "agr": 82.8,
+          "agr_f1": 87.8,
+          "rr_em": 68.4,
+          "rr_f1": 74.4,
+          "rr_agr": 87.4,
+          "by_type": {
+            "how": {
+              "n": 48,
+              "exact": 47.9,
+              "f1": 61.0
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 70.8,
+              "f1": 75.7
+            },
+            "other": {
+              "n": 9,
+              "exact": 44.4,
+              "f1": 56.0
+            },
+            "what": {
+              "n": 1009,
+              "exact": 66.7,
+              "f1": 73.4
+            },
+            "when": {
+              "n": 151,
+              "exact": 80.1,
+              "f1": 82.1
+            },
+            "where": {
+              "n": 73,
+              "exact": 72.6,
+              "f1": 81.0
+            },
+            "which": {
+              "n": 111,
+              "exact": 60.4,
+              "f1": 67.4
+            },
+            "who": {
+              "n": 198,
+              "exact": 74.2,
+              "f1": 76.6
+            },
+            "why": {
+              "n": 34,
+              "exact": 35.3,
+              "f1": 73.5
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 48,
+              "exact": 58.3,
+              "f1": 68.3
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 68.8,
+              "f1": 73.5
+            },
+            "other": {
+              "n": 9,
+              "exact": 44.4,
+              "f1": 56.0
+            },
+            "what": {
+              "n": 1009,
+              "exact": 67.9,
+              "f1": 74.2
+            },
+            "when": {
+              "n": 151,
+              "exact": 78.1,
+              "f1": 80.1
+            },
+            "where": {
+              "n": 73,
+              "exact": 75.3,
+              "f1": 80.8
+            },
+            "which": {
+              "n": 111,
+              "exact": 59.5,
+              "f1": 66.3
+            },
+            "who": {
+              "n": 198,
+              "exact": 74.2,
+              "f1": 76.4
+            },
+            "why": {
+              "n": 34,
+              "exact": 41.2,
+              "f1": 74.1
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_dual/eval_addonesent/results.json"
+        }
+      }
+    },
+    "bert_kl_lam0.5": {
+      "run": "bert_kl_lam0.5",
+      "model": "bert-base-uncased",
+      "mode": "kl",
+      "lambda_kl": 0.5,
+      "epochs": 2,
+      "batch_size": 16,
+      "lr": 3e-05,
+      "max_seq_len": 384,
+      "doc_stride": 128,
+      "n_train_questions": 83484,
+      "n_val_questions": 4115,
+      "n_features": 84507,
+      "val_max_examples": 2000,
+      "pair_stats": {
+        "attached": 68439,
+        "rejected": 15045,
+        "missing": 0,
+        "total": 83484
+      },
+      "steps": 10564,
+      "train_time_min": 21.759999999999998,
+      "val_f1": 82.5,
+      "val_f1_raw": 82.49,
+      "val_exact": 69.5,
+      "val_agreement": 89.5,
+      "val_pairs": 1683,
+      "val_n": 2000,
+      "full_val_f1": 81.9,
+      "full_val_f1_raw": 81.91518469561287,
+      "full_val_exact": 68.6,
+      "full_val_agreement": 89.8,
+      "full_val_n": 4115,
+      "full_val_pairs": 3447,
+      "reranker": {
+        "train_items": 6156,
+        "dev_items": 758,
+        "pair_features": true,
+        "top1": {
+          "n": 758,
+          "exact": 70.6,
+          "f1": 82.8,
+          "oracle_exact": 97.1
+        },
+        "reranked": {
+          "n": 758,
+          "exact": 70.4,
+          "f1": 82.4,
+          "oracle_exact": 97.1
+        },
+        "n_epochs": 20,
+        "best_epoch": 1,
+        "last_epoch_f1": 79.3
+      },
+      "sets": {
+        "dev": {
+          "n": 10570,
+          "pairs": 8622,
+          "paired_view": "back-translated paraphrase",
+          "em": 81.1,
+          "f1": 88.5,
+          "agr": 87.6,
+          "agr_f1": 91.7,
+          "rr_em": 81.3,
+          "rr_f1": 88.3,
+          "rr_agr": 89.1,
+          "by_type": {
+            "how": {
+              "n": 301,
+              "exact": 59.8,
+              "f1": 77.4
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 85.2,
+              "f1": 91.0
+            },
+            "other": {
+              "n": 94,
+              "exact": 56.4,
+              "f1": 72.8
+            },
+            "what": {
+              "n": 5812,
+              "exact": 79.9,
+              "f1": 87.8
+            },
+            "when": {
+              "n": 924,
+              "exact": 93.0,
+              "f1": 95.4
+            },
+            "where": {
+              "n": 511,
+              "exact": 75.7,
+              "f1": 86.2
+            },
+            "which": {
+              "n": 646,
+              "exact": 81.6,
+              "f1": 87.6
+            },
+            "who": {
+              "n": 1204,
+              "exact": 87.4,
+              "f1": 91.0
+            },
+            "why": {
+              "n": 155,
+              "exact": 55.5,
+              "f1": 79.0
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 301,
+              "exact": 59.1,
+              "f1": 76.2
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 84.3,
+              "f1": 90.7
+            },
+            "other": {
+              "n": 94,
+              "exact": 61.7,
+              "f1": 73.8
+            },
+            "what": {
+              "n": 5812,
+              "exact": 80.1,
+              "f1": 87.6
+            },
+            "when": {
+              "n": 924,
+              "exact": 92.6,
+              "f1": 95.0
+            },
+            "where": {
+              "n": 511,
+              "exact": 76.3,
+              "f1": 86.2
+            },
+            "which": {
+              "n": 646,
+              "exact": 81.9,
+              "f1": 87.6
+            },
+            "who": {
+              "n": 1204,
+              "exact": 88.0,
+              "f1": 91.3
+            },
+            "why": {
+              "n": 155,
+              "exact": 55.5,
+              "f1": 76.1
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam0.5/eval_dev/results.json"
+        },
+        "gan_dev": {
+          "n": 1062,
+          "pairs": 1061,
+          "paired_view": "original question",
+          "em": 78.2,
+          "f1": 86.0,
+          "agr": 90.8,
+          "agr_f1": 94.4,
+          "rr_em": 79.4,
+          "rr_f1": 86.5,
+          "rr_agr": 92.2,
+          "by_type": {
+            "how": {
+              "n": 17,
+              "exact": 35.3,
+              "f1": 58.8
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 83.1,
+              "f1": 91.9
+            },
+            "other": {
+              "n": 31,
+              "exact": 48.4,
+              "f1": 63.2
+            },
+            "what": {
+              "n": 598,
+              "exact": 77.3,
+              "f1": 85.4
+            },
+            "when": {
+              "n": 84,
+              "exact": 91.7,
+              "f1": 94.7
+            },
+            "where": {
+              "n": 29,
+              "exact": 75.9,
+              "f1": 85.6
+            },
+            "which": {
+              "n": 102,
+              "exact": 80.4,
+              "f1": 85.2
+            },
+            "who": {
+              "n": 110,
+              "exact": 87.3,
+              "f1": 91.6
+            },
+            "why": {
+              "n": 20,
+              "exact": 55.0,
+              "f1": 79.1
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 17,
+              "exact": 41.2,
+              "f1": 57.1
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 84.5,
+              "f1": 93.3
+            },
+            "other": {
+              "n": 31,
+              "exact": 54.8,
+              "f1": 67.8
+            },
+            "what": {
+              "n": 598,
+              "exact": 78.4,
+              "f1": 86.0
+            },
+            "when": {
+              "n": 84,
+              "exact": 91.7,
+              "f1": 94.7
+            },
+            "where": {
+              "n": 29,
+              "exact": 75.9,
+              "f1": 84.9
+            },
+            "which": {
+              "n": 102,
+              "exact": 80.4,
+              "f1": 84.6
+            },
+            "who": {
+              "n": 110,
+              "exact": 88.2,
+              "f1": 91.5
+            },
+            "why": {
+              "n": 20,
+              "exact": 60.0,
+              "f1": 80.3
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam0.5/eval_gan_dev/results.json",
+          "orig_em": 81.0,
+          "orig_f1": 88.5,
+          "rr_orig_f1": 88.8
+        },
+        "gan_adv": {
+          "n": 56,
+          "pairs": 56,
+          "paired_view": "original question",
+          "em": 57.1,
+          "f1": 61.7,
+          "agr": 62.5,
+          "agr_f1": 65.3,
+          "rr_em": 60.7,
+          "rr_f1": 66.1,
+          "rr_agr": 71.4,
+          "by_type": {
+            "how": {
+              "n": 1,
+              "exact": 0.0,
+              "f1": 0.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 77.8,
+              "f1": 83.3
+            },
+            "what": {
+              "n": 17,
+              "exact": 52.9,
+              "f1": 60.0
+            },
+            "when": {
+              "n": 11,
+              "exact": 72.7,
+              "f1": 72.7
+            },
+            "where": {
+              "n": 4,
+              "exact": 50.0,
+              "f1": 54.8
+            },
+            "which": {
+              "n": 7,
+              "exact": 14.3,
+              "f1": 21.4
+            },
+            "who": {
+              "n": 7,
+              "exact": 71.4,
+              "f1": 73.6
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 1,
+              "exact": 0.0,
+              "f1": 0.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 77.8,
+              "f1": 83.3
+            },
+            "what": {
+              "n": 17,
+              "exact": 52.9,
+              "f1": 60.0
+            },
+            "when": {
+              "n": 11,
+              "exact": 81.8,
+              "f1": 81.8
+            },
+            "where": {
+              "n": 4,
+              "exact": 75.0,
+              "f1": 75.0
+            },
+            "which": {
+              "n": 7,
+              "exact": 14.3,
+              "f1": 31.0
+            },
+            "who": {
+              "n": 7,
+              "exact": 71.4,
+              "f1": 73.6
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam0.5/eval_gan_adv/results.json",
+          "orig_em": 75.0,
+          "orig_f1": 81.8,
+          "rr_orig_f1": 83.4
+        },
+        "addsent": {
+          "n": 3560,
+          "pairs": 3007,
+          "paired_view": "back-translated paraphrase",
+          "em": 59.3,
+          "f1": 65.8,
+          "agr": 83.7,
+          "agr_f1": 87.7,
+          "rr_em": 59.9,
+          "rr_f1": 66.0,
+          "rr_agr": 85.8,
+          "by_type": {
+            "how": {
+              "n": 102,
+              "exact": 36.3,
+              "f1": 54.0
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 67.4,
+              "f1": 72.4
+            },
+            "other": {
+              "n": 13,
+              "exact": 38.5,
+              "f1": 45.6
+            },
+            "what": {
+              "n": 2108,
+              "exact": 58.3,
+              "f1": 64.7
+            },
+            "when": {
+              "n": 278,
+              "exact": 67.6,
+              "f1": 70.9
+            },
+            "where": {
+              "n": 143,
+              "exact": 69.2,
+              "f1": 72.6
+            },
+            "which": {
+              "n": 230,
+              "exact": 57.0,
+              "f1": 63.8
+            },
+            "who": {
+              "n": 310,
+              "exact": 61.0,
+              "f1": 63.9
+            },
+            "why": {
+              "n": 69,
+              "exact": 34.8,
+              "f1": 72.3
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 102,
+              "exact": 42.2,
+              "f1": 57.7
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 66.8,
+              "f1": 71.7
+            },
+            "other": {
+              "n": 13,
+              "exact": 38.5,
+              "f1": 45.6
+            },
+            "what": {
+              "n": 2108,
+              "exact": 59.0,
+              "f1": 65.0
+            },
+            "when": {
+              "n": 278,
+              "exact": 67.6,
+              "f1": 70.3
+            },
+            "where": {
+              "n": 143,
+              "exact": 69.2,
+              "f1": 72.0
+            },
+            "which": {
+              "n": 230,
+              "exact": 59.1,
+              "f1": 65.2
+            },
+            "who": {
+              "n": 310,
+              "exact": 60.3,
+              "f1": 63.4
+            },
+            "why": {
+              "n": 69,
+              "exact": 37.7,
+              "f1": 73.9
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam0.5/eval_addsent/results.json"
+        },
+        "addonesent": {
+          "n": 1787,
+          "pairs": 1491,
+          "paired_view": "back-translated paraphrase",
+          "em": 67.2,
+          "f1": 74.1,
+          "agr": 85.4,
+          "agr_f1": 89.2,
+          "rr_em": 67.9,
+          "rr_f1": 74.2,
+          "rr_agr": 87.3,
+          "by_type": {
+            "how": {
+              "n": 48,
+              "exact": 41.7,
+              "f1": 57.9
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 70.1,
+              "f1": 75.4
+            },
+            "other": {
+              "n": 9,
+              "exact": 55.6,
+              "f1": 65.9
+            },
+            "what": {
+              "n": 1009,
+              "exact": 67.1,
+              "f1": 74.1
+            },
+            "when": {
+              "n": 151,
+              "exact": 76.2,
+              "f1": 78.8
+            },
+            "where": {
+              "n": 73,
+              "exact": 75.3,
+              "f1": 81.0
+            },
+            "which": {
+              "n": 111,
+              "exact": 63.1,
+              "f1": 69.4
+            },
+            "who": {
+              "n": 198,
+              "exact": 70.7,
+              "f1": 74.0
+            },
+            "why": {
+              "n": 34,
+              "exact": 32.4,
+              "f1": 72.2
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 48,
+              "exact": 47.9,
+              "f1": 64.0
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 70.8,
+              "f1": 75.2
+            },
+            "other": {
+              "n": 9,
+              "exact": 55.6,
+              "f1": 65.9
+            },
+            "what": {
+              "n": 1009,
+              "exact": 67.7,
+              "f1": 74.2
+            },
+            "when": {
+              "n": 151,
+              "exact": 76.8,
+              "f1": 78.8
+            },
+            "where": {
+              "n": 73,
+              "exact": 76.7,
+              "f1": 80.4
+            },
+            "which": {
+              "n": 111,
+              "exact": 63.1,
+              "f1": 69.0
+            },
+            "who": {
+              "n": 198,
+              "exact": 70.7,
+              "f1": 73.9
+            },
+            "why": {
+              "n": 34,
+              "exact": 35.3,
+              "f1": 73.9
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam0.5/eval_addonesent/results.json"
+        }
+      }
+    },
+    "bert_kl_lam1.0": {
+      "run": "bert_kl_lam1.0",
+      "model": "bert-base-uncased",
+      "mode": "kl",
+      "lambda_kl": 1.0,
+      "epochs": 2,
+      "batch_size": 16,
+      "lr": 3e-05,
+      "max_seq_len": 384,
+      "doc_stride": 128,
+      "n_train_questions": 83484,
+      "n_val_questions": 4115,
+      "n_features": 84507,
+      "val_max_examples": 2000,
+      "pair_stats": {
+        "attached": 68439,
+        "rejected": 15045,
+        "missing": 0,
+        "total": 83484
+      },
+      "steps": 10564,
+      "train_time_min": 19.396666666666665,
+      "val_f1": 82.1,
+      "val_f1_raw": 82.052,
+      "val_exact": 68.5,
+      "val_agreement": 90.6,
+      "val_pairs": 1683,
+      "val_n": 2000,
+      "full_val_f1": 82.0,
+      "full_val_f1_raw": 81.99901876259733,
+      "full_val_exact": 68.5,
+      "full_val_agreement": 90.1,
+      "full_val_n": 4115,
+      "full_val_pairs": 3447,
+      "reranker": {
+        "train_items": 6156,
+        "dev_items": 758,
+        "pair_features": true,
+        "top1": {
+          "n": 758,
+          "exact": 70.6,
+          "f1": 82.4,
+          "oracle_exact": 96.7
+        },
+        "reranked": {
+          "n": 758,
+          "exact": 71.9,
+          "f1": 83.0,
+          "oracle_exact": 96.7
+        },
+        "n_epochs": 20,
+        "best_epoch": 8,
+        "last_epoch_f1": 80.3
+      },
+      "sets": {
+        "dev": {
+          "n": 10570,
+          "pairs": 8622,
+          "paired_view": "back-translated paraphrase",
+          "em": 81.4,
+          "f1": 88.6,
+          "agr": 87.9,
+          "agr_f1": 92.0,
+          "rr_em": 80.0,
+          "rr_f1": 87.7,
+          "rr_agr": 92.9,
+          "by_type": {
+            "how": {
+              "n": 301,
+              "exact": 61.8,
+              "f1": 77.9
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 85.8,
+              "f1": 91.6
+            },
+            "other": {
+              "n": 94,
+              "exact": 57.4,
+              "f1": 74.4
+            },
+            "what": {
+              "n": 5812,
+              "exact": 79.8,
+              "f1": 87.6
+            },
+            "when": {
+              "n": 924,
+              "exact": 93.0,
+              "f1": 95.3
+            },
+            "where": {
+              "n": 511,
+              "exact": 77.7,
+              "f1": 87.7
+            },
+            "which": {
+              "n": 646,
+              "exact": 82.2,
+              "f1": 87.7
+            },
+            "who": {
+              "n": 1204,
+              "exact": 88.6,
+              "f1": 91.8
+            },
+            "why": {
+              "n": 155,
+              "exact": 54.8,
+              "f1": 78.3
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 301,
+              "exact": 57.8,
+              "f1": 77.1
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 81.5,
+              "f1": 89.4
+            },
+            "other": {
+              "n": 94,
+              "exact": 59.6,
+              "f1": 74.1
+            },
+            "what": {
+              "n": 5812,
+              "exact": 79.1,
+              "f1": 87.1
+            },
+            "when": {
+              "n": 924,
+              "exact": 89.9,
+              "f1": 93.9
+            },
+            "where": {
+              "n": 511,
+              "exact": 76.1,
+              "f1": 86.4
+            },
+            "which": {
+              "n": 646,
+              "exact": 81.4,
+              "f1": 87.3
+            },
+            "who": {
+              "n": 1204,
+              "exact": 87.1,
+              "f1": 90.6
+            },
+            "why": {
+              "n": 155,
+              "exact": 54.8,
+              "f1": 76.9
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/eval_dev/results.json"
+        },
+        "gan_dev": {
+          "n": 1062,
+          "pairs": 1061,
+          "paired_view": "original question",
+          "em": 78.3,
+          "f1": 86.1,
+          "agr": 91.0,
+          "agr_f1": 94.2,
+          "rr_em": 77.3,
+          "rr_f1": 85.9,
+          "rr_agr": 95.0,
+          "by_type": {
+            "how": {
+              "n": 17,
+              "exact": 35.3,
+              "f1": 62.8
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 90.1,
+              "f1": 93.5
+            },
+            "other": {
+              "n": 31,
+              "exact": 48.4,
+              "f1": 62.4
+            },
+            "what": {
+              "n": 598,
+              "exact": 77.3,
+              "f1": 85.4
+            },
+            "when": {
+              "n": 84,
+              "exact": 90.5,
+              "f1": 93.9
+            },
+            "where": {
+              "n": 29,
+              "exact": 69.0,
+              "f1": 81.0
+            },
+            "which": {
+              "n": 102,
+              "exact": 78.4,
+              "f1": 84.7
+            },
+            "who": {
+              "n": 110,
+              "exact": 90.0,
+              "f1": 92.5
+            },
+            "why": {
+              "n": 20,
+              "exact": 50.0,
+              "f1": 82.3
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 17,
+              "exact": 35.3,
+              "f1": 64.3
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 83.1,
+              "f1": 90.2
+            },
+            "other": {
+              "n": 31,
+              "exact": 45.2,
+              "f1": 61.4
+            },
+            "what": {
+              "n": 598,
+              "exact": 77.3,
+              "f1": 85.8
+            },
+            "when": {
+              "n": 84,
+              "exact": 86.9,
+              "f1": 93.7
+            },
+            "where": {
+              "n": 29,
+              "exact": 72.4,
+              "f1": 83.4
+            },
+            "which": {
+              "n": 102,
+              "exact": 78.4,
+              "f1": 84.9
+            },
+            "who": {
+              "n": 110,
+              "exact": 86.4,
+              "f1": 89.9
+            },
+            "why": {
+              "n": 20,
+              "exact": 55.0,
+              "f1": 82.4
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/eval_gan_dev/results.json",
+          "orig_em": 79.8,
+          "orig_f1": 87.5,
+          "rr_orig_f1": 86.6
+        },
+        "gan_adv": {
+          "n": 56,
+          "pairs": 56,
+          "paired_view": "original question",
+          "em": 58.9,
+          "f1": 63.6,
+          "agr": 62.5,
+          "agr_f1": 65.6,
+          "rr_em": 67.9,
+          "rr_f1": 75.6,
+          "rr_agr": 82.1,
+          "by_type": {
+            "how": {
+              "n": 1,
+              "exact": 0.0,
+              "f1": 0.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 77.8,
+              "f1": 83.3
+            },
+            "what": {
+              "n": 17,
+              "exact": 52.9,
+              "f1": 61.7
+            },
+            "when": {
+              "n": 11,
+              "exact": 63.6,
+              "f1": 63.6
+            },
+            "where": {
+              "n": 4,
+              "exact": 75.0,
+              "f1": 75.0
+            },
+            "which": {
+              "n": 7,
+              "exact": 28.6,
+              "f1": 35.7
+            },
+            "who": {
+              "n": 7,
+              "exact": 71.4,
+              "f1": 73.6
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 1,
+              "exact": 0.0,
+              "f1": 0.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 77.8,
+              "f1": 83.3
+            },
+            "what": {
+              "n": 17,
+              "exact": 58.8,
+              "f1": 73.7
+            },
+            "when": {
+              "n": 11,
+              "exact": 90.9,
+              "f1": 90.9
+            },
+            "where": {
+              "n": 4,
+              "exact": 75.0,
+              "f1": 75.0
+            },
+            "which": {
+              "n": 7,
+              "exact": 42.9,
+              "f1": 59.5
+            },
+            "who": {
+              "n": 7,
+              "exact": 71.4,
+              "f1": 73.6
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/eval_gan_adv/results.json",
+          "orig_em": 78.6,
+          "orig_f1": 85.0,
+          "rr_orig_f1": 87.3
+        },
+        "addsent": {
+          "n": 3560,
+          "pairs": 3007,
+          "paired_view": "back-translated paraphrase",
+          "em": 59.9,
+          "f1": 66.1,
+          "agr": 84.1,
+          "agr_f1": 88.0,
+          "rr_em": 59.0,
+          "rr_f1": 66.0,
+          "rr_agr": 91.1,
+          "by_type": {
+            "how": {
+              "n": 102,
+              "exact": 41.2,
+              "f1": 57.3
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 65.5,
+              "f1": 71.4
+            },
+            "other": {
+              "n": 13,
+              "exact": 38.5,
+              "f1": 48.2
+            },
+            "what": {
+              "n": 2108,
+              "exact": 58.7,
+              "f1": 64.6
+            },
+            "when": {
+              "n": 278,
+              "exact": 69.4,
+              "f1": 72.4
+            },
+            "where": {
+              "n": 143,
+              "exact": 72.0,
+              "f1": 74.5
+            },
+            "which": {
+              "n": 230,
+              "exact": 57.4,
+              "f1": 63.7
+            },
+            "who": {
+              "n": 310,
+              "exact": 62.3,
+              "f1": 65.2
+            },
+            "why": {
+              "n": 69,
+              "exact": 36.2,
+              "f1": 71.5
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 102,
+              "exact": 44.1,
+              "f1": 63.8
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 57.7,
+              "f1": 66.1
+            },
+            "other": {
+              "n": 13,
+              "exact": 38.5,
+              "f1": 45.6
+            },
+            "what": {
+              "n": 2108,
+              "exact": 58.7,
+              "f1": 65.2
+            },
+            "when": {
+              "n": 278,
+              "exact": 68.7,
+              "f1": 72.9
+            },
+            "where": {
+              "n": 143,
+              "exact": 70.6,
+              "f1": 72.9
+            },
+            "which": {
+              "n": 230,
+              "exact": 59.1,
+              "f1": 64.0
+            },
+            "who": {
+              "n": 310,
+              "exact": 61.3,
+              "f1": 65.2
+            },
+            "why": {
+              "n": 69,
+              "exact": 27.5,
+              "f1": 65.5
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/eval_addsent/results.json"
+        },
+        "addonesent": {
+          "n": 1787,
+          "pairs": 1491,
+          "paired_view": "back-translated paraphrase",
+          "em": 68.1,
+          "f1": 74.5,
+          "agr": 84.4,
+          "agr_f1": 88.7,
+          "rr_em": 67.5,
+          "rr_f1": 74.6,
+          "rr_agr": 91.1,
+          "by_type": {
+            "how": {
+              "n": 48,
+              "exact": 50.0,
+              "f1": 65.4
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 70.1,
+              "f1": 75.9
+            },
+            "other": {
+              "n": 9,
+              "exact": 55.6,
+              "f1": 65.9
+            },
+            "what": {
+              "n": 1009,
+              "exact": 67.0,
+              "f1": 73.6
+            },
+            "when": {
+              "n": 151,
+              "exact": 78.8,
+              "f1": 80.8
+            },
+            "where": {
+              "n": 73,
+              "exact": 79.5,
+              "f1": 83.3
+            },
+            "which": {
+              "n": 111,
+              "exact": 64.0,
+              "f1": 68.7
+            },
+            "who": {
+              "n": 198,
+              "exact": 72.2,
+              "f1": 75.7
+            },
+            "why": {
+              "n": 34,
+              "exact": 38.2,
+              "f1": 73.8
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 48,
+              "exact": 56.3,
+              "f1": 74.9
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 63.6,
+              "f1": 70.9
+            },
+            "other": {
+              "n": 9,
+              "exact": 55.6,
+              "f1": 65.9
+            },
+            "what": {
+              "n": 1009,
+              "exact": 67.3,
+              "f1": 74.4
+            },
+            "when": {
+              "n": 151,
+              "exact": 77.5,
+              "f1": 81.2
+            },
+            "where": {
+              "n": 73,
+              "exact": 76.7,
+              "f1": 80.9
+            },
+            "which": {
+              "n": 111,
+              "exact": 64.0,
+              "f1": 68.7
+            },
+            "who": {
+              "n": 198,
+              "exact": 71.7,
+              "f1": 75.4
+            },
+            "why": {
+              "n": 34,
+              "exact": 32.4,
+              "f1": 69.8
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/eval_addonesent/results.json"
+        }
+      }
+    },
+    "bert_kl_lam2.0": {
+      "run": "bert_kl_lam2.0",
+      "model": "bert-base-uncased",
+      "mode": "kl",
+      "lambda_kl": 2.0,
+      "epochs": 2,
+      "batch_size": 16,
+      "lr": 3e-05,
+      "max_seq_len": 384,
+      "doc_stride": 128,
+      "n_train_questions": 83484,
+      "n_val_questions": 4115,
+      "n_features": 84507,
+      "val_max_examples": 2000,
+      "pair_stats": {
+        "attached": 68439,
+        "rejected": 15045,
+        "missing": 0,
+        "total": 83484
+      },
+      "steps": 10564,
+      "train_time_min": 21.771666666666665,
+      "val_f1": 81.7,
+      "val_f1_raw": 81.67,
+      "val_exact": 68.4,
+      "val_agreement": 91.0,
+      "val_pairs": 1683,
+      "val_n": 2000,
+      "full_val_f1": 81.5,
+      "full_val_f1_raw": 81.47087351143713,
+      "full_val_exact": 67.9,
+      "full_val_agreement": 90.7,
+      "full_val_n": 4115,
+      "full_val_pairs": 3447,
+      "reranker": {
+        "train_items": 6156,
+        "dev_items": 758,
+        "pair_features": true,
+        "top1": {
+          "n": 758,
+          "exact": 69.9,
+          "f1": 81.8,
+          "oracle_exact": 96.7
+        },
+        "reranked": {
+          "n": 758,
+          "exact": 71.1,
+          "f1": 82.5,
+          "oracle_exact": 96.7
+        },
+        "n_epochs": 20,
+        "best_epoch": 6,
+        "last_epoch_f1": 79.9
+      },
+      "sets": {
+        "dev": {
+          "n": 10570,
+          "pairs": 8622,
+          "paired_view": "back-translated paraphrase",
+          "em": 81.3,
+          "f1": 88.4,
+          "agr": 88.8,
+          "agr_f1": 92.4,
+          "rr_em": 80.4,
+          "rr_f1": 87.8,
+          "rr_agr": 93.7,
+          "by_type": {
+            "how": {
+              "n": 301,
+              "exact": 60.5,
+              "f1": 76.4
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 85.0,
+              "f1": 90.9
+            },
+            "other": {
+              "n": 94,
+              "exact": 60.6,
+              "f1": 75.6
+            },
+            "what": {
+              "n": 5812,
+              "exact": 79.4,
+              "f1": 87.3
+            },
+            "when": {
+              "n": 924,
+              "exact": 92.3,
+              "f1": 94.8
+            },
+            "where": {
+              "n": 511,
+              "exact": 77.7,
+              "f1": 87.4
+            },
+            "which": {
+              "n": 646,
+              "exact": 83.6,
+              "f1": 88.7
+            },
+            "who": {
+              "n": 1204,
+              "exact": 89.0,
+              "f1": 91.9
+            },
+            "why": {
+              "n": 155,
+              "exact": 57.4,
+              "f1": 78.2
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 301,
+              "exact": 56.5,
+              "f1": 74.0
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 81.8,
+              "f1": 89.5
+            },
+            "other": {
+              "n": 94,
+              "exact": 60.6,
+              "f1": 76.2
+            },
+            "what": {
+              "n": 5812,
+              "exact": 79.1,
+              "f1": 87.0
+            },
+            "when": {
+              "n": 924,
+              "exact": 91.8,
+              "f1": 94.4
+            },
+            "where": {
+              "n": 511,
+              "exact": 75.9,
+              "f1": 86.2
+            },
+            "which": {
+              "n": 646,
+              "exact": 83.1,
+              "f1": 88.4
+            },
+            "who": {
+              "n": 1204,
+              "exact": 89.0,
+              "f1": 91.8
+            },
+            "why": {
+              "n": 155,
+              "exact": 52.9,
+              "f1": 76.1
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam2.0/eval_dev/results.json"
+        },
+        "gan_dev": {
+          "n": 1062,
+          "pairs": 1061,
+          "paired_view": "original question",
+          "em": 79.8,
+          "f1": 86.9,
+          "agr": 91.9,
+          "agr_f1": 94.7,
+          "rr_em": 79.9,
+          "rr_f1": 86.8,
+          "rr_agr": 94.9,
+          "by_type": {
+            "how": {
+              "n": 17,
+              "exact": 41.2,
+              "f1": 65.0
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 85.9,
+              "f1": 93.7
+            },
+            "other": {
+              "n": 31,
+              "exact": 51.6,
+              "f1": 65.3
+            },
+            "what": {
+              "n": 598,
+              "exact": 78.3,
+              "f1": 85.8
+            },
+            "when": {
+              "n": 84,
+              "exact": 94.0,
+              "f1": 96.3
+            },
+            "where": {
+              "n": 29,
+              "exact": 79.3,
+              "f1": 86.1
+            },
+            "which": {
+              "n": 102,
+              "exact": 80.4,
+              "f1": 84.8
+            },
+            "who": {
+              "n": 110,
+              "exact": 90.0,
+              "f1": 93.5
+            },
+            "why": {
+              "n": 20,
+              "exact": 65.0,
+              "f1": 85.9
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 17,
+              "exact": 35.3,
+              "f1": 59.3
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 83.1,
+              "f1": 92.0
+            },
+            "other": {
+              "n": 31,
+              "exact": 58.1,
+              "f1": 66.9
+            },
+            "what": {
+              "n": 598,
+              "exact": 78.8,
+              "f1": 86.0
+            },
+            "when": {
+              "n": 84,
+              "exact": 94.0,
+              "f1": 97.1
+            },
+            "where": {
+              "n": 29,
+              "exact": 75.9,
+              "f1": 83.9
+            },
+            "which": {
+              "n": 102,
+              "exact": 79.4,
+              "f1": 84.2
+            },
+            "who": {
+              "n": 110,
+              "exact": 90.9,
+              "f1": 93.7
+            },
+            "why": {
+              "n": 20,
+              "exact": 65.0,
+              "f1": 85.3
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam2.0/eval_gan_dev/results.json",
+          "orig_em": 81.8,
+          "orig_f1": 88.5,
+          "rr_orig_f1": 88.4
+        },
+        "gan_adv": {
+          "n": 56,
+          "pairs": 56,
+          "paired_view": "original question",
+          "em": 57.1,
+          "f1": 63.5,
+          "agr": 64.3,
+          "agr_f1": 67.5,
+          "rr_em": 71.4,
+          "rr_f1": 77.8,
+          "rr_agr": 82.1,
+          "by_type": {
+            "how": {
+              "n": 1,
+              "exact": 0.0,
+              "f1": 0.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 77.8,
+              "f1": 83.3
+            },
+            "what": {
+              "n": 17,
+              "exact": 52.9,
+              "f1": 62.9
+            },
+            "when": {
+              "n": 11,
+              "exact": 81.8,
+              "f1": 81.8
+            },
+            "where": {
+              "n": 4,
+              "exact": 50.0,
+              "f1": 54.8
+            },
+            "which": {
+              "n": 7,
+              "exact": 14.3,
+              "f1": 21.4
+            },
+            "who": {
+              "n": 7,
+              "exact": 57.1,
+              "f1": 66.5
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 1,
+              "exact": 0.0,
+              "f1": 0.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 88.9,
+              "f1": 88.9
+            },
+            "what": {
+              "n": 17,
+              "exact": 58.8,
+              "f1": 71.9
+            },
+            "when": {
+              "n": 11,
+              "exact": 100.0,
+              "f1": 100.0
+            },
+            "where": {
+              "n": 4,
+              "exact": 75.0,
+              "f1": 75.0
+            },
+            "which": {
+              "n": 7,
+              "exact": 42.9,
+              "f1": 59.5
+            },
+            "who": {
+              "n": 7,
+              "exact": 71.4,
+              "f1": 73.6
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam2.0/eval_gan_adv/results.json",
+          "orig_em": 78.6,
+          "orig_f1": 84.4,
+          "rr_orig_f1": 82.8
+        },
+        "addsent": {
+          "n": 3560,
+          "pairs": 3007,
+          "paired_view": "back-translated paraphrase",
+          "em": 59.4,
+          "f1": 65.7,
+          "agr": 84.1,
+          "agr_f1": 88.2,
+          "rr_em": 60.2,
+          "rr_f1": 66.8,
+          "rr_agr": 92.2,
+          "by_type": {
+            "how": {
+              "n": 102,
+              "exact": 42.2,
+              "f1": 57.4
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 65.8,
+              "f1": 71.6
+            },
+            "other": {
+              "n": 13,
+              "exact": 38.5,
+              "f1": 45.6
+            },
+            "what": {
+              "n": 2108,
+              "exact": 58.6,
+              "f1": 64.8
+            },
+            "when": {
+              "n": 278,
+              "exact": 65.1,
+              "f1": 68.0
+            },
+            "where": {
+              "n": 143,
+              "exact": 68.5,
+              "f1": 70.7
+            },
+            "which": {
+              "n": 230,
+              "exact": 57.8,
+              "f1": 63.5
+            },
+            "who": {
+              "n": 310,
+              "exact": 63.5,
+              "f1": 66.2
+            },
+            "why": {
+              "n": 69,
+              "exact": 27.5,
+              "f1": 66.5
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 102,
+              "exact": 41.2,
+              "f1": 60.4
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 64.5,
+              "f1": 71.2
+            },
+            "other": {
+              "n": 13,
+              "exact": 38.5,
+              "f1": 45.6
+            },
+            "what": {
+              "n": 2108,
+              "exact": 59.8,
+              "f1": 66.1
+            },
+            "when": {
+              "n": 278,
+              "exact": 66.2,
+              "f1": 69.4
+            },
+            "where": {
+              "n": 143,
+              "exact": 65.7,
+              "f1": 69.7
+            },
+            "which": {
+              "n": 230,
+              "exact": 59.6,
+              "f1": 64.3
+            },
+            "who": {
+              "n": 310,
+              "exact": 65.2,
+              "f1": 67.5
+            },
+            "why": {
+              "n": 69,
+              "exact": 29.0,
+              "f1": 68.6
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam2.0/eval_addsent/results.json"
+        },
+        "addonesent": {
+          "n": 1787,
+          "pairs": 1491,
+          "paired_view": "back-translated paraphrase",
+          "em": 67.4,
+          "f1": 73.8,
+          "agr": 86.0,
+          "agr_f1": 90.0,
+          "rr_em": 67.5,
+          "rr_f1": 74.1,
+          "rr_agr": 92.5,
+          "by_type": {
+            "how": {
+              "n": 48,
+              "exact": 47.9,
+              "f1": 62.5
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 69.5,
+              "f1": 75.2
+            },
+            "other": {
+              "n": 9,
+              "exact": 55.6,
+              "f1": 65.9
+            },
+            "what": {
+              "n": 1009,
+              "exact": 67.1,
+              "f1": 73.8
+            },
+            "when": {
+              "n": 151,
+              "exact": 73.5,
+              "f1": 75.7
+            },
+            "where": {
+              "n": 73,
+              "exact": 76.7,
+              "f1": 79.5
+            },
+            "which": {
+              "n": 111,
+              "exact": 63.1,
+              "f1": 69.0
+            },
+            "who": {
+              "n": 198,
+              "exact": 73.2,
+              "f1": 76.1
+            },
+            "why": {
+              "n": 34,
+              "exact": 32.4,
+              "f1": 70.2
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 48,
+              "exact": 47.9,
+              "f1": 66.4
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 66.9,
+              "f1": 72.4
+            },
+            "other": {
+              "n": 9,
+              "exact": 55.6,
+              "f1": 65.9
+            },
+            "what": {
+              "n": 1009,
+              "exact": 67.3,
+              "f1": 74.3
+            },
+            "when": {
+              "n": 151,
+              "exact": 73.5,
+              "f1": 75.8
+            },
+            "where": {
+              "n": 73,
+              "exact": 75.3,
+              "f1": 79.8
+            },
+            "which": {
+              "n": 111,
+              "exact": 65.8,
+              "f1": 70.7
+            },
+            "who": {
+              "n": 198,
+              "exact": 74.2,
+              "f1": 76.4
+            },
+            "why": {
+              "n": 34,
+              "exact": 32.4,
+              "f1": 68.6
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam2.0/eval_addonesent/results.json"
+        }
+      }
+    },
+    "bert_ot": {
+      "run": "bert_ot",
+      "model": "bert-base-uncased",
+      "mode": "ot",
+      "lambda_kl": null,
+      "epochs": 2,
+      "batch_size": 16,
+      "lr": 3e-05,
+      "max_seq_len": 384,
+      "doc_stride": 128,
+      "n_train_questions": 83484,
+      "n_val_questions": 4115,
+      "n_features": 84507,
+      "val_max_examples": 2000,
+      "pair_stats": {
+        "attached": 68439,
+        "rejected": 15045,
+        "missing": 0,
+        "total": 83484
+      },
+      "steps": 10564,
+      "train_time_min": 19.404999999999998,
+      "val_f1": 81.7,
+      "val_f1_raw": 81.693,
+      "val_exact": 68.1,
+      "val_agreement": 88.1,
+      "val_pairs": 1683,
+      "val_n": 2000,
+      "full_val_f1": 81.7,
+      "full_val_f1_raw": 81.73447546427973,
+      "full_val_exact": 68.2,
+      "full_val_agreement": 88.3,
+      "full_val_n": 4115,
+      "full_val_pairs": 3447,
+      "reranker": {
+        "train_items": 6156,
+        "dev_items": 758,
+        "pair_features": true,
+        "top1": {
+          "n": 758,
+          "exact": 70.3,
+          "f1": 82.3,
+          "oracle_exact": 96.7
+        },
+        "reranked": {
+          "n": 758,
+          "exact": 71.1,
+          "f1": 82.7,
+          "oracle_exact": 96.7
+        },
+        "n_epochs": 20,
+        "best_epoch": 11,
+        "last_epoch_f1": 81.9
+      },
+      "sets": {
+        "dev": {
+          "n": 10570,
+          "pairs": 8622,
+          "paired_view": "back-translated paraphrase",
+          "em": 80.9,
+          "f1": 88.2,
+          "agr": 86.3,
+          "agr_f1": 90.9,
+          "rr_em": 78.4,
+          "rr_f1": 86.8,
+          "rr_agr": 91.3,
+          "by_type": {
+            "how": {
+              "n": 301,
+              "exact": 60.1,
+              "f1": 77.9
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 85.3,
+              "f1": 91.3
+            },
+            "other": {
+              "n": 94,
+              "exact": 56.4,
+              "f1": 75.2
+            },
+            "what": {
+              "n": 5812,
+              "exact": 79.3,
+              "f1": 87.2
+            },
+            "when": {
+              "n": 924,
+              "exact": 93.0,
+              "f1": 95.4
+            },
+            "where": {
+              "n": 511,
+              "exact": 76.5,
+              "f1": 86.7
+            },
+            "which": {
+              "n": 646,
+              "exact": 80.7,
+              "f1": 86.8
+            },
+            "who": {
+              "n": 1204,
+              "exact": 88.0,
+              "f1": 91.6
+            },
+            "why": {
+              "n": 155,
+              "exact": 54.8,
+              "f1": 78.3
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 301,
+              "exact": 55.1,
+              "f1": 74.8
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 81.3,
+              "f1": 89.5
+            },
+            "other": {
+              "n": 94,
+              "exact": 53.2,
+              "f1": 69.6
+            },
+            "what": {
+              "n": 5812,
+              "exact": 77.3,
+              "f1": 86.1
+            },
+            "when": {
+              "n": 924,
+              "exact": 89.8,
+              "f1": 93.9
+            },
+            "where": {
+              "n": 511,
+              "exact": 73.8,
+              "f1": 85.1
+            },
+            "which": {
+              "n": 646,
+              "exact": 79.3,
+              "f1": 86.2
+            },
+            "who": {
+              "n": 1204,
+              "exact": 85.8,
+              "f1": 89.7
+            },
+            "why": {
+              "n": 155,
+              "exact": 49.0,
+              "f1": 73.9
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ot/eval_dev/results.json"
+        },
+        "gan_dev": {
+          "n": 1062,
+          "pairs": 1061,
+          "paired_view": "original question",
+          "em": 78.1,
+          "f1": 85.6,
+          "agr": 90.3,
+          "agr_f1": 93.5,
+          "rr_em": 76.6,
+          "rr_f1": 85.5,
+          "rr_agr": 92.7,
+          "by_type": {
+            "how": {
+              "n": 17,
+              "exact": 29.4,
+              "f1": 55.1
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 87.3,
+              "f1": 93.7
+            },
+            "other": {
+              "n": 31,
+              "exact": 51.6,
+              "f1": 64.9
+            },
+            "what": {
+              "n": 598,
+              "exact": 77.4,
+              "f1": 85.1
+            },
+            "when": {
+              "n": 84,
+              "exact": 90.5,
+              "f1": 93.9
+            },
+            "where": {
+              "n": 29,
+              "exact": 69.0,
+              "f1": 80.6
+            },
+            "which": {
+              "n": 102,
+              "exact": 75.5,
+              "f1": 80.8
+            },
+            "who": {
+              "n": 110,
+              "exact": 90.9,
+              "f1": 93.8
+            },
+            "why": {
+              "n": 20,
+              "exact": 50.0,
+              "f1": 80.3
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 17,
+              "exact": 35.3,
+              "f1": 64.2
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 81.7,
+              "f1": 91.1
+            },
+            "other": {
+              "n": 31,
+              "exact": 51.6,
+              "f1": 63.3
+            },
+            "what": {
+              "n": 598,
+              "exact": 75.9,
+              "f1": 85.0
+            },
+            "when": {
+              "n": 84,
+              "exact": 88.1,
+              "f1": 94.8
+            },
+            "where": {
+              "n": 29,
+              "exact": 72.4,
+              "f1": 83.4
+            },
+            "which": {
+              "n": 102,
+              "exact": 76.5,
+              "f1": 82.2
+            },
+            "who": {
+              "n": 110,
+              "exact": 87.3,
+              "f1": 91.4
+            },
+            "why": {
+              "n": 20,
+              "exact": 55.0,
+              "f1": 78.9
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ot/eval_gan_dev/results.json",
+          "orig_em": 79.7,
+          "orig_f1": 87.2,
+          "rr_orig_f1": 85.7
+        },
+        "gan_adv": {
+          "n": 56,
+          "pairs": 56,
+          "paired_view": "original question",
+          "em": 51.8,
+          "f1": 57.4,
+          "agr": 57.1,
+          "agr_f1": 60.7,
+          "rr_em": 76.8,
+          "rr_f1": 80.6,
+          "rr_agr": 85.7,
+          "by_type": {
+            "how": {
+              "n": 1,
+              "exact": 0.0,
+              "f1": 0.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 44.4,
+              "f1": 55.8
+            },
+            "what": {
+              "n": 17,
+              "exact": 58.8,
+              "f1": 67.6
+            },
+            "when": {
+              "n": 11,
+              "exact": 63.6,
+              "f1": 63.6
+            },
+            "where": {
+              "n": 4,
+              "exact": 50.0,
+              "f1": 50.0
+            },
+            "which": {
+              "n": 7,
+              "exact": 28.6,
+              "f1": 35.7
+            },
+            "who": {
+              "n": 7,
+              "exact": 57.1,
+              "f1": 59.3
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 1,
+              "exact": 0.0,
+              "f1": 0.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 88.9,
+              "f1": 88.9
+            },
+            "what": {
+              "n": 17,
+              "exact": 64.7,
+              "f1": 73.3
+            },
+            "when": {
+              "n": 11,
+              "exact": 90.9,
+              "f1": 90.9
+            },
+            "where": {
+              "n": 4,
+              "exact": 75.0,
+              "f1": 75.0
+            },
+            "which": {
+              "n": 7,
+              "exact": 71.4,
+              "f1": 78.6
+            },
+            "who": {
+              "n": 7,
+              "exact": 85.7,
+              "f1": 87.9
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ot/eval_gan_adv/results.json",
+          "orig_em": 78.6,
+          "orig_f1": 85.0,
+          "rr_orig_f1": 88.2
+        },
+        "addsent": {
+          "n": 3560,
+          "pairs": 3007,
+          "paired_view": "back-translated paraphrase",
+          "em": 59.2,
+          "f1": 65.8,
+          "agr": 81.8,
+          "agr_f1": 86.0,
+          "rr_em": 58.3,
+          "rr_f1": 65.8,
+          "rr_agr": 89.1,
+          "by_type": {
+            "how": {
+              "n": 102,
+              "exact": 39.2,
+              "f1": 56.8
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 64.8,
+              "f1": 70.8
+            },
+            "other": {
+              "n": 13,
+              "exact": 30.8,
+              "f1": 47.1
+            },
+            "what": {
+              "n": 2108,
+              "exact": 58.1,
+              "f1": 64.3
+            },
+            "when": {
+              "n": 278,
+              "exact": 70.9,
+              "f1": 73.9
+            },
+            "where": {
+              "n": 143,
+              "exact": 70.6,
+              "f1": 73.9
+            },
+            "which": {
+              "n": 230,
+              "exact": 56.1,
+              "f1": 63.1
+            },
+            "who": {
+              "n": 310,
+              "exact": 61.6,
+              "f1": 64.6
+            },
+            "why": {
+              "n": 69,
+              "exact": 30.4,
+              "f1": 68.6
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 102,
+              "exact": 33.3,
+              "f1": 50.3
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 62.2,
+              "f1": 69.6
+            },
+            "other": {
+              "n": 13,
+              "exact": 30.8,
+              "f1": 38.8
+            },
+            "what": {
+              "n": 2108,
+              "exact": 57.9,
+              "f1": 65.3
+            },
+            "when": {
+              "n": 278,
+              "exact": 68.0,
+              "f1": 72.3
+            },
+            "where": {
+              "n": 143,
+              "exact": 64.3,
+              "f1": 71.4
+            },
+            "which": {
+              "n": 230,
+              "exact": 59.1,
+              "f1": 64.5
+            },
+            "who": {
+              "n": 310,
+              "exact": 61.6,
+              "f1": 65.3
+            },
+            "why": {
+              "n": 69,
+              "exact": 26.1,
+              "f1": 61.4
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ot/eval_addsent/results.json"
+        },
+        "addonesent": {
+          "n": 1787,
+          "pairs": 1491,
+          "paired_view": "back-translated paraphrase",
+          "em": 67.2,
+          "f1": 73.9,
+          "agr": 83.4,
+          "agr_f1": 88.0,
+          "rr_em": 65.6,
+          "rr_f1": 73.3,
+          "rr_agr": 89.7,
+          "by_type": {
+            "how": {
+              "n": 48,
+              "exact": 47.9,
+              "f1": 63.3
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 68.2,
+              "f1": 74.1
+            },
+            "other": {
+              "n": 9,
+              "exact": 44.4,
+              "f1": 64.3
+            },
+            "what": {
+              "n": 1009,
+              "exact": 66.3,
+              "f1": 73.1
+            },
+            "when": {
+              "n": 151,
+              "exact": 79.5,
+              "f1": 81.6
+            },
+            "where": {
+              "n": 73,
+              "exact": 76.7,
+              "f1": 82.2
+            },
+            "which": {
+              "n": 111,
+              "exact": 61.3,
+              "f1": 68.0
+            },
+            "who": {
+              "n": 198,
+              "exact": 72.2,
+              "f1": 75.7
+            },
+            "why": {
+              "n": 34,
+              "exact": 35.3,
+              "f1": 73.4
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 48,
+              "exact": 43.8,
+              "f1": 59.5
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 67.5,
+              "f1": 73.1
+            },
+            "other": {
+              "n": 9,
+              "exact": 44.4,
+              "f1": 56.0
+            },
+            "what": {
+              "n": 1009,
+              "exact": 65.1,
+              "f1": 73.2
+            },
+            "when": {
+              "n": 151,
+              "exact": 75.5,
+              "f1": 79.9
+            },
+            "where": {
+              "n": 73,
+              "exact": 68.5,
+              "f1": 79.4
+            },
+            "which": {
+              "n": 111,
+              "exact": 64.0,
+              "f1": 68.1
+            },
+            "who": {
+              "n": 198,
+              "exact": 71.2,
+              "f1": 75.0
+            },
+            "why": {
+              "n": 34,
+              "exact": 29.4,
+              "f1": 65.1
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ot/eval_addonesent/results.json"
+        }
+      }
+    },
+    "deb_ce": {
+      "run": "deb_ce",
+      "model": "microsoft/deberta-v3-base",
+      "mode": "ce",
+      "lambda_kl": null,
+      "epochs": 2,
+      "batch_size": 16,
+      "lr": 3e-05,
+      "max_seq_len": 384,
+      "doc_stride": 128,
+      "n_train_questions": 83484,
+      "n_val_questions": 4115,
+      "n_features": 84286,
+      "val_max_examples": 2000,
+      "pair_stats": {},
+      "steps": 10536,
+      "train_time_min": 16.86,
+      "val_f1": 87.3,
+      "val_f1_raw": 87.306,
+      "val_exact": 75.1,
+      "val_agreement": 90.9,
+      "val_pairs": 1683,
+      "val_n": 2000,
+      "full_val_f1": 87.1,
+      "full_val_f1_raw": 87.12439469943317,
+      "full_val_exact": 74.5,
+      "full_val_agreement": 90.8,
+      "full_val_n": 4115,
+      "full_val_pairs": 3447,
+      "reranker": {
+        "train_items": 6156,
+        "dev_items": 758,
+        "pair_features": true,
+        "top1": {
+          "n": 758,
+          "exact": 76.1,
+          "f1": 87.4,
+          "oracle_exact": 98.2
+        },
+        "reranked": {
+          "n": 758,
+          "exact": 76.4,
+          "f1": 88.0,
+          "oracle_exact": 98.2
+        },
+        "n_epochs": 20,
+        "best_epoch": 1,
+        "last_epoch_f1": 86.1
+      },
+      "sets": {
+        "dev": {
+          "n": 10570,
+          "pairs": 8622,
+          "paired_view": "back-translated paraphrase",
+          "em": 88.3,
+          "f1": 93.9,
+          "agr": 88.0,
+          "agr_f1": 92.5,
+          "rr_em": 87.4,
+          "rr_f1": 93.3,
+          "rr_agr": 89.7,
+          "by_type": {
+            "how": {
+              "n": 301,
+              "exact": 70.8,
+              "f1": 86.2
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 90.5,
+              "f1": 94.8
+            },
+            "other": {
+              "n": 94,
+              "exact": 67.0,
+              "f1": 84.5
+            },
+            "what": {
+              "n": 5812,
+              "exact": 87.7,
+              "f1": 93.6
+            },
+            "when": {
+              "n": 924,
+              "exact": 96.1,
+              "f1": 97.9
+            },
+            "where": {
+              "n": 511,
+              "exact": 83.4,
+              "f1": 91.7
+            },
+            "which": {
+              "n": 646,
+              "exact": 89.8,
+              "f1": 92.8
+            },
+            "who": {
+              "n": 1204,
+              "exact": 93.5,
+              "f1": 96.1
+            },
+            "why": {
+              "n": 155,
+              "exact": 69.7,
+              "f1": 87.0
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 301,
+              "exact": 65.1,
+              "f1": 83.6
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 87.9,
+              "f1": 93.4
+            },
+            "other": {
+              "n": 94,
+              "exact": 66.0,
+              "f1": 84.8
+            },
+            "what": {
+              "n": 5812,
+              "exact": 86.9,
+              "f1": 93.1
+            },
+            "when": {
+              "n": 924,
+              "exact": 95.6,
+              "f1": 97.6
+            },
+            "where": {
+              "n": 511,
+              "exact": 82.8,
+              "f1": 90.9
+            },
+            "which": {
+              "n": 646,
+              "exact": 89.5,
+              "f1": 92.8
+            },
+            "who": {
+              "n": 1204,
+              "exact": 93.5,
+              "f1": 96.2
+            },
+            "why": {
+              "n": 155,
+              "exact": 67.7,
+              "f1": 85.7
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_ce/eval_dev/results.json"
+        },
+        "gan_dev": {
+          "n": 1062,
+          "pairs": 1061,
+          "paired_view": "original question",
+          "em": 86.0,
+          "f1": 91.3,
+          "agr": 91.8,
+          "agr_f1": 94.8,
+          "rr_em": 85.2,
+          "rr_f1": 90.9,
+          "rr_agr": 92.2,
+          "by_type": {
+            "how": {
+              "n": 17,
+              "exact": 58.8,
+              "f1": 75.6
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 94.4,
+              "f1": 97.5
+            },
+            "other": {
+              "n": 31,
+              "exact": 61.3,
+              "f1": 77.2
+            },
+            "what": {
+              "n": 598,
+              "exact": 84.8,
+              "f1": 90.3
+            },
+            "when": {
+              "n": 84,
+              "exact": 94.0,
+              "f1": 96.8
+            },
+            "where": {
+              "n": 29,
+              "exact": 75.9,
+              "f1": 85.0
+            },
+            "which": {
+              "n": 102,
+              "exact": 90.2,
+              "f1": 93.0
+            },
+            "who": {
+              "n": 110,
+              "exact": 94.5,
+              "f1": 96.1
+            },
+            "why": {
+              "n": 20,
+              "exact": 65.0,
+              "f1": 82.2
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 17,
+              "exact": 52.9,
+              "f1": 74.2
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 91.5,
+              "f1": 96.4
+            },
+            "other": {
+              "n": 31,
+              "exact": 58.1,
+              "f1": 76.3
+            },
+            "what": {
+              "n": 598,
+              "exact": 84.4,
+              "f1": 90.4
+            },
+            "when": {
+              "n": 84,
+              "exact": 95.2,
+              "f1": 97.5
+            },
+            "where": {
+              "n": 29,
+              "exact": 79.3,
+              "f1": 85.4
+            },
+            "which": {
+              "n": 102,
+              "exact": 87.3,
+              "f1": 89.8
+            },
+            "who": {
+              "n": 110,
+              "exact": 96.4,
+              "f1": 97.2
+            },
+            "why": {
+              "n": 20,
+              "exact": 50.0,
+              "f1": 76.9
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_ce/eval_gan_dev/results.json",
+          "orig_em": 88.9,
+          "orig_f1": 93.5,
+          "rr_orig_f1": 93.0
+        },
+        "gan_adv": {
+          "n": 56,
+          "pairs": 56,
+          "paired_view": "original question",
+          "em": 75.0,
+          "f1": 81.9,
+          "agr": 78.6,
+          "agr_f1": 83.3,
+          "rr_em": 80.4,
+          "rr_f1": 85.8,
+          "rr_agr": 85.7,
+          "by_type": {
+            "how": {
+              "n": 1,
+              "exact": 100.0,
+              "f1": 100.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 88.9,
+              "f1": 93.3
+            },
+            "what": {
+              "n": 17,
+              "exact": 64.7,
+              "f1": 75.8
+            },
+            "when": {
+              "n": 11,
+              "exact": 90.9,
+              "f1": 90.9
+            },
+            "where": {
+              "n": 4,
+              "exact": 25.0,
+              "f1": 47.5
+            },
+            "which": {
+              "n": 7,
+              "exact": 85.7,
+              "f1": 92.9
+            },
+            "who": {
+              "n": 7,
+              "exact": 71.4,
+              "f1": 73.6
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 1,
+              "exact": 100.0,
+              "f1": 100.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 88.9,
+              "f1": 94.4
+            },
+            "what": {
+              "n": 17,
+              "exact": 64.7,
+              "f1": 75.8
+            },
+            "when": {
+              "n": 11,
+              "exact": 100.0,
+              "f1": 100.0
+            },
+            "where": {
+              "n": 4,
+              "exact": 75.0,
+              "f1": 75.0
+            },
+            "which": {
+              "n": 7,
+              "exact": 85.7,
+              "f1": 92.9
+            },
+            "who": {
+              "n": 7,
+              "exact": 71.4,
+              "f1": 73.6
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_ce/eval_gan_adv/results.json",
+          "orig_em": 89.3,
+          "orig_f1": 93.9,
+          "rr_orig_f1": 91.8
+        },
+        "addsent": {
+          "n": 3560,
+          "pairs": 3007,
+          "paired_view": "back-translated paraphrase",
+          "em": 80.2,
+          "f1": 85.1,
+          "agr": 85.5,
+          "agr_f1": 90.2,
+          "rr_em": 80.1,
+          "rr_f1": 85.3,
+          "rr_agr": 87.4,
+          "by_type": {
+            "how": {
+              "n": 102,
+              "exact": 59.8,
+              "f1": 74.1
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 86.0,
+              "f1": 89.6
+            },
+            "other": {
+              "n": 13,
+              "exact": 38.5,
+              "f1": 62.0
+            },
+            "what": {
+              "n": 2108,
+              "exact": 79.6,
+              "f1": 84.8
+            },
+            "when": {
+              "n": 278,
+              "exact": 89.2,
+              "f1": 91.2
+            },
+            "where": {
+              "n": 143,
+              "exact": 86.7,
+              "f1": 88.6
+            },
+            "which": {
+              "n": 230,
+              "exact": 78.3,
+              "f1": 80.1
+            },
+            "who": {
+              "n": 310,
+              "exact": 82.6,
+              "f1": 84.2
+            },
+            "why": {
+              "n": 69,
+              "exact": 55.1,
+              "f1": 81.8
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 102,
+              "exact": 56.9,
+              "f1": 79.6
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 85.0,
+              "f1": 88.2
+            },
+            "other": {
+              "n": 13,
+              "exact": 30.8,
+              "f1": 61.4
+            },
+            "what": {
+              "n": 2108,
+              "exact": 79.6,
+              "f1": 84.8
+            },
+            "when": {
+              "n": 278,
+              "exact": 89.2,
+              "f1": 91.1
+            },
+            "where": {
+              "n": 143,
+              "exact": 85.3,
+              "f1": 88.1
+            },
+            "which": {
+              "n": 230,
+              "exact": 80.0,
+              "f1": 82.2
+            },
+            "who": {
+              "n": 310,
+              "exact": 83.5,
+              "f1": 84.8
+            },
+            "why": {
+              "n": 69,
+              "exact": 55.1,
+              "f1": 81.8
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_ce/eval_addsent/results.json"
+        },
+        "addonesent": {
+          "n": 1787,
+          "pairs": 1491,
+          "paired_view": "back-translated paraphrase",
+          "em": 83.6,
+          "f1": 88.7,
+          "agr": 86.2,
+          "agr_f1": 90.7,
+          "rr_em": 83.5,
+          "rr_f1": 88.8,
+          "rr_agr": 87.5,
+          "by_type": {
+            "how": {
+              "n": 48,
+              "exact": 62.5,
+              "f1": 75.1
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 88.3,
+              "f1": 91.0
+            },
+            "other": {
+              "n": 9,
+              "exact": 55.6,
+              "f1": 78.8
+            },
+            "what": {
+              "n": 1009,
+              "exact": 83.0,
+              "f1": 88.5
+            },
+            "when": {
+              "n": 151,
+              "exact": 92.1,
+              "f1": 93.7
+            },
+            "where": {
+              "n": 73,
+              "exact": 90.4,
+              "f1": 93.3
+            },
+            "which": {
+              "n": 111,
+              "exact": 81.1,
+              "f1": 84.3
+            },
+            "who": {
+              "n": 198,
+              "exact": 87.4,
+              "f1": 89.7
+            },
+            "why": {
+              "n": 34,
+              "exact": 52.9,
+              "f1": 81.3
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 48,
+              "exact": 56.3,
+              "f1": 78.8
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 87.0,
+              "f1": 90.5
+            },
+            "other": {
+              "n": 9,
+              "exact": 44.4,
+              "f1": 77.9
+            },
+            "what": {
+              "n": 1009,
+              "exact": 83.3,
+              "f1": 88.6
+            },
+            "when": {
+              "n": 151,
+              "exact": 92.7,
+              "f1": 94.2
+            },
+            "where": {
+              "n": 73,
+              "exact": 86.3,
+              "f1": 90.0
+            },
+            "which": {
+              "n": 111,
+              "exact": 82.0,
+              "f1": 85.3
+            },
+            "who": {
+              "n": 198,
+              "exact": 88.4,
+              "f1": 90.4
+            },
+            "why": {
+              "n": 34,
+              "exact": 52.9,
+              "f1": 81.3
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_ce/eval_addonesent/results.json"
+        }
+      }
+    },
+    "deb_kl": {
+      "run": "deb_kl",
+      "model": "microsoft/deberta-v3-base",
+      "mode": "kl",
+      "lambda_kl": 1.0,
+      "epochs": 2,
+      "batch_size": 16,
+      "lr": 3e-05,
+      "max_seq_len": 384,
+      "doc_stride": 128,
+      "n_train_questions": 83484,
+      "n_val_questions": 4115,
+      "n_features": 84289,
+      "val_max_examples": 2000,
+      "pair_stats": {
+        "attached": 68439,
+        "rejected": 15045,
+        "missing": 0,
+        "total": 83484
+      },
+      "steps": 10538,
+      "train_time_min": 33.00666666666667,
+      "val_f1": 88.2,
+      "val_f1_raw": 88.21,
+      "val_exact": 75.9,
+      "val_agreement": 93.6,
+      "val_pairs": 1683,
+      "val_n": 2000,
+      "full_val_f1": 87.4,
+      "full_val_f1_raw": 87.36945461055312,
+      "full_val_exact": 74.9,
+      "full_val_agreement": 93.2,
+      "full_val_n": 4115,
+      "full_val_pairs": 3447,
+      "reranker": {
+        "train_items": 6156,
+        "dev_items": 758,
+        "pair_features": true,
+        "top1": {
+          "n": 758,
+          "exact": 76.5,
+          "f1": 87.6,
+          "oracle_exact": 98.0
+        },
+        "reranked": {
+          "n": 758,
+          "exact": 76.3,
+          "f1": 87.5,
+          "oracle_exact": 98.0
+        },
+        "n_epochs": 20,
+        "best_epoch": 1,
+        "last_epoch_f1": 84.3
+      },
+      "sets": {
+        "dev": {
+          "n": 10570,
+          "pairs": 8622,
+          "paired_view": "back-translated paraphrase",
+          "em": 88.3,
+          "f1": 93.7,
+          "agr": 91.8,
+          "agr_f1": 94.8,
+          "rr_em": 88.0,
+          "rr_f1": 93.7,
+          "rr_agr": 92.6,
+          "by_type": {
+            "how": {
+              "n": 301,
+              "exact": 70.4,
+              "f1": 85.3
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 90.9,
+              "f1": 95.2
+            },
+            "other": {
+              "n": 94,
+              "exact": 69.1,
+              "f1": 84.4
+            },
+            "what": {
+              "n": 5812,
+              "exact": 87.5,
+              "f1": 93.2
+            },
+            "when": {
+              "n": 924,
+              "exact": 96.4,
+              "f1": 98.2
+            },
+            "where": {
+              "n": 511,
+              "exact": 83.6,
+              "f1": 91.9
+            },
+            "which": {
+              "n": 646,
+              "exact": 90.2,
+              "f1": 93.9
+            },
+            "who": {
+              "n": 1204,
+              "exact": 93.9,
+              "f1": 96.5
+            },
+            "why": {
+              "n": 155,
+              "exact": 65.8,
+              "f1": 86.4
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 301,
+              "exact": 65.8,
+              "f1": 84.1
+            },
+            "how many/much": {
+              "n": 923,
+              "exact": 89.4,
+              "f1": 94.8
+            },
+            "other": {
+              "n": 94,
+              "exact": 68.1,
+              "f1": 83.6
+            },
+            "what": {
+              "n": 5812,
+              "exact": 87.5,
+              "f1": 93.3
+            },
+            "when": {
+              "n": 924,
+              "exact": 96.4,
+              "f1": 98.2
+            },
+            "where": {
+              "n": 511,
+              "exact": 84.0,
+              "f1": 91.8
+            },
+            "which": {
+              "n": 646,
+              "exact": 90.4,
+              "f1": 93.8
+            },
+            "who": {
+              "n": 1204,
+              "exact": 93.7,
+              "f1": 96.3
+            },
+            "why": {
+              "n": 155,
+              "exact": 67.1,
+              "f1": 85.6
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/eval_dev/results.json"
+        },
+        "gan_dev": {
+          "n": 1062,
+          "pairs": 1061,
+          "paired_view": "original question",
+          "em": 85.7,
+          "f1": 91.0,
+          "agr": 93.7,
+          "agr_f1": 96.4,
+          "rr_em": 85.6,
+          "rr_f1": 91.2,
+          "rr_agr": 93.9,
+          "by_type": {
+            "how": {
+              "n": 17,
+              "exact": 47.1,
+              "f1": 68.3
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 91.5,
+              "f1": 96.6
+            },
+            "other": {
+              "n": 31,
+              "exact": 64.5,
+              "f1": 78.3
+            },
+            "what": {
+              "n": 598,
+              "exact": 84.3,
+              "f1": 89.9
+            },
+            "when": {
+              "n": 84,
+              "exact": 97.6,
+              "f1": 99.2
+            },
+            "where": {
+              "n": 29,
+              "exact": 79.3,
+              "f1": 87.0
+            },
+            "which": {
+              "n": 102,
+              "exact": 91.2,
+              "f1": 93.3
+            },
+            "who": {
+              "n": 110,
+              "exact": 93.6,
+              "f1": 95.6
+            },
+            "why": {
+              "n": 20,
+              "exact": 60.0,
+              "f1": 80.9
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 17,
+              "exact": 47.1,
+              "f1": 69.4
+            },
+            "how many/much": {
+              "n": 71,
+              "exact": 91.5,
+              "f1": 96.4
+            },
+            "other": {
+              "n": 31,
+              "exact": 64.5,
+              "f1": 80.3
+            },
+            "what": {
+              "n": 598,
+              "exact": 84.9,
+              "f1": 90.5
+            },
+            "when": {
+              "n": 84,
+              "exact": 97.6,
+              "f1": 99.2
+            },
+            "where": {
+              "n": 29,
+              "exact": 75.9,
+              "f1": 85.8
+            },
+            "which": {
+              "n": 102,
+              "exact": 89.2,
+              "f1": 91.4
+            },
+            "who": {
+              "n": 110,
+              "exact": 94.5,
+              "f1": 96.0
+            },
+            "why": {
+              "n": 20,
+              "exact": 45.0,
+              "f1": 77.3
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/eval_gan_dev/results.json",
+          "orig_em": 87.8,
+          "orig_f1": 92.4,
+          "rr_orig_f1": 92.7
+        },
+        "gan_adv": {
+          "n": 56,
+          "pairs": 56,
+          "paired_view": "original question",
+          "em": 76.8,
+          "f1": 82.9,
+          "agr": 82.1,
+          "agr_f1": 85.5,
+          "rr_em": 82.1,
+          "rr_f1": 87.0,
+          "rr_agr": 91.1,
+          "by_type": {
+            "how": {
+              "n": 1,
+              "exact": 100.0,
+              "f1": 100.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 100.0,
+              "f1": 100.0
+            },
+            "what": {
+              "n": 17,
+              "exact": 64.7,
+              "f1": 75.8
+            },
+            "when": {
+              "n": 11,
+              "exact": 100.0,
+              "f1": 100.0
+            },
+            "where": {
+              "n": 4,
+              "exact": 50.0,
+              "f1": 60.0
+            },
+            "which": {
+              "n": 7,
+              "exact": 71.4,
+              "f1": 78.6
+            },
+            "who": {
+              "n": 7,
+              "exact": 57.1,
+              "f1": 65.8
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 1,
+              "exact": 100.0,
+              "f1": 100.0
+            },
+            "how many/much": {
+              "n": 9,
+              "exact": 100.0,
+              "f1": 100.0
+            },
+            "what": {
+              "n": 17,
+              "exact": 70.6,
+              "f1": 81.7
+            },
+            "when": {
+              "n": 11,
+              "exact": 100.0,
+              "f1": 100.0
+            },
+            "where": {
+              "n": 4,
+              "exact": 75.0,
+              "f1": 75.0
+            },
+            "which": {
+              "n": 7,
+              "exact": 71.4,
+              "f1": 78.6
+            },
+            "who": {
+              "n": 7,
+              "exact": 71.4,
+              "f1": 76.5
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/eval_gan_adv/results.json",
+          "orig_em": 91.1,
+          "orig_f1": 95.4,
+          "rr_orig_f1": 94.8
+        },
+        "addsent": {
+          "n": 3560,
+          "pairs": 3007,
+          "paired_view": "back-translated paraphrase",
+          "em": 78.8,
+          "f1": 84.2,
+          "agr": 90.2,
+          "agr_f1": 93.0,
+          "rr_em": 78.1,
+          "rr_f1": 83.9,
+          "rr_agr": 91.0,
+          "by_type": {
+            "how": {
+              "n": 102,
+              "exact": 56.9,
+              "f1": 70.0
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 84.4,
+              "f1": 87.6
+            },
+            "other": {
+              "n": 13,
+              "exact": 46.2,
+              "f1": 60.0
+            },
+            "what": {
+              "n": 2108,
+              "exact": 77.9,
+              "f1": 83.7
+            },
+            "when": {
+              "n": 278,
+              "exact": 89.9,
+              "f1": 91.8
+            },
+            "where": {
+              "n": 143,
+              "exact": 85.3,
+              "f1": 88.2
+            },
+            "which": {
+              "n": 230,
+              "exact": 79.6,
+              "f1": 82.0
+            },
+            "who": {
+              "n": 310,
+              "exact": 81.6,
+              "f1": 84.6
+            },
+            "why": {
+              "n": 69,
+              "exact": 44.9,
+              "f1": 76.3
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 102,
+              "exact": 50.0,
+              "f1": 69.8
+            },
+            "how many/much": {
+              "n": 307,
+              "exact": 84.4,
+              "f1": 87.6
+            },
+            "other": {
+              "n": 13,
+              "exact": 38.5,
+              "f1": 52.6
+            },
+            "what": {
+              "n": 2108,
+              "exact": 77.0,
+              "f1": 83.2
+            },
+            "when": {
+              "n": 278,
+              "exact": 89.9,
+              "f1": 91.8
+            },
+            "where": {
+              "n": 143,
+              "exact": 86.0,
+              "f1": 87.9
+            },
+            "which": {
+              "n": 230,
+              "exact": 79.1,
+              "f1": 82.4
+            },
+            "who": {
+              "n": 310,
+              "exact": 82.6,
+              "f1": 84.9
+            },
+            "why": {
+              "n": 69,
+              "exact": 46.4,
+              "f1": 76.3
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/eval_addsent/results.json"
+        },
+        "addonesent": {
+          "n": 1787,
+          "pairs": 1491,
+          "paired_view": "back-translated paraphrase",
+          "em": 82.5,
+          "f1": 87.9,
+          "agr": 89.9,
+          "agr_f1": 92.9,
+          "rr_em": 81.8,
+          "rr_f1": 87.5,
+          "rr_agr": 92.0,
+          "by_type": {
+            "how": {
+              "n": 48,
+              "exact": 58.3,
+              "f1": 72.9
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 86.4,
+              "f1": 89.3
+            },
+            "other": {
+              "n": 9,
+              "exact": 66.7,
+              "f1": 74.6
+            },
+            "what": {
+              "n": 1009,
+              "exact": 81.8,
+              "f1": 87.4
+            },
+            "when": {
+              "n": 151,
+              "exact": 92.7,
+              "f1": 94.2
+            },
+            "where": {
+              "n": 73,
+              "exact": 87.7,
+              "f1": 91.2
+            },
+            "which": {
+              "n": 111,
+              "exact": 82.9,
+              "f1": 86.6
+            },
+            "who": {
+              "n": 198,
+              "exact": 86.4,
+              "f1": 90.2
+            },
+            "why": {
+              "n": 34,
+              "exact": 47.1,
+              "f1": 79.7
+            }
+          },
+          "rr_by_type": {
+            "how": {
+              "n": 48,
+              "exact": 52.1,
+              "f1": 71.8
+            },
+            "how many/much": {
+              "n": 154,
+              "exact": 86.4,
+              "f1": 89.3
+            },
+            "other": {
+              "n": 9,
+              "exact": 55.6,
+              "f1": 67.9
+            },
+            "what": {
+              "n": 1009,
+              "exact": 80.9,
+              "f1": 87.1
+            },
+            "when": {
+              "n": 151,
+              "exact": 92.7,
+              "f1": 94.2
+            },
+            "where": {
+              "n": 73,
+              "exact": 87.7,
+              "f1": 89.5
+            },
+            "which": {
+              "n": 111,
+              "exact": 81.1,
+              "f1": 84.8
+            },
+            "who": {
+              "n": 198,
+              "exact": 86.9,
+              "f1": 89.9
+            },
+            "why": {
+              "n": 34,
+              "exact": 50.0,
+              "f1": 80.1
+            }
+          },
+          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/eval_addonesent/results.json"
+        }
+      }
+    }
+  }
+}

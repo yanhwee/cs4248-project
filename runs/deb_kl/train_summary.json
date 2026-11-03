@@ -1,0 +1,48 @@
+{
+  "run_name": "deb_kl",
+  "model": "microsoft/deberta-v3-base",
+  "loss_mode": "kl",
+  "lambda_kl": 1.0,
+  "best_val_f1": 88.21,
+  "best_val_exact": 75.9,
+  "best_val_agreement_em": 93.583,
+  "best_val_agreement_f1": 95.656,
+  "best_val_pairs": 1683,
+  "selection_note": "best checkpoint within the run by validation F1; choose lambda across runs on validation F1 and agreement",
+  "val_history": [
+    {
+      "step": 5269,
+      "tag": "epoch1",
+      "exact": 73.3,
+      "f1": 86.42,
+      "n": 2000,
+      "pairs": 1683,
+      "agreement_em": 93.999,
+      "agreement_f1": 96.01,
+      "elapsed_sec": 985.9
+    },
+    {
+      "step": 10538,
+      "tag": "epoch2",
+      "exact": 75.9,
+      "f1": 88.21,
+      "n": 2000,
+      "pairs": 1683,
+      "agreement_em": 93.583,
+      "agreement_f1": 95.656,
+      "elapsed_sec": 1962.2
+    }
+  ],
+  "final_full_val": {
+    "exact": 74.9210206561361,
+    "f1": 87.36945461055312,
+    "total": 4115,
+    "pairs": 3447,
+    "agreement_em": 93.24049898462431,
+    "agreement_f1": 95.61290010169739
+  },
+  "train_time_sec": 1980.4,
+  "steps": 10538,
+  "best_checkpoint": "weights/deb_kl/best.pt",
+  "last_checkpoint": "weights/deb_kl/last.pt"
+}

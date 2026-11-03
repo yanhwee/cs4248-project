@@ -1,0 +1,153 @@
+{
+  "eval_set": "dev",
+  "data_file": "provided/dev-v1.1.json",
+  "orig_file": null,
+  "weights": "weights/bert_ot/best.pt",
+  "model": "bert-base-uncased",
+  "loss_mode": "ot",
+  "reranker_path": "weights/bert_ot/reranker.pt",
+  "rerank_margin": null,
+  "top_k": 20,
+  "n_questions": 10570,
+  "paired_view": "back-translated paraphrase",
+  "n_pairs": 8622,
+  "official_scorer": "/home/c/chengke/cs4248-project/provided/evaluate-v2.0.py",
+  "extractor": {
+    "official": {
+      "exact": 80.86092715231788,
+      "f1": 88.21902722024805,
+      "total": 10570,
+      "HasAns_exact": 80.86092715231788,
+      "HasAns_f1": 88.21902722024805,
+      "HasAns_total": 10570
+    },
+    "by_question_type": {
+      "how": {
+        "n": 301,
+        "exact": 60.1328903654485,
+        "f1": 77.86156342213035
+      },
+      "how many/much": {
+        "n": 923,
+        "exact": 85.26543878656555,
+        "f1": 91.27994609289613
+      },
+      "other": {
+        "n": 94,
+        "exact": 56.38297872340426,
+        "f1": 75.18097579911688
+      },
+      "what": {
+        "n": 5812,
+        "exact": 79.31865106675843,
+        "f1": 87.20056160543596
+      },
+      "when": {
+        "n": 924,
+        "exact": 92.96536796536796,
+        "f1": 95.4129608218635
+      },
+      "where": {
+        "n": 511,
+        "exact": 76.51663405088063,
+        "f1": 86.7217424271068
+      },
+      "which": {
+        "n": 646,
+        "exact": 80.6501547987616,
+        "f1": 86.7798352318476
+      },
+      "who": {
+        "n": 1204,
+        "exact": 88.03986710963456,
+        "f1": 91.56053526511128
+      },
+      "why": {
+        "n": 155,
+        "exact": 54.83870967741935,
+        "f1": 78.29468973991459
+      }
+    },
+    "consistency": {
+      "pairs": 8622,
+      "agreement_em": 86.30248202273255,
+      "agreement_f1": 90.92185481907681
+    }
+  },
+  "reranker": {
+    "official": {
+      "exact": 78.37275307473983,
+      "f1": 86.796391156241,
+      "total": 10570,
+      "HasAns_exact": 78.37275307473983,
+      "HasAns_f1": 86.796391156241,
+      "HasAns_total": 10570
+    },
+    "by_question_type": {
+      "how": {
+        "n": 301,
+        "exact": 55.14950166112957,
+        "f1": 74.79385911452508
+      },
+      "how many/much": {
+        "n": 923,
+        "exact": 81.25677139761646,
+        "f1": 89.45698216554116
+      },
+      "other": {
+        "n": 94,
+        "exact": 53.191489361702125,
+        "f1": 69.55575629105039
+      },
+      "what": {
+        "n": 5812,
+        "exact": 77.25395732966277,
+        "f1": 86.09871737956217
+      },
+      "when": {
+        "n": 924,
+        "exact": 89.82683982683983,
+        "f1": 93.88792079427424
+      },
+      "where": {
+        "n": 511,
+        "exact": 73.77690802348337,
+        "f1": 85.12677581170736
+      },
+      "which": {
+        "n": 646,
+        "exact": 79.25696594427245,
+        "f1": 86.17067401123128
+      },
+      "who": {
+        "n": 1204,
+        "exact": 85.79734219269103,
+        "f1": 89.73785873691884
+      },
+      "why": {
+        "n": 155,
+        "exact": 49.03225806451613,
+        "f1": 73.86621486212087
+      }
+    },
+    "consistency": {
+      "pairs": 8622,
+      "agreement_em": 91.26652748782185,
+      "agreement_f1": 95.10800079750639
+    }
+  },
+  "elapsed_sec": 155.0,
+  "extractor_config": {
+    "model": "bert-base-uncased",
+    "loss_mode": "ot",
+    "lambda_kl": 1.0,
+    "lambda_ot": 0.5,
+    "mu_hung": 0.1,
+    "max_seq_len": 384,
+    "doc_stride": 128,
+    "epochs": 2,
+    "lr": 3e-05,
+    "val_frac": 0.05,
+    "split_seed": 42
+  }
+}

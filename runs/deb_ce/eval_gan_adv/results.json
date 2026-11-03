@@ -1,0 +1,149 @@
+{
+  "eval_set": "gan_adv",
+  "data_file": "data/external/gan_ng/adv_para.json",
+  "orig_file": "data/external/gan_ng/adv_orig.json",
+  "weights": "weights/deb_ce/best.pt",
+  "model": "microsoft/deberta-v3-base",
+  "loss_mode": "ce",
+  "reranker_path": "weights/deb_ce/reranker.pt",
+  "rerank_margin": null,
+  "top_k": 20,
+  "n_questions": 56,
+  "paired_view": "original question",
+  "n_pairs": 56,
+  "official_scorer": "/home/c/chengke/cs4248-project/provided/evaluate-v2.0.py",
+  "extractor": {
+    "official": {
+      "exact": 75.0,
+      "f1": 81.87104562104562,
+      "total": 56,
+      "HasAns_exact": 75.0,
+      "HasAns_f1": 81.87104562104562,
+      "HasAns_total": 56
+    },
+    "by_question_type": {
+      "how": {
+        "n": 1,
+        "exact": 100.0,
+        "f1": 100.0
+      },
+      "how many/much": {
+        "n": 9,
+        "exact": 88.88888888888889,
+        "f1": 93.33333333333333
+      },
+      "what": {
+        "n": 17,
+        "exact": 64.70588235294117,
+        "f1": 75.84670231729055
+      },
+      "when": {
+        "n": 11,
+        "exact": 90.9090909090909,
+        "f1": 90.9090909090909
+      },
+      "where": {
+        "n": 4,
+        "exact": 25.0,
+        "f1": 47.5
+      },
+      "which": {
+        "n": 7,
+        "exact": 85.71428571428571,
+        "f1": 92.85714285714286
+      },
+      "who": {
+        "n": 7,
+        "exact": 71.42857142857143,
+        "f1": 73.62637362637362
+      }
+    },
+    "consistency": {
+      "pairs": 56,
+      "agreement_em": 78.57142857142857,
+      "agreement_f1": 83.25091575091574
+    },
+    "paired_view_official_on_orig_file": {
+      "exact": 89.28571428571429,
+      "f1": 93.85822510822508,
+      "total": 56,
+      "HasAns_exact": 89.28571428571429,
+      "HasAns_f1": 93.85822510822508,
+      "HasAns_total": 56
+    }
+  },
+  "reranker": {
+    "official": {
+      "exact": 80.35714285714286,
+      "f1": 85.79961704961704,
+      "total": 56,
+      "HasAns_exact": 80.35714285714286,
+      "HasAns_f1": 85.79961704961704,
+      "HasAns_total": 56
+    },
+    "by_question_type": {
+      "how": {
+        "n": 1,
+        "exact": 100.0,
+        "f1": 100.0
+      },
+      "how many/much": {
+        "n": 9,
+        "exact": 88.88888888888889,
+        "f1": 94.44444444444444
+      },
+      "what": {
+        "n": 17,
+        "exact": 64.70588235294117,
+        "f1": 75.84670231729055
+      },
+      "when": {
+        "n": 11,
+        "exact": 100.0,
+        "f1": 100.0
+      },
+      "where": {
+        "n": 4,
+        "exact": 75.0,
+        "f1": 75.0
+      },
+      "which": {
+        "n": 7,
+        "exact": 85.71428571428571,
+        "f1": 92.85714285714286
+      },
+      "who": {
+        "n": 7,
+        "exact": 71.42857142857143,
+        "f1": 73.62637362637362
+      }
+    },
+    "consistency": {
+      "pairs": 56,
+      "agreement_em": 85.71428571428571,
+      "agreement_f1": 88.69047619047618
+    },
+    "paired_view_official_on_orig_file": {
+      "exact": 85.71428571428571,
+      "f1": 91.751998001998,
+      "total": 56,
+      "HasAns_exact": 85.71428571428571,
+      "HasAns_f1": 91.751998001998,
+      "HasAns_total": 56
+    }
+  },
+  "elapsed_sec": 7.0,
+  "extractor_config": {
+    "model": "microsoft/deberta-v3-base",
+    "loss_mode": "ce",
+    "lambda_kl": 1.0,
+    "lambda_ot": 0.5,
+    "mu_hung": 0.1,
+    "max_seq_len": 384,
+    "doc_stride": 128,
+    "epochs": 2,
+    "lr": 3e-05,
+    "val_frac": 0.05,
+    "split_seed": 42
+  }
+}

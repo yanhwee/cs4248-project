@@ -1,0 +1,24 @@
+[
+  {
+    "step": 5282,
+    "tag": "epoch1",
+    "exact": 66.55,
+    "f1": 80.046,
+    "n": 2000,
+    "pairs": 1683,
+    "agreement_em": 89.483,
+    "agreement_f1": 92.568,
+    "elapsed_sec": 700.8
+  },
+  {
+    "step": 10564,
+    "tag": "epoch2",
+    "exact": 68.45,
+    "f1": 82.052,
+    "n": 2000,
+    "pairs": 1683,
+    "agreement_em": 90.553,
+    "agreement_f1": 92.976,
+    "elapsed_sec": 1102.5
+  }
+]
