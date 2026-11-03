@@ -124,7 +124,13 @@ def main() -> None:
         max_answer_len=cfg.get("max_answer_len", 30), with_pairs=paired, want_vecs=reranker is not None, amp_dtype=amp,
     )
     preds = {q: o.pred for q, o in outputs.items()}
-    preds_p = {q: o.pred_p for q, o in outputs.items() if o.paired}
+    preds_p = {q: o.pred_p for q, o in outputs.items() if o.paired}          # true pairs only (consistency metric)
+
+    def full_paired_view(view_preds: Dict[str, str], base_preds: Dict[str, str]) -> Dict[str, str]:
+        """Paired-view predictions for *every* question, for scoring the original-question file of the Gan & Ng
+        sets: a question whose 'paraphrase' is identical to the original has no separate pair, so its original-view
+        prediction is the base prediction itself."""
+        return {q: view_preds.get(q, base_preds[q]) for q in base_preds}
 
     # ---- official scorer ----------------------------------------------------------------------
     # The scorer needs a prediction for every question in the data file, so it is always given a copy of the data
@@ -153,7 +159,7 @@ def main() -> None:
     if paired:
         ext["consistency"] = consistency_metrics(preds, preds_p)
         if orig_file:
-            ext["paired_view_official_on_orig_file"] = score(preds_p, "_orig", scored_orig, id_map)
+            ext["paired_view_official_on_orig_file"] = score(full_paired_view(preds_p, preds), "_orig", scored_orig, id_map)
     results["extractor"] = ext
     print(f"extractor  | official EM {ext['official']['exact']:.2f} F1 {ext['official']['f1']:.2f} (n={ext['official']['total']})"
           + (f" | consistency EM-agreement {ext['consistency']['agreement_em']:.2f} over {ext['consistency']['pairs']} pairs" if paired else ""))
@@ -165,7 +171,7 @@ def main() -> None:
         if paired:
             rr["consistency"] = consistency_metrics(rp, rpp)
             if orig_file:
-                rr["paired_view_official_on_orig_file"] = score(rpp, "_rerank_orig", scored_orig, id_map)
+                rr["paired_view_official_on_orig_file"] = score(full_paired_view(rpp, rp), "_rerank_orig", scored_orig, id_map)
         results["reranker"] = rr
         print(f"+reranker  | official EM {rr['official']['exact']:.2f} F1 {rr['official']['f1']:.2f}"
               + (f" | consistency EM-agreement {rr['consistency']['agreement_em']:.2f}" if paired else ""))
