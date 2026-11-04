@@ -1,39 +1,37 @@
 # G17 Results Report: Paraphrase-Consistent Extractive QA on SQuAD v1.1
 
-*Generated 2026-11-04 by `scripts/make_results_report.py` from the run artefacts in `runs/`. Every number is read from `runs/<run>/config.json`, `train_summary.json`, `reranker_summary.json` or `eval_<set>/results.json` (which copy the official `evaluate-v2.0.py` output stored in `official_eval*.json`). Metrics are rounded to one decimal first and every difference quoted in the text is the difference of the rounded values. The exact values used are in `docs/results_digest.json`. An independent fact-check on 2026-11-04 recomputed every table cell and prose number from the raw files for the runs present on that date.*
+*Generated 2026-11-04 by `scripts/make_results_report.py` from `runs/`. Every number is read from `config.json`, `train_summary.json`, `reranker_summary.json` or `eval_<set>/results.json` (official `evaluate-v2.0.py` output). Metrics are rounded to one decimal first; every difference in the text is a difference of rounded values. Exact values: `docs/results_digest.json`. Independently fact-checked against the raw files on 2026-11-04.*
 
 ## 1. Summary
 
-- The BERT-base baseline reaches **81.1 EM / 88.5 F1** on the full 10,570-question dev set, matching the published BERT-base result (80.8 / 88.5, Devlin et al. 2019, Table 2), so the training recipe is validated.
-- Consistency training (symmetric KL, λ = 1) raises **paraphrase agreement from 83.3 % to 87.9 %** (+4.6 points over the baseline, +1.4 over augmentation-only) while EM / F1 move by +0.3 / +0.1, i.e. within noise. DeBERTa-v3-base shows the same pattern (+3.8 agreement, -0.2 F1).
-- Against distractor sentences the effect is small: AddSent F1 64.9 → 66.1 (+1.2, of which +1.0 comes from augmentation alone), AddOneSent 73.9 → 74.5 (+0.6); agreement on those sets rises by +6.2 and +4.1 points.
-- The learned span reranker raises agreement further (87.9 → 92.9 % on dev) but costs -0.9 F1 / -1.4 EM on dev; its clearest benefit is on the 56-question adversarial-paraphrase set (63.6 → 75.6 F1), which is too small for firm conclusions.
-- λ was chosen on held-out training articles with the rule "largest λ whose held-out F1 is within 0.5 points of the best": **λ = 1** (bert_kl_lam1.0). The rule gives λ = 1 as well when applied to all 4,115 held-out questions instead of the 2,000-question selection sample, where λ = 1 is nominally the best (by 0.08 points, well within noise).
-- Scaling the backbone to DeBERTa-v3-large gives **90.3 EM / 95.5 F1** (+2.0 / +1.6 over DeBERTa-v3-base). Consistency training again raises agreement (89.4 → 92.7 %, +3.3) at -0.1 F1, and on this backbone the reranker costs only -0.1 F1 on dev while raising F1 on all four robustness sets (one seed; these rerankers use the newer graded targets, Section 8).
+- **The baseline reproduces the literature.** BERT-base: 81.1 EM / 88.5 F1 on the 10,570-question dev set (published 80.8 / 88.5).
+- **Consistency training buys stability, not accuracy.** Paraphrase agreement rises from 83.3 % to 87.9 % (+4.6 points, of which +1.4 beyond augmentation alone) at +0.3 EM / +0.1 F1. The same holds for DeBERTa-v3-base (+3.8) and DeBERTa-v3-large (+3.3).
+- **The backbone is the accuracy lever.** DeBERTa-v3-base 88.3 / 93.9, DeBERTa-v3-large 90.3 / 95.5 EM / F1, against 81.1 / 88.5 for BERT-base; no objective change moves accuracy by more than half a point.
+- **Robustness gains are small and come mostly from the paraphrase data.** AddSent F1 64.9 → 66.1 (+1.2, of which +1.0 from augmentation alone); AddSent agreement +6.2.
+- **The reranker trades accuracy for agreement.** Selected run, dev: -0.9 F1 for +5.0 agreement; its largest gain is on the 56-question adversarial-paraphrase set (63.6 → 75.6 F1), which is too small for firm conclusions. On DeBERTa-v3-large the cost falls to -0.1 F1 and F1 rises on all four robustness sets, but with newer reranker targets (Section 8).
+- **λ = 1**, chosen on held-out training articles as the largest λ with F1 within 0.5 points of the best (same choice on the full held-out set).
 
 ## 2. What was run
 
-All runs share the same recipe: 2 epochs, effective batch 16, learning rate 3e-05, sequence length 384, window stride 128, AdamW with 10 % warm-up, best checkpoint by validation F1; the DeBERTa-v3-large runs keep the effective batch (8 × 2 gradient-accumulation steps) but use learning rate 1e-05, the usual range for large encoders (Section 6). Training uses the 83,484 questions from 95 % of the SQuAD training articles (bert-base-uncased: 84,504–84,507 windows; deberta-v3-base: 84,286–84,289 windows; deberta-v3-large: 84,286–84,289 windows; the count varies slightly with the tokeniser and with whether a paraphrase view is built). The 4,115 questions of the remaining 5 % of articles are held out: during training, validation is run on a seeded random sample of 2,000 of them (`--val_max_examples`), which is what checkpoint selection and the λ rule use; the selected checkpoint is then evaluated once on all 4,115 (`final_full_val`), and the reranker is trained on the same articles. The dev set and the external test sets are used only for the final numbers.
+2 epochs, effective batch 16, learning rate 3e-05, sequence length 384, stride 128, AdamW with 10 % warm-up, best checkpoint by validation F1; the DeBERTa-v3-large runs use batch 8 × 2 accumulation steps and learning rate 1e-05. Training uses the 83,484 questions of 95 % of the training articles; the other 5 % (4,115 questions) are held out for checkpoint selection (on a 2,000-question sample), λ selection and reranker training. Dev and the external sets are used only for the final numbers. Paraphrases are MarianMT back-translations (EN→DE→EN) kept at cosine similarity ≥ 0.85; 8,622 of 10,570 dev questions (81.6 %) have one, and agreement is measured over those pairs.
 
-| Run | Model | Objective | λ | Batch × accum. | LR | Optimiser steps | Training time (min) | Paraphrases attached to training questions |
+| Run | Model | Objective | λ | Batch × accum. | LR | Optimiser steps | Training (min) | Paraphrases attached |
 | :-- | :-- | :-- | --: | --: | --: | --: | --: | --: |
 | BERT ce (baseline) | bert-base-uncased | cross-entropy only (baseline) | – | 16 × 1 | 3e-05 | 10,564 | 15 | not used |
 | BERT aug | bert-base-uncased | paraphrases as extra training data | – | 16 × 1 | 3e-05 | 10,564 | 19 | 68,439 / 83,484 |
 | BERT kl λ=0.5 | bert-base-uncased | paraphrases + symmetric-KL consistency penalty | 0.5 | 16 × 1 | 3e-05 | 10,564 | 22 | 68,439 / 83,484 |
-| BERT kl λ=1 | bert-base-uncased | paraphrases + symmetric-KL consistency penalty | 1.0 | 16 × 1 | 3e-05 | 10,564 | 19 | 68,439 / 83,484 |
-| BERT kl λ=2 | bert-base-uncased | paraphrases + symmetric-KL consistency penalty | 2.0 | 16 × 1 | 3e-05 | 10,564 | 22 | 68,439 / 83,484 |
+| BERT kl λ=1 | bert-base-uncased | paraphrases + symmetric-KL consistency penalty | 1 | 16 × 1 | 3e-05 | 10,564 | 19 | 68,439 / 83,484 |
+| BERT kl λ=2 | bert-base-uncased | paraphrases + symmetric-KL consistency penalty | 2 | 16 × 1 | 3e-05 | 10,564 | 22 | 68,439 / 83,484 |
 | BERT ot | bert-base-uncased | paraphrases + 1-D Wasserstein penalty | – | 16 × 1 | 3e-05 | 10,564 | 19 | 68,439 / 83,484 |
 | BERT dual | bert-base-uncased | paraphrases + Wasserstein + Hungarian span matching | – | 16 × 1 | 3e-05 | 10,564 | 22 | 68,439 / 83,484 |
 | DeBERTa ce (baseline) | deberta-v3-base | cross-entropy only (baseline) | – | 16 × 1 | 3e-05 | 10,536 | 17 | not used |
-| DeBERTa kl λ=1 | deberta-v3-base | paraphrases + symmetric-KL consistency penalty | 1.0 | 16 × 1 | 3e-05 | 10,538 | 33 | 68,439 / 83,484 |
+| DeBERTa kl λ=1 | deberta-v3-base | paraphrases + symmetric-KL consistency penalty | 1 | 16 × 1 | 3e-05 | 10,538 | 33 | 68,439 / 83,484 |
 | DeBERTa-large ce (baseline) | deberta-v3-large | cross-entropy only (baseline) | – | 8 × 2 | 1e-05 | 10,536 | 43 | not used |
-| DeBERTa-large kl λ=1 | deberta-v3-large | paraphrases + symmetric-KL consistency penalty | 1.0 | 8 × 2 | 1e-05 | 10,538 | 108 | 68,439 / 83,484 |
-
-Paraphrases come from MarianMT back-translation (EN→DE→EN) filtered at cosine similarity ≥ 0.85. On the dev set 8,622 of 10,570 questions (81.6 %) received an accepted paraphrase; the agreement metric is computed over those pairs only.
+| DeBERTa-large kl λ=1 | deberta-v3-large | paraphrases + symmetric-KL consistency penalty | 1 | 8 × 2 | 1e-05 | 10,538 | 108 | 68,439 / 83,484 |
 
 ## 3. Main results on the dev set
 
-Official scorer (`evaluate-v2.0.py`), all 10,570 questions. *Agreement* = percentage of (question, paraphrase) pairs that receive the same normalised answer. The `+reranker` columns are the second system version.
+Official scorer, all 10,570 questions. *Agreement* = share of (question, paraphrase) pairs that get the same normalised answer. `+reranker` = the second system version.
 
 | Run | EM | F1 | Agreement | EM +reranker | F1 +reranker | Agreement +reranker |
 | :-- | --: | --: | --: | --: | --: | --: |
@@ -49,15 +47,15 @@ Official scorer (`evaluate-v2.0.py`), all 10,570 questions. *Agreement* = percen
 | DeBERTa-large ce (baseline) | 90.3 | 95.5 | 89.4 | 90.2 | 95.4 | 93.4 |
 | DeBERTa-large kl λ=1 | 90.0 | 95.4 | 92.7 | 90.0 | 95.3 | 95.1 |
 
-**Reading.** Accuracy is flat across the 7 BERT objectives (EM 80.9–81.4, F1 88.2–88.6); the binomial standard error of one EM value over 10,570 questions is about 0.38 points and seed-to-seed variation of BERT fine-tuning is typically a few tenths of a point, so differences below roughly half a point should not be interpreted. Agreement is where the objectives separate: baseline 83.3 %, augmentation 86.5 %, consistency training 87.9 % (λ = 1) and 88.8 % (λ = 2). With 8,622 pairs the standard error of one agreement value is about 0.40 points and that of a difference between two runs about 0.57; the +4.6-point gain over the baseline is about 8 standard errors and clearly real, whereas the +1.4-point gain over augmentation-only is about 2.5 standard errors and, with one training seed per configuration, only suggestive.
+**Reading.** Accuracy is flat across the 7 BERT objectives (EM 80.9–81.4, F1 88.2–88.6; one standard error of an EM value is about 0.4 points, so differences under half a point are noise). Agreement is where they separate: 83.3 % baseline, 86.5 % augmentation, 87.9 % consistency (λ = 1). The +4.6 gain over the baseline is about 8 standard errors of a difference; the +1.4 over augmentation-only is about 2.5 and, with one seed per run, only suggestive.
 
 ## 4. Augmentation versus consistency loss
 
-The `aug` run isolates the effect of the extra paraphrased examples from the effect of the penalty. Extra data alone moves agreement from 83.3 % to 86.5 % (+3.2); the KL penalty adds +1.4 points on top of that at λ = 1 and +2.3 at λ = 2 (both relative to `aug`). Accuracy does not pay for this: `aug` scores 81.0 / 88.2 and `kl` (λ = 1) 81.4 / 88.6 EM / F1. So roughly 70 % of the agreement gain over the baseline comes from the paraphrase data itself and the remainder from the penalty; the penalty's own share is the part that is only suggestive at one seed (Section 3).
+The paraphrased examples alone (`aug`) move agreement 83.3 → 86.5 % (+3.2); the KL penalty adds +1.4 at λ = 1 and +2.3 at λ = 2, at no accuracy cost (EM / F1 81.0 / 88.2 for `aug`, 81.4 / 88.6 at λ = 1, 81.3 / 88.4 at λ = 2). Roughly 70 % of the gain over the baseline is therefore the data and the rest the penalty; the penalty's share is the part that is only suggestive at one seed.
 
 ## 5. Choosing λ on held-out data
 
-The form of the rule (largest λ whose held-out F1 is within a tolerance of the best) and the example tolerance of 0.5 points were written into the README and the report draft before the runs finished; the value 0.5 was not formally pre-registered and is load-bearing (on the selection sample a tolerance below 0.44 would pick λ = 0.5 and one of 0.82 or more would pick λ = 2; on the full held-out set λ = 2 is 0.53 below the best). The rule is applied to unrounded F1 values. The table shows both the selection sample used during training and the full held-out set.
+Rule: the largest λ whose held-out F1 is within 0.5 points of the best, applied to unrounded values. The selection sample is what training used; the full held-out set is a check.
 
 | Model | λ | Sample F1 (n=2,000) | Sample agreement | Full held-out F1 (n=4,115) | Full held-out agreement | Dev F1 | Dev agreement |
 | :-- | --: | --: | --: | --: | --: | --: | --: |
@@ -67,17 +65,24 @@ The form of the rule (largest λ whose held-out F1 is within a tolerance of the 
 | deberta-v3-base | 1 | 88.2 | 93.6 | 87.4 | 93.2 | 93.7 | 91.8 |
 | deberta-v3-large | 1 | 88.8 | 95.4 | 88.2 | 94.6 | 95.4 | 92.7 |
 
-On the selection sample the best F1 is 82.5 (λ = 0.5) and λ = 0.5, 1 fall within 0.5 points, so the rule selects **λ = 1**. On all 4,115 held-out questions the F1 values are 81.9, 82.0, 81.5 for λ = 0.5, 1, 2: λ = 1 is nominally the best (by 0.08 points), λ = 0.5 within tolerance, and λ = 2 is 0.53 below the best, so the rule selects λ = 1 there too; agreement rises with λ on both the sample (89.5, 90.6, 91.0) and the full set (89.8, 90.1, 90.7). The sample differences in F1 (82.5, 82.1, 81.7) are within the sampling error of a 2,000-question sample (at most about 0.8 points for one value under a binomial bound, roughly 1.2 for a difference between two runs), so no accuracy trade-off is demonstrated between these λ values. On dev, λ = 1 also has the best F1 of the three (88.5, 88.6, 88.4).
+Both the sample and the full set select **λ = 1** (sample F1 82.5, 82.1, 81.7 for λ = 0.5, 1, 2; all within the sampling error of a 2,000-question sample, about 1.2 points for a difference). Agreement rises monotonically with λ (89.5, 90.6, 91.0), so the choice rests on the tolerance: a tolerance under about 0.44 would pick λ = 0.5 and one of 0.82 or more λ = 2. On dev, λ = 1 also has the best F1 of the sweep (88.5, 88.6, 88.4; a 0.2-point spread, within noise).
 
 ## 6. Backbone: BERT-base, DeBERTa-v3-base and DeBERTa-v3-large
 
-DeBERTa-v3-base is far stronger as an extractor (88.3 / 93.9 EM / F1 versus 81.1 / 88.5 for BERT-base) and already more self-consistent (88.0 % agreement versus 83.3 %). Consistency training still adds +3.8 agreement points at -0.2 F1 on dev, so the effect is not specific to the weaker backbone. On the full held-out set the picture is the same: F1 87.1 → 87.4, agreement 90.8 → 93.2.
+| Backbone | Objective | Dev EM | Dev F1 | Dev agreement | Full held-out F1 | Full held-out agreement | AddSent F1 | AddSent agreement | Training (min) |
+| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: |
+| bert-base-uncased | ce | 81.1 | 88.5 | 83.3 | 81.6 | 87.3 | 64.9 | 77.9 | 15 |
+| bert-base-uncased | kl λ=1 | 81.4 | 88.6 | 87.9 | 82.0 | 90.1 | 66.1 | 84.1 | 19 |
+| deberta-v3-base | ce | 88.3 | 93.9 | 88.0 | 87.1 | 90.8 | 85.1 | 85.5 | 17 |
+| deberta-v3-base | kl λ=1 | 88.3 | 93.7 | 91.8 | 87.4 | 93.2 | 84.2 | 90.2 | 33 |
+| deberta-v3-large | ce | 90.3 | 95.5 | 89.4 | 88.2 | 90.9 | 86.0 | 84.1 | 43 |
+| deberta-v3-large | kl λ=1 | 90.0 | 95.4 | 92.7 | 88.2 | 94.6 | 87.0 | 90.4 | 108 |
 
-**DeBERTa-v3-large.** The large model (24 layers, hidden size 1,024) was fine-tuned on the same data and windows for the same 2 epochs and effective batch, with a per-step batch of 8 × 2 accumulation steps and learning rate 1e-05 (Section 2). Training took 43 min (`ce`) and 108 min (`kl`) with peak GPU memory 16.4 GB and 25.3 GB; the cluster logs show the `ce` job on a 47 GB H100 MIG slice but the `kl` job on a full H100 NVL shared with another process, so the two times are not comparable with each other or with the base model's 17 and 33 min on MIG slices. As an extractor it reaches **90.3 / 95.5 EM / F1** on dev, +2.0 / +1.6 over DeBERTa-v3-base and +9.2 / +7.0 over BERT-base, with 89.4 % agreement. Consistency training adds +3.3 agreement points (89.4 → 92.7 %) at -0.1 F1 / -0.3 EM, so all three backbones show the same trade; on the full held-out set F1 goes 88.2 → 88.2 and agreement 90.9 → 94.6. Two things differ from DeBERTa-v3-base. First, consistency training raises rather than lowers distractor F1 (AddSent 86.0 → 87.0, AddOneSent 89.3 → 90.2), as it does for BERT-base (Section 7). Second, the reranker raises F1 on all four robustness sets for both runs, which only `bert_kl_lam0.5` of the 9 base-model rerankers also does, by smaller margins, while costing -0.1 / -0.1 F1 on dev (`ce` / `kl`) and adding +4.0 / +2.4 agreement; the near-zero dev cost itself is not new (DeBERTa-v3-base `kl` was at +0.0 F1, for +0.8 agreement; Section 8). The two large-model rerankers were trained with the newer graded targets, so backbone and target effects are confounded there (Section 8), and every number in this paragraph is one seed per configuration.
+Each step up in backbone adds far more accuracy than any objective change (88.5 → 93.9 → 95.5 F1). Consistency training raises agreement on every backbone (+4.6, +3.8, +3.3) at +0.1, -0.2, -0.1 F1, so the effect is not specific to the weak encoder. Distractor robustness is the clearest place the backbones disagree: consistency training raises AddSent F1 for BERT-base (+1.2) and DeBERTa-v3-large (+1.0) but lowers it for DeBERTa-v3-base (-0.9); with one seed per run, F1 moves of about one point are not reliable, whereas the agreement gains are several standard errors (Section 7). The large runs peaked at 16.4 / 25.3 GB of GPU memory; the `kl` job ran on a full, shared H100 rather than a 47 GB MIG slice, so its 108 min is not comparable with the other times. Its reranker behaviour is discussed in Section 8.
 
 ## 7. Robustness: paraphrased and adversarial test sets
 
-F1 from the official scorer. For the Gan & Ng sets, *orig* is the model's F1 on the original questions and *para* on their human-written paraphrases; *agreement* is between the two answers. For AddSent / AddOneSent the agreement is with back-translated paraphrases of the adversarial questions.
+F1 from the official scorer. Gan & Ng: *orig* = original questions, *para* = their human paraphrases, *agreement* = same answer on both. AddSent / AddOneSent: agreement with back-translated paraphrases of the adversarial questions.
 
 | Run | G&N orig F1 | G&N para F1 | G&N agreement | G&N adv orig F1 | G&N adv para F1 | AddSent F1 | AddSent agreement | AddOneSent F1 | AddOneSent agreement |
 | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |
@@ -93,15 +98,15 @@ F1 from the official scorer. For the Gan & Ng sets, *orig* is the model's F1 on 
 | DeBERTa-large ce (baseline) | 94.9 | 93.8 | 92.3 | 97.4 | 85.6 | 86.0 | 84.1 | 89.3 | 85.4 |
 | DeBERTa-large kl λ=1 | 94.9 | 93.8 | 95.0 | 97.4 | 90.3 | 87.0 | 90.4 | 90.2 | 91.2 |
 
-**Distractor sentences (Jia & Liang).** Every model loses heavily when a distractor sentence is appended: the BERT baseline drops from 88.5 F1 on dev to 64.9 on AddSent (−23.6) and 73.9 on AddOneSent (−14.6). All 6 paraphrase-trained BERT runs land in a narrow band on AddSent (65.7–66.1 F1), so the +1.2 of the λ = 1 run over the baseline is mostly the paraphrase data (`aug` alone: +1.0); on AddOneSent `aug` is -0.1 and λ = 1 +0.6. What consistency training does change is stability: agreement on AddSent goes from 77.9 % to 84.1 % (+6.2), i.e. the model is fooled more consistently rather than less often. DeBERTa is much more robust to distractors (85.1 F1 on AddSent for the baseline) and consistency training slightly lowers its AddSent F1 (84.2) while raising agreement (85.5 → 90.2 %). For DeBERTa-v3-large the direction reverses: under consistency training AddSent F1 goes 86.0 → 87.0 (+1.0) and AddOneSent 89.3 → 90.2 (+0.9), with AddSent agreement 84.1 → 90.4 % (+6.3, about 7 standard errors of a difference between two runs over 3,007 pairs). With one seed per run the F1 gains are of the size of ordinary seed-to-seed variation (Section 3) and only suggestive; the agreement gain is not.
+**Distractors (Jia & Liang).** The BERT baseline drops from 88.5 F1 on dev to 64.9 on AddSent and 73.9 on AddOneSent. All 6 paraphrase-trained BERT runs sit within 65.7–66.1 F1 on AddSent, so the +1.2 of λ = 1 is mostly the paraphrase data (`aug` alone +1.0); what changes is stability, AddSent agreement 77.9 → 84.1 % (+6.2), i.e. the model is fooled more consistently rather than less often. DeBERTa-v3-base is far more robust (85.1 F1) and consistency training moves it by -0.9; DeBERTa-v3-large gains +1.0 (86.0 → 87.0) with agreement 84.1 → 90.4 % (+6.3, about 7 standard errors over 3,007 pairs).
 
-**Human paraphrases (Gan & Ng, 1,062 questions, 1,061 pairs).** Paraphrasing costs the baseline 2.8 F1 (88.4 on the original questions → 85.6 on the paraphrases) and the λ = 1 model 1.4 (87.5 → 86.1); note that the narrower gap comes from both directions, +0.5 on the paraphrases but -0.9 on the originals. Agreement between the two answers goes from 89.1 % to 91.0 % (+1.9). On the 56-question adversarial-paraphrase subset the baseline falls to 58.6 F1 and the λ = 1 model to 63.6; with 56 questions each one is worth 1.8 points, so these numbers are indicative only.
+**Human paraphrases (Gan & Ng, 1,062 questions, 1,061 pairs).** Paraphrasing costs the baseline 2.8 F1 (88.4 → 85.6) and the λ = 1 model 1.4 (87.5 → 86.1); the narrower gap comes from both sides (+0.5 on the paraphrases, -0.9 on the originals). Agreement 89.1 → 91.0 % (+1.9). On the 56-question adversarial subset (1.8 points per question) the baseline scores 58.6 and λ = 1 63.6 F1; indicative only.
 
 ## 8. The learned span reranker
 
-Held-out columns come from `reranker_summary.json`: the reranker is trained on 80 % of the held-out articles and early-stopped on the other 20 % (758 questions); the held-out *reranked* value is the best of 20 epochs on that same slice (chosen by F1 for the one-hot rows, by EM then F1 for the graded rows) and is therefore optimistic. The remaining columns are the dev set. Δ = reranked − extractor.
+Held-out columns: the reranker is trained on 80 % of the held-out articles and early-stopped on the other 20 % (758 questions); the reranked value is the best of 20 epochs on that slice (by F1 for one-hot targets, by EM then F1 for graded) and therefore optimistic. Remaining columns: dev and external sets, Δ = reranked − extractor.
 
-| Run | Targets | Held-out top-1 EM / F1 | Held-out reranked EM / F1 (best epoch) | Last-epoch F1 | Oracle EM (correct span among top-20) | Dev Δ EM | Dev Δ F1 | Dev Δ agreement | AddSent Δ F1 | G&N adv Δ F1 |
+| Run | Targets | Held-out top-1 EM / F1 | Held-out reranked EM / F1 (best epoch) | Last-epoch F1 | Oracle EM (correct span in top-20) | Dev Δ EM | Dev Δ F1 | Dev Δ agreement | AddSent Δ F1 | G&N adv Δ F1 |
 | :-- | :-- | :-- | :-- | --: | --: | --: | --: | --: | --: | --: |
 | BERT ce (baseline) | one-hot | 72.2 / 83.6 | 72.7 / 84.0 (ep. 1) | 78.9 | 96.0 | +0.3 | -0.2 | +3.0 | -0.1 | +4.8 |
 | BERT aug | one-hot | 70.7 / 82.7 | 71.1 / 82.6 (ep. 5) | 79.0 | 97.2 | -0.4 | -0.7 | +6.9 | -0.7 | +25.4 |
@@ -115,19 +120,19 @@ Held-out columns come from `reranker_summary.json`: the reranker is trained on 8
 | DeBERTa-large ce (baseline) | graded | 79.0 / 89.9 | 79.4 / 90.0 (ep. 2) | 89.0 | 98.4 | -0.1 | -0.1 | +4.0 | +0.2 | +7.4 |
 | DeBERTa-large kl λ=1 | graded | 78.6 / 89.5 | 79.7 / 89.5 (ep. 5) | 88.1 | 98.9 | +0.0 | -0.1 | +2.4 | +0.6 | +4.5 |
 
-**Reading.** The oracle column shows that the correct span is among the top-20 candidates for 96–99 % of held-out questions, so there is room to gain; the reranker captures almost none of it. The best-epoch held-out EM changes of -0.2 to +1.3 points are measured on 758 questions (binomial standard error 1.5–1.7 points) and the last-epoch F1 is 0.8–5.1 points below the best epoch, i.e. the reranker overfits within a few epochs. The honest estimates are the dev deltas: F1 never rises (it falls in 10 of 11 runs and is unchanged in 1) while agreement rises in 11 of 11; for the selected run the trade is -0.9 F1 for +5.0 agreement. We hypothesise that the paraphrase-score feature drives this (the reranker prefers spans both phrasings score highly, which stabilises answers but sometimes overrides a correct top-1 span); no run without that feature was trained, so this is not established by ablation. Its largest effect is on the adversarial paraphrases of Gan & Ng, where the paired view is the easier original question (orig F1 85.0) and the reranker can lean on it (F1 63.6 → 75.6 for the selected run; small set). Conclusion: the reranker is a consistency device with an accuracy cost on in-distribution data; both system versions are reported.
+**Reading.** The correct span is among the top-20 candidates for 96.0–98.9 % of held-out questions, but the reranker recovers almost none of that: on dev, F1 never rises (it falls in 10 of 11 runs, unchanged in 1) while agreement rises in 11 of 11; for the selected run the trade is -0.9 F1 for +5.0 agreement. The last-epoch F1 is 0.8–5.1 points below the best epoch, so it overfits within a few epochs. We hypothesise that the paraphrase-score feature drives the trade (it favours spans both phrasings score highly); this is not yet ablated. Its clearest benefit is on the adversarial paraphrases, where it can lean on the easier original question (63.6 → 75.6 F1 for the selected run; small set). Both system versions are reported.
 
-**Graded-target rerankers (`deb_large_ce` and `deb_large_kl`).** These rerankers were trained after the training target changed from a one-hot label (the first exact-match candidate, else the best-F1 candidate; best epoch by held-out F1) to graded relevance (exact-match candidates 1, partial-overlap candidates 0.3 × F1, normalised to a distribution; best epoch by held-out EM, then F1), so their rows are not strictly comparable with the other 9. For `deb_large_ce` the dev trade is -0.1 F1 / -0.1 EM for +4.0 agreement, and the reranker changes F1 by +0.2 on AddSent, +0.5 on AddOneSent, +0.4 on the Gan & Ng paraphrases and +7.4 on the adversarial paraphrases. For `deb_large_kl` the dev trade is -0.1 F1 / +0.0 EM for +2.4 agreement, and the reranker changes F1 by +0.6 on AddSent, +0.8 on AddOneSent, +0.5 on the Gan & Ng paraphrases and +4.5 on the adversarial paraphrases. The near-zero dev cost on the large extractor may come from the stronger extractor (its top-1 is right more often, so there is less to override), from the graded targets, or both; separating the two needs the base-model rerankers retrained with graded targets, which the reranker-ablation scripts added on 4 Nov 2026 can do without retraining any extractor.
+**Graded targets.** `deb_large_ce` and `deb_large_kl` were trained after the target changed from one-hot (first exact-match candidate, else best F1) to graded relevance (exact match 1, partial overlap 0.3 × F1), so they are not strictly comparable with the other 9 rows. `deb_large_ce`: -0.1 F1 for +4.0 agreement on dev, F1 up on all four robustness sets. `deb_large_kl`: -0.1 F1 for +2.4 agreement on dev, F1 up on all four robustness sets. Among the base-model rerankers only `bert_kl_lam0.5` also gains on all four, mostly by smaller margins. Whether this comes from the stronger extractor or from the new targets needs the base rerankers retrained with graded targets; the reranker-ablation scripts added on 4 Nov 2026 do that without retraining any extractor.
 
 ## 9. Optimal-transport and span-matching ablation
 
-Replacing the KL penalty by the 1-D Wasserstein penalty (`ot`) or by Wasserstein plus Hungarian span matching (`dual`), with the same paraphrase data, gives dev agreement of 86.3 % and 86.7 % against 87.9 % for KL at λ = 1, with EM / F1 of 80.9 / 88.2 and 81.1 / 88.3. Both are within 0.2 points of the augmentation-only run (-0.2 and +0.2), so at their default weights (λ_OT = 0.5, μ = 0.1, not tuned) these penalties add nothing beyond the paraphrase data, whereas KL adds +1.4. On AddSent they reach 65.8 and 66.0 F1 versus 66.1. KL remains the primary method; these runs are a negative ablation.
+Replacing the KL penalty by the 1-D Wasserstein penalty (`ot`) or by Wasserstein plus Hungarian span matching (`dual`) gives dev agreement 86.3 % and 86.7 % against 87.9 % for KL, at EM / F1 80.9 / 88.2 and 81.1 / 88.3. Both are within 0.2 points of augmentation-only (-0.2, +0.2) whereas KL adds +1.4: at their default, untuned weights (λ_OT = 0.5, μ = 0.1) these penalties add nothing beyond the paraphrase data. KL remains the method; this is a negative ablation.
 
 ## 10. Question-type analysis (dev)
 
-EM / F1 by question type for the baseline and the selected consistency run (extractor only), and F1 with the reranker for the selected run. Types are assigned from the question's wh-word; *how many/much* also covers *how long / old / far / often / tall / big / large*.
+Types from the question's wh-word (*how many/much* also covers *how long / old / far / often / tall / big / large*). Baseline and selected run, extractor only; last column with the reranker.
 
-| Type | n | Baseline EM / F1 | kl λ=1 EM / F1 | Δ F1 | kl λ=1 F1 +reranker |
+| Type | n | Baseline EM / F1 | kl λ = 1 EM / F1 | Δ F1 | kl λ = 1 F1 +reranker |
 | :-- | --: | :-- | :-- | --: | --: |
 | what | 5,812 | 79.5 / 87.5 | 79.8 / 87.6 | +0.1 | 87.1 |
 | who | 1,204 | 88.9 / 92.2 | 88.6 / 91.8 | -0.4 | 90.6 |
@@ -139,16 +144,16 @@ EM / F1 by question type for the baseline and the selected consistency run (extr
 | why | 155 | 53.5 / 77.0 | 54.8 / 78.3 | +1.3 | 76.9 |
 | other | 94 | 55.3 / 75.4 | 57.4 / 74.4 | -1.0 | 74.1 |
 
-The hardest types are *other* (74.4 F1), *how* (77.9 F1), *why* (78.3 F1); the easiest are *when* (95.3), *who* (91.8). Consistency training changes per-type F1 by at most 1.3 points, i.e. it does not redistribute accuracy across question types; its effect is on stability, which this table does not measure. The reranker lowers F1 for 9 of the 9 types, consistent with Section 8.
+Hardest: *other* (74.4), *how* (77.9), *why* (78.3); easiest: *when* (95.3), *who* (91.8). Consistency training changes per-type F1 by at most 1.3 points, so it does not redistribute accuracy across types; the reranker lowers F1 for 9 of 9 types, consistent with Section 8.
 
 ## 11. Caveats
 
-- Single training seed per configuration; no confidence intervals beyond the binomial standard errors quoted above. Dev EM/F1 differences below about half a point, the +1.4-point agreement gain of KL over augmentation alone, and all differences on the 56-question adversarial-paraphrase set should be treated as unconfirmed.
-- Agreement is measured only on questions with an accepted back-translated paraphrase (8,622 of 10,570 on dev); the filter admits some meaning-changing paraphrases, which caps attainable agreement below 100 %.
-- Checkpoint selection and the λ rule used a 2,000-question sample of the held-out articles; the full-set numbers are reported alongside and lead to the same λ.
-- The OT / Hungarian weights were not tuned, so Section 9 compares them at default weights.
-- Validation articles were used for checkpoint selection, λ selection and reranker training; dev and the external sets were never used for any decision.
-- The DeBERTa-v3-large runs use a smaller per-step batch and a lower learning rate than the base runs (Section 2), and their rerankers were trained with the graded targets (Section 8), so the large-versus-base comparison is not a pure backbone comparison.
+- One training seed per configuration. Dev EM/F1 differences under about half a point, the +1.4-point agreement gain of KL over augmentation alone, and everything on the 56-question adversarial-paraphrase set are unconfirmed.
+- Agreement is measured only on questions with an accepted paraphrase (8,622 of 10,570 on dev); the 0.85 filter admits some meaning-changing paraphrases, which caps attainable agreement.
+- The λ rule's tolerance (0.5) was fixed before the runs but not formally pre-registered, and it is load-bearing (Section 5).
+- OT / Hungarian weights were not tuned (Section 9).
+- The DeBERTa-v3-large runs use a smaller per-step batch and lower learning rate (Section 2) and graded reranker targets (Section 8), so large-versus-base is not a pure backbone comparison.
+- Held-out training articles were used for every decision (checkpoint, λ, reranker); dev and the external sets never were.
 
 ## 12. Provenance
 
@@ -156,4 +161,4 @@ The hardest types are *other* (74.4 F1), *how* (77.9 F1), *why* (78.3 F1); the e
 python visualize.py --best bert_kl_lam1.0        # regenerates figures/ and report/tables/ from runs/
 python scripts/make_results_report.py              # regenerates this file and docs/results_digest.json
 ```
-Per-run sources: `runs/<run>/config.json` (hyper-parameters, split sizes, paraphrase attachment), `runs/<run>/train_summary.json` (steps, time, selection-sample and full held-out F1/agreement), `runs/<run>/reranker_summary.json` (including the per-epoch history), `runs/<run>/eval_<set>/results.json` and `official_eval*.json` (official scorer output). Training, reranker fitting and the dev evaluations were produced by the training jobs on 3 Nov 2026; the four external sets were re-evaluated the same evening after a fix to the Gan & Ng original-question scoring (commit 3d62dc6). Hardware (NUS SoC cluster, H100 NVL MIG 3g.47gb slices) and Slurm job ids (training 1068703–1068711, re-evaluation 1069429–1069438) are taken from the cluster logs, which are not part of the repository. The DeBERTa-v3-large runs (training, reranker and all evaluations in one job each) were produced on 4 Nov 2026 as Slurm jobs 1072440 (`ce`) and 1072441 (`kl`); their `train_summary.json` also records the peak GPU memory quoted in Section 6.
+Sources per run: `config.json`, `train_summary.json`, `reranker_summary.json`, `eval_<set>/results.json` and `official_eval*.json`. NUS SoC cluster, H100 NVL; base-model training jobs 1068703–1068711 and re-evaluation jobs 1069429–1069438 (3 Nov 2026, after the Gan & Ng original-question scoring fix in commit 3d62dc6); DeBERTa-v3-large jobs 1072440 (`ce`) and 1072441 (`kl`) on 4 Nov 2026. Cluster logs are not part of the repository.

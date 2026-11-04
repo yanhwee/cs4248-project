@@ -208,61 +208,60 @@ def main() -> int:
     # ---- report -------------------------------------------------------------------------------------------
     L: List[str] = []
     w = L.append
+    sel_lam = f"λ = {kl['lambda_kl']:g}"
     w("# G17 Results Report: Paraphrase-Consistent Extractive QA on SQuAD v1.1")
     w("")
-    w(f"*Generated {digest['generated'][:10]} by `scripts/make_results_report.py` from the run artefacts in `runs/`. Every number is read from "
-      "`runs/<run>/config.json`, `train_summary.json`, `reranker_summary.json` or `eval_<set>/results.json` (which copy the official `evaluate-v2.0.py` output "
-      "stored in `official_eval*.json`). Metrics are rounded to one decimal first and every difference quoted in the text is the difference of the rounded values. "
-      "The exact values used are in `docs/results_digest.json`."
-      + (f" An independent fact-check on {args.verified} recomputed every table cell and prose number from the raw files for the runs present on that date." if args.verified else "") + "*")
+    w(f"*Generated {digest['generated'][:10]} by `scripts/make_results_report.py` from `runs/`. Every number is read from `config.json`, `train_summary.json`, `reranker_summary.json` or `eval_<set>/results.json` (official `evaluate-v2.0.py` output). "
+      "Metrics are rounded to one decimal first; every difference in the text is a difference of rounded values. Exact values: `docs/results_digest.json`."
+      + (f" Independently fact-checked against the raw files on {args.verified}." if args.verified else "") + "*")
     w("")
 
     # 1 ---------------------------------------------------------------------------------------------------------
     w("## 1. Summary")
     w("")
-    w(f"- The BERT-base baseline reaches **{f1(dv(ce,'em'))} EM / {f1(dv(ce,'f1'))} F1** on the full {dev_n:,}-question dev set, matching the published BERT-base result (80.8 / 88.5, Devlin et al. 2019, Table 2), so the training recipe is validated.")
-    line = (f"- Consistency training (symmetric KL, λ = {kl['lambda_kl']:g}) raises **paraphrase agreement from {f1(dv(ce,'agr'))} % to {f1(dv(kl,'agr'))} %** ({sgn(deltas['kl_vs_ce_agr'])} points over the baseline, {sgn(deltas['kl_vs_aug_agr'])} over augmentation-only) "
-            f"while EM / F1 move by {sgn(deltas['kl_vs_ce_em'])} / {sgn(deltas['kl_vs_ce_f1'])}, i.e. within noise.")
+    w(f"- **The baseline reproduces the literature.** BERT-base: {f1(dv(ce,'em'))} EM / {f1(dv(ce,'f1'))} F1 on the {dev_n:,}-question dev set (published 80.8 / 88.5).")
+    line = (f"- **Consistency training buys stability, not accuracy.** Paraphrase agreement rises from {f1(dv(ce,'agr'))} % to {f1(dv(kl,'agr'))} % ({sgn(deltas['kl_vs_ce_agr'])} points, of which {sgn(deltas['kl_vs_aug_agr'])} beyond augmentation alone) "
+            f"at {sgn(deltas['kl_vs_ce_em'])} EM / {sgn(deltas['kl_vs_ce_f1'])} F1.")
+    same = []
     if deltas["deb_kl_vs_ce_agr"] is not None:
-        line += f" DeBERTa-v3-base shows the same pattern ({sgn(deltas['deb_kl_vs_ce_agr'])} agreement, {sgn(deltas['deb_kl_vs_ce_f1'])} F1)."
+        same.append(f"DeBERTa-v3-base ({sgn(deltas['deb_kl_vs_ce_agr'])})")
+    if dl_ce and dl_kl:
+        same.append(f"DeBERTa-v3-large ({sgn(dv(dl_kl,'agr') - dv(dl_ce,'agr'))})")
+    if same:
+        line += " The same holds for " + " and ".join(same) + "."
     w(line)
-    w(f"- Against distractor sentences the effect is small: AddSent F1 {f1(rob['addsent']['ce_f1'])} → {f1(rob['addsent']['kl_f1'])} ({sgn(rob['addsent']['delta_f1'])}, of which {sgn(rob['addsent']['aug_delta_f1'])} comes from augmentation alone), "
-      f"AddOneSent {f1(rob['addonesent']['ce_f1'])} → {f1(rob['addonesent']['kl_f1'])} ({sgn(rob['addonesent']['delta_f1'])}); agreement on those sets rises by {sgn(rob['addsent']['delta_agr'])} and {sgn(rob['addonesent']['delta_agr'])} points.")
-    w(f"- The learned span reranker raises agreement further ({f1(dv(kl,'agr'))} → {f1(dv(kl,'rr_agr'))} % on dev) but costs {sgn(deltas['rr_dev_f1'])} F1 / {sgn(deltas['rr_dev_em'])} EM on dev; its clearest benefit is on the {kl['sets']['gan_adv']['n']}-question adversarial-paraphrase set ({f1(kl['sets']['gan_adv']['f1'])} → {f1(kl['sets']['gan_adv']['rr_f1'])} F1), which is too small for firm conclusions.")
-    w(f"- λ was chosen on held-out training articles with the rule \"largest λ whose held-out F1 is within {args.tolerance:g} points of the best\": **λ = {D[pick_s]['lambda_kl']:g}** ({pick_s}). "
-      f"The rule gives λ = {D[pick_f]['lambda_kl']:g} as well when applied to all {D[pick_s]['full_val_n']:,} held-out questions instead of the {D[pick_s]['val_n']:,}-question selection sample, where λ = {best_f_run['lambda_kl']:g} is nominally the best (by {min(v for k, v in gaps_f.items() if k != best_f_run['lambda_kl']):.2f} points, well within noise).")
-    if dl_ce and dl_kl and deb_ce:
-        w(f"- Scaling the backbone to DeBERTa-v3-large gives **{f1(dv(dl_ce,'em'))} EM / {f1(dv(dl_ce,'f1'))} F1** ({sgn(dv(dl_ce,'em') - dv(deb_ce,'em'))} / {sgn(dv(dl_ce,'f1') - dv(deb_ce,'f1'))} over DeBERTa-v3-base). "
-          f"Consistency training again raises agreement ({f1(dv(dl_ce,'agr'))} → {f1(dv(dl_kl,'agr'))} %, {sgn(dv(dl_kl,'agr') - dv(dl_ce,'agr'))}) at {sgn(dv(dl_kl,'f1') - dv(dl_ce,'f1'))} F1, and on this backbone the reranker costs only {sgn(dv(dl_kl,'rr_f1') - dv(dl_kl,'f1'))} F1 on dev while raising F1 on {of4(rob_up['deb_large_kl'])} robustness sets "
-          "(one seed; these rerankers use the newer graded targets, Section 8).")
+    if deb_ce and dl_ce:
+        w(f"- **The backbone is the accuracy lever.** DeBERTa-v3-base {f1(dv(deb_ce,'em'))} / {f1(dv(deb_ce,'f1'))}, DeBERTa-v3-large {f1(dv(dl_ce,'em'))} / {f1(dv(dl_ce,'f1'))} EM / F1, against {f1(dv(ce,'em'))} / {f1(dv(ce,'f1'))} for BERT-base; no objective change moves accuracy by more than half a point.")
+    w(f"- **Robustness gains are small and come mostly from the paraphrase data.** AddSent F1 {f1(rob['addsent']['ce_f1'])} → {f1(rob['addsent']['kl_f1'])} ({sgn(rob['addsent']['delta_f1'])}, of which {sgn(rob['addsent']['aug_delta_f1'])} from augmentation alone); AddSent agreement {sgn(rob['addsent']['delta_agr'])}.")
+    rr_line = (f"- **The reranker trades accuracy for agreement.** Selected run, dev: {sgn(deltas['rr_dev_f1'])} F1 for {sgn(deltas['rr_dev_agr'])} agreement; its largest gain is on the {kl['sets']['gan_adv']['n']}-question adversarial-paraphrase set ({f1(kl['sets']['gan_adv']['f1'])} → {f1(kl['sets']['gan_adv']['rr_f1'])} F1), which is too small for firm conclusions.")
+    if dl_kl:
+        rr_line += f" On DeBERTa-v3-large the cost falls to {sgn(dv(dl_kl,'rr_f1') - dv(dl_kl,'f1'))} F1 and F1 rises on {of4(rob_up['deb_large_kl'])} robustness sets, but with newer reranker targets (Section 8)."
+    w(rr_line)
+    w(f"- **λ = {D[pick_s]['lambda_kl']:g}**, chosen on held-out training articles as the largest λ with F1 within {args.tolerance:g} points of the best" + (" (same choice on the full held-out set)." if pick_s == pick_f else f" (the full held-out set would give λ = {D[pick_f]['lambda_kl']:g})."))
     w("")
 
     # 2 ---------------------------------------------------------------------------------------------------------
     w("## 2. What was run")
     w("")
-    nf_txt = "; ".join(f"{m.split('/')[-1]}: {v[0]:,}" + (f"–{v[-1]:,}" if len(v) > 1 else "") + " windows" for m, v in nf.items())
-    recipe = (f"All runs share the same recipe: {ce['epochs']} epochs, effective batch {ce['batch_size'] * ce['grad_accum']}, learning rate {ce['lr']:g}, sequence length {ce['max_seq_len']}, window stride {ce['doc_stride']}, AdamW with 10 % warm-up, best checkpoint by validation F1"
-              + (f"; the DeBERTa-v3-large runs keep the effective batch ({dl_ce['batch_size']} × {dl_ce['grad_accum']} gradient-accumulation steps) but use learning rate {dl_ce['lr']:g}, the usual range for large encoders (Section 6). " if dl_ce else ". "))
-    w(recipe
-      + f"Training uses the {ce['n_train_questions']:,} questions from 95 % of the SQuAD training articles ({nf_txt}; the count varies slightly with the tokeniser and with whether a paraphrase view is built). "
-      f"The {ce['n_val_questions']:,} questions of the remaining 5 % of articles are held out: during training, validation is run on a seeded random sample of {ce['val_max_examples']:,} of them (`--val_max_examples`), which is what checkpoint selection and the λ rule use; the selected checkpoint is then evaluated once on all {ce['n_val_questions']:,} (`final_full_val`), and the reranker is trained on the same articles. "
-      "The dev set and the external test sets are used only for the final numbers.")
+    w(f"{ce['epochs']} epochs, effective batch {ce['batch_size'] * ce['grad_accum']}, learning rate {ce['lr']:g}, sequence length {ce['max_seq_len']}, stride {ce['doc_stride']}, AdamW with 10 % warm-up, best checkpoint by validation F1"
+      + (f"; the DeBERTa-v3-large runs use batch {dl_ce['batch_size']} × {dl_ce['grad_accum']} accumulation steps and learning rate {dl_ce['lr']:g}" if dl_ce else "") + ". "
+      f"Training uses the {ce['n_train_questions']:,} questions of 95 % of the training articles; the other 5 % ({ce['n_val_questions']:,} questions) are held out for checkpoint selection (on a {ce['val_max_examples']:,}-question sample), λ selection and reranker training. Dev and the external sets are used only for the final numbers. "
+      f"Paraphrases are MarianMT back-translations (EN→DE→EN) kept at cosine similarity ≥ 0.85; {dev_pairs:,} of {dev_n:,} dev questions ({100*dev_pairs/dev_n:.1f} %) have one, and agreement is measured over those pairs.")
     w("")
-    w("| Run | Model | Objective | λ | Batch × accum. | LR | Optimiser steps | Training time (min) | Paraphrases attached to training questions |")
+    w("| Run | Model | Objective | λ | Batch × accum. | LR | Optimiser steps | Training (min) | Paraphrases attached |")
     w("| :-- | :-- | :-- | --: | --: | --: | --: | --: | --: |")
     for n in order:
         d = D[n]
         ps = d["pair_stats"]
         att = f"{ps['attached']:,} / {ps['total']:,}" if ps else "not used"
-        w(f"| {label[n]} | {d['model'].split('/')[-1]} | {MODE_DESC.get(d['mode'], d['mode'])} | {f1(d['lambda_kl'],1) if d['lambda_kl'] is not None else '–'} | {d['batch_size']} × {d['grad_accum']} | {d['lr']:g} | {d['steps']:,} | {d['train_time_min']:.0f} | {att} |")
-    w("")
-    w(f"Paraphrases come from MarianMT back-translation (EN→DE→EN) filtered at cosine similarity ≥ 0.85. On the dev set {dev_pairs:,} of {dev_n:,} questions ({100*dev_pairs/dev_n:.1f} %) received an accepted paraphrase; the agreement metric is computed over those pairs only.")
+        lam_txt = f"{d['lambda_kl']:g}" if d['lambda_kl'] is not None else "–"
+        w(f"| {label[n]} | {d['model'].split('/')[-1]} | {MODE_DESC.get(d['mode'], d['mode'])} | {lam_txt} | {d['batch_size']} × {d['grad_accum']} | {d['lr']:g} | {d['steps']:,} | {d['train_time_min']:.0f} | {att} |")
     w("")
 
     # 3 ---------------------------------------------------------------------------------------------------------
     w("## 3. Main results on the dev set")
     w("")
-    w(f"Official scorer (`evaluate-v2.0.py`), all {dev_n:,} questions. *Agreement* = percentage of (question, paraphrase) pairs that receive the same normalised answer. The `+reranker` columns are the second system version.")
+    w(f"Official scorer, all {dev_n:,} questions. *Agreement* = share of (question, paraphrase) pairs that get the same normalised answer. `+reranker` = the second system version.")
     w("")
     w("| Run | EM | F1 | Agreement | EM +reranker | F1 +reranker | Agreement +reranker |")
     w("| :-- | --: | --: | --: | --: | --: | --: |")
@@ -273,59 +272,59 @@ def main() -> int:
     w("")
     em_lo, em_hi = min(dv(D[n], "em") for n in bert_names), max(dv(D[n], "em") for n in bert_names)
     f1_lo, f1_hi = min(dv(D[n], "f1") for n in bert_names), max(dv(D[n], "f1") for n in bert_names)
-    w(f"**Reading.** Accuracy is flat across the {len(bert_names)} BERT objectives (EM {em_lo:.1f}–{em_hi:.1f}, F1 {f1_lo:.1f}–{f1_hi:.1f}); the binomial standard error of one EM value over {dev_n:,} questions is about {deltas['se_dev_em']:.2f} points and seed-to-seed variation of BERT fine-tuning is typically a few tenths of a point, so differences below roughly half a point should not be interpreted. "
-      f"Agreement is where the objectives separate: baseline {f1(dv(ce,'agr'))} %, augmentation {f1(dv(aug,'agr'))} %, consistency training {f1(dv(kl,'agr'))} % (λ = 1) and {f1(dv(kl2,'agr')) if kl2 else '--'} % (λ = 2). "
-      f"With {dev_pairs:,} pairs the standard error of one agreement value is about {deltas['se_dev_agr']:.2f} points and that of a difference between two runs about {deltas['se_dev_agr_diff']:.2f}; the {sgn(deltas['kl_vs_ce_agr'])}-point gain over the baseline is about {deltas['kl_vs_ce_agr_in_se']:.0f} standard errors and clearly real, whereas the {sgn(deltas['kl_vs_aug_agr'])}-point gain over augmentation-only is about {deltas['kl_vs_aug_agr_in_se']:.1f} standard errors and, with one training seed per configuration, only suggestive.")
+    w(f"**Reading.** Accuracy is flat across the {len(bert_names)} BERT objectives (EM {em_lo:.1f}–{em_hi:.1f}, F1 {f1_lo:.1f}–{f1_hi:.1f}; one standard error of an EM value is about {deltas['se_dev_em']:.1f} points, so differences under half a point are noise). "
+      f"Agreement is where they separate: {f1(dv(ce,'agr'))} % baseline, {f1(dv(aug,'agr'))} % augmentation, {f1(dv(kl,'agr'))} % consistency ({sel_lam}). "
+      f"The {sgn(deltas['kl_vs_ce_agr'])} gain over the baseline is about {deltas['kl_vs_ce_agr_in_se']:.0f} standard errors of a difference; the {sgn(deltas['kl_vs_aug_agr'])} over augmentation-only is about {deltas['kl_vs_aug_agr_in_se']:.1f} and, with one seed per run, only suggestive.")
     w("")
 
     # 4 ---------------------------------------------------------------------------------------------------------
     w("## 4. Augmentation versus consistency loss")
     w("")
-    w(f"The `aug` run isolates the effect of the extra paraphrased examples from the effect of the penalty. Extra data alone moves agreement from {f1(dv(ce,'agr'))} % to {f1(dv(aug,'agr'))} % ({sgn(deltas['aug_vs_ce_agr'])}); the KL penalty adds {sgn(deltas['kl_vs_aug_agr'])} points on top of that at λ = 1 and {sgn(deltas['kl2_vs_aug_agr'])} at λ = 2 (both relative to `aug`). "
-      f"Accuracy does not pay for this: `aug` scores {f1(dv(aug,'em'))} / {f1(dv(aug,'f1'))} and `kl` (λ = 1) {f1(dv(kl,'em'))} / {f1(dv(kl,'f1'))} EM / F1. "
-      f"So roughly {100 * deltas['aug_vs_ce_agr'] / deltas['kl_vs_ce_agr']:.0f} % of the agreement gain over the baseline comes from the paraphrase data itself and the remainder from the penalty; the penalty's own share is the part that is only suggestive at one seed (Section 3).")
+    w(f"The paraphrased examples alone (`aug`) move agreement {f1(dv(ce,'agr'))} → {f1(dv(aug,'agr'))} % ({sgn(deltas['aug_vs_ce_agr'])}); the KL penalty adds {sgn(deltas['kl_vs_aug_agr'])} at λ = 1 and {sgn(deltas['kl2_vs_aug_agr'])} at λ = 2, at no accuracy cost (EM / F1 {f1(dv(aug,'em'))} / {f1(dv(aug,'f1'))} for `aug`, {f1(dv(kl,'em'))} / {f1(dv(kl,'f1'))} at λ = 1" + (f", {f1(dv(kl2,'em'))} / {f1(dv(kl2,'f1'))} at λ = 2" if kl2 else "") + "). "
+      f"Roughly {100 * deltas['aug_vs_ce_agr'] / deltas['kl_vs_ce_agr']:.0f} % of the gain over the baseline is therefore the data and the rest the penalty; the penalty's share is the part that is only suggestive at one seed.")
     w("")
 
     # 5 ---------------------------------------------------------------------------------------------------------
     w("## 5. Choosing λ on held-out data")
     w("")
-    w(f"The form of the rule (largest λ whose held-out F1 is within a tolerance of the best) and the example tolerance of {args.tolerance:g} points were written into the README and the report draft before the runs finished; the value {args.tolerance:g} was not formally pre-registered and is load-bearing (on the selection sample a tolerance below {gaps_s[1.0]:.2f} would pick λ = 0.5 and one of {gaps_s[2.0]:.2f} or more would pick λ = 2; on the full held-out set λ = 2 is {gaps_f[2.0]:.2f} below the best). "
-      "The rule is applied to unrounded F1 values. The table shows both the selection sample used during training and the full held-out set.")
+    w(f"Rule: the largest λ whose held-out F1 is within {args.tolerance:g} points of the best, applied to unrounded values. The selection sample is what training used; the full held-out set is a check.")
     w("")
     w(f"| Model | λ | Sample F1 (n={sweep[0]['val_n']:,}) | Sample agreement | Full held-out F1 (n={sweep[0]['full_val_n']:,}) | Full held-out agreement | Dev F1 | Dev agreement |")
     w("| :-- | --: | --: | --: | --: | --: | --: | --: |")
     for d in sorted([d for d in D.values() if d["mode"] == "kl"], key=lambda d: (d["model"], d["lambda_kl"])):
         w(f"| {d['model'].split('/')[-1]} | {d['lambda_kl']:g} | {f1(d['val_f1'])} | {f1(d['val_agreement'])} | {f1(d['full_val_f1'])} | {f1(d['full_val_agreement'])} | {f1(d['sets']['dev']['f1'])} | {f1(d['sets']['dev']['agr'])} |")
     w("")
-    w(f"On the selection sample the best F1 is {f1(best_s)} (λ = {max(sweep, key=lambda d: d['val_f1_raw'])['lambda_kl']:g}) and λ = " + ", ".join(f"{d['lambda_kl']:g}" for d in elig_s) + f" fall within {args.tolerance:g} points, so the rule selects **λ = {D[pick_s]['lambda_kl']:g}**. "
-      f"On all {sweep[0]['full_val_n']:,} held-out questions the F1 values are {', '.join(f1(d['full_val_f1']) for d in sweep)} for λ = {lam_list}: λ = {best_f_run['lambda_kl']:g} is nominally the best (by {min(v for k, v in gaps_f.items() if k != best_f_run['lambda_kl']):.2f} points), λ = " + ", ".join(f"{d['lambda_kl']:g}" for d in elig_f if d is not best_f_run) + f" within tolerance, and λ = 2 is {gaps_f[2.0]:.2f} below the best, so the rule selects λ = {D[pick_f]['lambda_kl']:g} there too; "
-      f"agreement rises with λ on both the sample ({', '.join(f1(d['val_agreement']) for d in sweep)}) and the full set ({', '.join(f1(d['full_val_agreement']) for d in sweep)}). "
-      f"The sample differences in F1 ({', '.join(f1(d['val_f1']) for d in sweep)}) are within the sampling error of a {sweep[0]['val_n']:,}-question sample (at most about {se_pct(best_s, sweep[0]['val_n']):.1f} points for one value under a binomial bound, roughly {math.sqrt(2) * se_pct(best_s, sweep[0]['val_n']):.1f} for a difference between two runs), so no accuracy trade-off is demonstrated between these λ values. "
-      f"On dev, λ = 1 also has the best F1 of the three ({', '.join(f1(d['sets']['dev']['f1']) for d in sweep)}).")
+    pick_txt = (f"Both the sample and the full set select **λ = {D[pick_s]['lambda_kl']:g}**" if pick_s == pick_f
+                else f"The sample selects **λ = {D[pick_s]['lambda_kl']:g}**, the full set λ = {D[pick_f]['lambda_kl']:g}")
+    w(f"{pick_txt} (sample F1 {', '.join(f1(d['val_f1']) for d in sweep)} for λ = {lam_list}; all within the sampling error of a {sweep[0]['val_n']:,}-question sample, about {math.sqrt(2) * se_pct(best_s, sweep[0]['val_n']):.1f} points for a difference). "
+      f"Agreement rises monotonically with λ ({', '.join(f1(d['val_agreement']) for d in sweep)}), so the choice rests on the tolerance: a tolerance under about {gaps_s[1.0]:.2f} would pick λ = 0.5 and one of {gaps_s[2.0]:.2f} or more λ = 2. On dev, {sel_lam} also has the best F1 of the sweep ({', '.join(f1(d['sets']['dev']['f1']) for d in sweep)}; a {max(d['sets']['dev']['f1'] for d in sweep) - min(d['sets']['dev']['f1'] for d in sweep):.1f}-point spread, within noise).")
     w("")
 
     # 6 ---------------------------------------------------------------------------------------------------------
     w("## 6. Backbone: BERT-base, DeBERTa-v3-base and DeBERTa-v3-large")
     w("")
+    bb_runs = [n for n in ("bert_ce", args.selected, "deb_ce", "deb_kl", "deb_large_ce", "deb_large_kl") if n in D]
+    w("| Backbone | Objective | Dev EM | Dev F1 | Dev agreement | Full held-out F1 | Full held-out agreement | AddSent F1 | AddSent agreement | Training (min) |")
+    w("| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: |")
+    for n in bb_runs:
+        d = D[n]
+        a1 = d["sets"].get("addsent") or {}
+        obj = "ce" if d["mode"] == "ce" else f"kl λ={d['lambda_kl']:g}"
+        w(f"| {d['model'].split('/')[-1]} | {obj} | {f1(dv(d,'em'))} | {f1(dv(d,'f1'))} | {f1(dv(d,'agr'))} | {f1(d['full_val_f1'])} | {f1(d['full_val_agreement'])} | {f1(a1.get('f1'))} | {f1(a1.get('agr'))} | {d['train_time_min']:.0f} |")
+    w("")
     if deb_ce and deb_kl:
-        w(f"DeBERTa-v3-base is far stronger as an extractor ({f1(dv(deb_ce,'em'))} / {f1(dv(deb_ce,'f1'))} EM / F1 versus {f1(dv(ce,'em'))} / {f1(dv(ce,'f1'))} for BERT-base) and already more self-consistent ({f1(dv(deb_ce,'agr'))} % agreement versus {f1(dv(ce,'agr'))} %). "
-          f"Consistency training still adds {sgn(deltas['deb_kl_vs_ce_agr'])} agreement points at {sgn(deltas['deb_kl_vs_ce_f1'])} F1 on dev, so the effect is not specific to the weaker backbone. "
-          f"On the full held-out set the picture is the same: F1 {f1(deb_ce['full_val_f1'])} → {f1(deb_kl['full_val_f1'])}, agreement {f1(deb_ce['full_val_agreement'])} → {f1(deb_kl['full_val_agreement'])}.")
-    if dl_ce and dl_kl and deb_ce:
-        w("")
-        w(f"**DeBERTa-v3-large.** The large model (24 layers, hidden size 1,024) was fine-tuned on the same data and windows for the same {dl_ce['epochs']} epochs and effective batch, with a per-step batch of {dl_ce['batch_size']} × {dl_ce['grad_accum']} accumulation steps and learning rate {dl_ce['lr']:g} (Section 2). "
-          f"Training took {dl_ce['train_time_min']:.0f} min (`ce`) and {dl_kl['train_time_min']:.0f} min (`kl`) with peak GPU memory {f1(dl_ce['peak_gpu_mem_gb'])} GB and {f1(dl_kl['peak_gpu_mem_gb'])} GB; the cluster logs show the `ce` job on a 47 GB H100 MIG slice but the `kl` job on a full H100 NVL shared with another process, so the two times are not comparable with each other or with the base model's {deb_ce['train_time_min']:.0f} and {deb_kl['train_time_min']:.0f} min on MIG slices. "
-          f"As an extractor it reaches **{f1(dv(dl_ce,'em'))} / {f1(dv(dl_ce,'f1'))} EM / F1** on dev, {sgn(dv(dl_ce,'em') - dv(deb_ce,'em'))} / {sgn(dv(dl_ce,'f1') - dv(deb_ce,'f1'))} over DeBERTa-v3-base and {sgn(dv(dl_ce,'em') - dv(ce,'em'))} / {sgn(dv(dl_ce,'f1') - dv(ce,'f1'))} over BERT-base, with {f1(dv(dl_ce,'agr'))} % agreement. "
-          f"Consistency training adds {sgn(dv(dl_kl,'agr') - dv(dl_ce,'agr'))} agreement points ({f1(dv(dl_ce,'agr'))} → {f1(dv(dl_kl,'agr'))} %) at {sgn(dv(dl_kl,'f1') - dv(dl_ce,'f1'))} F1 / {sgn(dv(dl_kl,'em') - dv(dl_ce,'em'))} EM, so all three backbones show the same trade; on the full held-out set F1 goes {f1(dl_ce['full_val_f1'])} → {f1(dl_kl['full_val_f1'])} and agreement {f1(dl_ce['full_val_agreement'])} → {f1(dl_kl['full_val_agreement'])}. "
-          f"Two things differ from DeBERTa-v3-base. First, consistency training raises rather than lowers distractor F1 (AddSent {f1(dl_ce['sets']['addsent']['f1'])} → {f1(dl_kl['sets']['addsent']['f1'])}, AddOneSent {f1(dl_ce['sets']['addonesent']['f1'])} → {f1(dl_kl['sets']['addonesent']['f1'])}), as it does for BERT-base (Section 7). "
-          f"Second, the reranker raises F1 on {'all four robustness sets for both runs' if rob_up['deb_large_ce'] == rob_up['deb_large_kl'] == 4 else of4(rob_up['deb_large_ce']) + ' robustness sets for ce and ' + of4(rob_up['deb_large_kl']) + ' for kl'}, which {('none of the ' + str(n_base_rr) + ' base-model rerankers does') if not base_all4 else ('only ' + ' and '.join('`' + n + '`' for n in base_all4) + ' of the ' + str(n_base_rr) + ' base-model rerankers also ' + ('does' if len(base_all4) == 1 else 'do') + ', by smaller margins')}, while costing {sgn(dv(dl_ce,'rr_f1') - dv(dl_ce,'f1'))} / {sgn(dv(dl_kl,'rr_f1') - dv(dl_kl,'f1'))} F1 on dev (`ce` / `kl`) and adding {sgn(dv(dl_ce,'rr_agr') - dv(dl_ce,'agr'))} / {sgn(dv(dl_kl,'rr_agr') - dv(dl_kl,'agr'))} agreement; the near-zero dev cost itself is not new (DeBERTa-v3-base `kl` was at {sgn(dv(deb_kl,'rr_f1') - dv(deb_kl,'f1'))} F1, for {sgn(dv(deb_kl,'rr_agr') - dv(deb_kl,'agr'))} agreement; Section 8). "
-          "The two large-model rerankers were trained with the newer graded targets, so backbone and target effects are confounded there (Section 8), and every number in this paragraph is one seed per configuration.")
+        txt = (f"Each step up in backbone adds far more accuracy than any objective change ({f1(dv(ce,'f1'))} → {f1(dv(deb_ce,'f1'))}" + (f" → {f1(dv(dl_ce,'f1'))}" if dl_ce else "") + " F1). "
+               f"Consistency training raises agreement on every backbone ({sgn(deltas['kl_vs_ce_agr'])}, {sgn(deltas['deb_kl_vs_ce_agr'])}" + (f", {sgn(dv(dl_kl,'agr') - dv(dl_ce,'agr'))}" if dl_ce and dl_kl else "") + f") at {sgn(deltas['kl_vs_ce_f1'])}, {sgn(deltas['deb_kl_vs_ce_f1'])}" + (f", {sgn(dv(dl_kl,'f1') - dv(dl_ce,'f1'))}" if dl_ce and dl_kl else "") + " F1, so the effect is not specific to the weak encoder. ")
+        txt += (f"Distractor robustness is the clearest place the backbones disagree: consistency training raises AddSent F1 for BERT-base ({sgn(rob['addsent']['delta_f1'])})" + (f" and DeBERTa-v3-large ({sgn(dl_kl['sets']['addsent']['f1'] - dl_ce['sets']['addsent']['f1'])})" if dl_ce and dl_kl else "") + f" but lowers it for DeBERTa-v3-base ({sgn(deb_kl['sets']['addsent']['f1'] - deb_ce['sets']['addsent']['f1'])}); with one seed per run, F1 moves of about one point are not reliable, whereas the agreement gains are several standard errors (Section 7). ")
+        if dl_ce and dl_kl:
+            txt += (f"The large runs peaked at {f1(dl_ce['peak_gpu_mem_gb'])} / {f1(dl_kl['peak_gpu_mem_gb'])} GB of GPU memory; the `kl` job ran on a full, shared H100 rather than a 47 GB MIG slice, so its {dl_kl['train_time_min']:.0f} min is not comparable with the other times. Its reranker behaviour is discussed in Section 8.")
+        w(txt)
     w("")
 
     # 7 ---------------------------------------------------------------------------------------------------------
     w("## 7. Robustness: paraphrased and adversarial test sets")
     w("")
-    w("F1 from the official scorer. For the Gan & Ng sets, *orig* is the model's F1 on the original questions and *para* on their human-written paraphrases; *agreement* is between the two answers. For AddSent / AddOneSent the agreement is with back-translated paraphrases of the adversarial questions.")
+    w("F1 from the official scorer. Gan & Ng: *orig* = original questions, *para* = their human paraphrases, *agreement* = same answer on both. AddSent / AddOneSent: agreement with back-translated paraphrases of the adversarial questions.")
     w("")
     w("| Run | G&N orig F1 | G&N para F1 | G&N agreement | G&N adv orig F1 | G&N adv para F1 | AddSent F1 | AddSent agreement | AddOneSent F1 | AddOneSent agreement |")
     w("| :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |")
@@ -335,25 +334,29 @@ def main() -> int:
         w(f"| {label[n]} | {f1(g and g.get('orig_f1'))} | {f1(g and g['f1'])} | {f1(g and g['agr'])} | {f1(ga and ga.get('orig_f1'))} | {f1(ga and ga['f1'])} | {f1(a1 and a1['f1'])} | {f1(a1 and a1['agr'])} | {f1(a2 and a2['f1'])} | {f1(a2 and a2['agr'])} |")
     w("")
     para_bert = [v for v, n in addsent_bert if n != "bert_ce"]
-    w(f"**Distractor sentences (Jia & Liang).** Every model loses heavily when a distractor sentence is appended: the BERT baseline drops from {f1(dv(ce,'f1'))} F1 on dev to {f1(rob['addsent']['ce_f1'])} on AddSent (−{rob['addsent']['drop_from_dev_ce']:.1f}) and {f1(rob['addonesent']['ce_f1'])} on AddOneSent (−{rob['addonesent']['drop_from_dev_ce']:.1f}). "
-      f"All {len(para_bert)} paraphrase-trained BERT runs land in a narrow band on AddSent ({min(para_bert):.1f}–{max(para_bert):.1f} F1), so the {sgn(rob['addsent']['delta_f1'])} of the λ = 1 run over the baseline is mostly the paraphrase data (`aug` alone: {sgn(rob['addsent']['aug_delta_f1'])}); on AddOneSent `aug` is {sgn(rob['addonesent']['aug_delta_f1'])} and λ = 1 {sgn(rob['addonesent']['delta_f1'])}. "
-      f"What consistency training does change is stability: agreement on AddSent goes from {f1(rob['addsent']['ce_agr'])} % to {f1(rob['addsent']['kl_agr'])} % ({sgn(rob['addsent']['delta_agr'])}), i.e. the model is fooled more consistently rather than less often. "
-      + (f"DeBERTa is much more robust to distractors ({f1(deb_ce['sets']['addsent']['f1'])} F1 on AddSent for the baseline) and consistency training slightly lowers its AddSent F1 ({f1(deb_kl['sets']['addsent']['f1'])}) while raising agreement ({f1(deb_ce['sets']['addsent']['agr'])} → {f1(deb_kl['sets']['addsent']['agr'])} %)." if (deb_ce and deb_kl) else "")
-      + (f" For DeBERTa-v3-large the direction reverses: under consistency training AddSent F1 goes {f1(dl_ce['sets']['addsent']['f1'])} → {f1(dl_kl['sets']['addsent']['f1'])} ({sgn(dl_kl['sets']['addsent']['f1'] - dl_ce['sets']['addsent']['f1'])}) and AddOneSent {f1(dl_ce['sets']['addonesent']['f1'])} → {f1(dl_kl['sets']['addonesent']['f1'])} ({sgn(dl_kl['sets']['addonesent']['f1'] - dl_ce['sets']['addonesent']['f1'])}), with AddSent agreement {f1(dl_ce['sets']['addsent']['agr'])} → {f1(dl_kl['sets']['addsent']['agr'])} % ({sgn(dl_kl['sets']['addsent']['agr'] - dl_ce['sets']['addsent']['agr'])}, about {(dl_kl['sets']['addsent']['agr'] - dl_ce['sets']['addsent']['agr']) / (math.sqrt(2) * se_pct(dl_ce['sets']['addsent']['agr'], dl_ce['sets']['addsent']['pairs'])):.0f} standard errors of a difference between two runs over {dl_ce['sets']['addsent']['pairs']:,} pairs). With one seed per run the F1 gains are of the size of ordinary seed-to-seed variation (Section 3) and only suggestive; the agreement gain is not." if (dl_ce and dl_kl) else ""))
+    txt = (f"**Distractors (Jia & Liang).** The BERT baseline drops from {f1(dv(ce,'f1'))} F1 on dev to {f1(rob['addsent']['ce_f1'])} on AddSent and {f1(rob['addonesent']['ce_f1'])} on AddOneSent. "
+           f"All {len(para_bert)} paraphrase-trained BERT runs sit within {min(para_bert):.1f}–{max(para_bert):.1f} F1 on AddSent, so the {sgn(rob['addsent']['delta_f1'])} of {sel_lam} is mostly the paraphrase data (`aug` alone {sgn(rob['addsent']['aug_delta_f1'])}); what changes is stability, AddSent agreement {f1(rob['addsent']['ce_agr'])} → {f1(rob['addsent']['kl_agr'])} % ({sgn(rob['addsent']['delta_agr'])}), i.e. the model is fooled more consistently rather than less often. ")
+    if deb_ce and deb_kl:
+        txt += f"DeBERTa-v3-base is far more robust ({f1(deb_ce['sets']['addsent']['f1'])} F1) and consistency training moves it by {sgn(deb_kl['sets']['addsent']['f1'] - deb_ce['sets']['addsent']['f1'])}"
+        if dl_ce and dl_kl:
+            a_ce, a_kl = dl_ce["sets"]["addsent"], dl_kl["sets"]["addsent"]
+            se_a = math.sqrt(2) * se_pct(a_ce["agr"], a_ce["pairs"])
+            txt += f"; DeBERTa-v3-large gains {sgn(a_kl['f1'] - a_ce['f1'])} ({f1(a_ce['f1'])} → {f1(a_kl['f1'])}) with agreement {f1(a_ce['agr'])} → {f1(a_kl['agr'])} % ({sgn(a_kl['agr'] - a_ce['agr'])}, about {(a_kl['agr'] - a_ce['agr']) / se_a:.0f} standard errors over {a_ce['pairs']:,} pairs)"
+        txt += "."
+    w(txt)
     w("")
     g_ce, g_kl = ce["sets"]["gan_dev"], kl["sets"]["gan_dev"]
-    w(f"**Human paraphrases (Gan & Ng, {g_ce['n']:,} questions, {g_ce['pairs']:,} pairs).** Paraphrasing costs the baseline {g_ce['orig_f1'] - g_ce['f1']:.1f} F1 ({f1(g_ce['orig_f1'])} on the original questions → {f1(g_ce['f1'])} on the paraphrases) and the λ = 1 model {g_kl['orig_f1'] - g_kl['f1']:.1f} ({f1(g_kl['orig_f1'])} → {f1(g_kl['f1'])}); "
-      f"note that the narrower gap comes from both directions, {sgn(g_kl['f1'] - g_ce['f1'])} on the paraphrases but {sgn(g_kl['orig_f1'] - g_ce['orig_f1'])} on the originals. Agreement between the two answers goes from {f1(g_ce['agr'])} % to {f1(g_kl['agr'])} % ({sgn(rob['gan_dev']['delta_agr'])}). "
-      f"On the {ce['sets']['gan_adv']['n']}-question adversarial-paraphrase subset the baseline falls to {f1(ce['sets']['gan_adv']['f1'])} F1 and the λ = 1 model to {f1(kl['sets']['gan_adv']['f1'])}; with {ce['sets']['gan_adv']['n']} questions each one is worth {100/ce['sets']['gan_adv']['n']:.1f} points, so these numbers are indicative only.")
+    w(f"**Human paraphrases (Gan & Ng, {g_ce['n']:,} questions, {g_ce['pairs']:,} pairs).** Paraphrasing costs the baseline {g_ce['orig_f1'] - g_ce['f1']:.1f} F1 ({f1(g_ce['orig_f1'])} → {f1(g_ce['f1'])}) and the {sel_lam} model {g_kl['orig_f1'] - g_kl['f1']:.1f} ({f1(g_kl['orig_f1'])} → {f1(g_kl['f1'])}); the narrower gap comes from both sides ({sgn(g_kl['f1'] - g_ce['f1'])} on the paraphrases, {sgn(g_kl['orig_f1'] - g_ce['orig_f1'])} on the originals). Agreement {f1(g_ce['agr'])} → {f1(g_kl['agr'])} % ({sgn(rob['gan_dev']['delta_agr'])}). "
+      f"On the {ce['sets']['gan_adv']['n']}-question adversarial subset ({100/ce['sets']['gan_adv']['n']:.1f} points per question) the baseline scores {f1(ce['sets']['gan_adv']['f1'])} and {sel_lam} {f1(kl['sets']['gan_adv']['f1'])} F1; indicative only.")
     w("")
 
     # 8 ---------------------------------------------------------------------------------------------------------
     w("## 8. The learned span reranker")
     w("")
     rr0 = kl["reranker"]
-    w(f"Held-out columns come from `reranker_summary.json`: the reranker is trained on 80 % of the held-out articles and early-stopped on the other 20 % ({rr0['dev_items']:,} questions); the held-out *reranked* value is the best of {rr0['n_epochs']} epochs on that same slice (chosen by F1 for the one-hot rows, by EM then F1 for the graded rows) and is therefore optimistic. The remaining columns are the dev set. Δ = reranked − extractor.")
+    w(f"Held-out columns: the reranker is trained on 80 % of the held-out articles and early-stopped on the other 20 % ({rr0['dev_items']:,} questions); the reranked value is the best of {rr0['n_epochs']} epochs on that slice (by F1 for one-hot targets, by EM then F1 for graded) and therefore optimistic. Remaining columns: dev and external sets, Δ = reranked − extractor.")
     w("")
-    w("| Run | Targets | Held-out top-1 EM / F1 | Held-out reranked EM / F1 (best epoch) | Last-epoch F1 | Oracle EM (correct span among top-20) | Dev Δ EM | Dev Δ F1 | Dev Δ agreement | AddSent Δ F1 | G&N adv Δ F1 |")
+    w("| Run | Targets | Held-out top-1 EM / F1 | Held-out reranked EM / F1 (best epoch) | Last-epoch F1 | Oracle EM (correct span in top-20) | Dev Δ EM | Dev Δ F1 | Dev Δ agreement | AddSent Δ F1 | G&N adv Δ F1 |")
     w("| :-- | :-- | :-- | :-- | --: | --: | --: | --: | --: | --: | --: |")
     for n, d in rr_rows:
         rr = d["reranker"]
@@ -363,38 +366,35 @@ def main() -> int:
     n_f1_down = sum(1 for _, d in rr_rows if dv(d, "rr_f1") < dv(d, "f1"))
     n_f1_flat = sum(1 for _, d in rr_rows if dv(d, "rr_f1") == dv(d, "f1"))
     n_agr_up = sum(1 for _, d in rr_rows if dv(d, "rr_agr") > dv(d, "agr"))
-    ho_em = [d["reranker"]["reranked"]["exact"] - d["reranker"]["top1"]["exact"] for _, d in rr_rows]
-    w(f"**Reading.** The oracle column shows that the correct span is among the top-20 candidates for {min(d['reranker']['top1']['oracle_exact'] for _, d in rr_rows):.0f}–{max(d['reranker']['top1']['oracle_exact'] for _, d in rr_rows):.0f} % of held-out questions, so there is room to gain; the reranker captures almost none of it. "
-      f"The best-epoch held-out EM changes of {min(ho_em):+.1f} to {max(ho_em):+.1f} points are measured on {rr0['dev_items']:,} questions (binomial standard error {min(se_pct(d['reranker']['top1']['exact'], d['reranker']['dev_items']) for _, d in rr_rows):.1f}–{max(se_pct(d['reranker']['top1']['exact'], d['reranker']['dev_items']) for _, d in rr_rows):.1f} points) and the last-epoch F1 is {min(rr_overfit.values()):.1f}–{max(rr_overfit.values()):.1f} points below the best epoch, i.e. the reranker overfits within a few epochs. "
-      f"The honest estimates are the dev deltas: F1 never rises (it falls in {n_f1_down} of {len(rr_rows)} runs and is unchanged in {n_f1_flat}) while agreement rises in {n_agr_up} of {len(rr_rows)}; for the selected run the trade is {sgn(deltas['rr_dev_f1'])} F1 for {sgn(deltas['rr_dev_agr'])} agreement. "
-      "We hypothesise that the paraphrase-score feature drives this (the reranker prefers spans both phrasings score highly, which stabilises answers but sometimes overrides a correct top-1 span); no run without that feature was trained, so this is not established by ablation. "
-      f"Its largest effect is on the adversarial paraphrases of Gan & Ng, where the paired view is the easier original question (orig F1 {f1(kl['sets']['gan_adv']['orig_f1'])}) and the reranker can lean on it (F1 {f1(kl['sets']['gan_adv']['f1'])} → {f1(kl['sets']['gan_adv']['rr_f1'])} for the selected run; small set). "
-      "Conclusion: the reranker is a consistency device with an accuracy cost on in-distribution data; both system versions are reported.")
+    w(f"**Reading.** The correct span is among the top-20 candidates for {min(d['reranker']['top1']['oracle_exact'] for _, d in rr_rows):.1f}–{max(d['reranker']['top1']['oracle_exact'] for _, d in rr_rows):.1f} % of held-out questions, but the reranker recovers almost none of that: on dev, F1 never rises (it falls in {n_f1_down} of {len(rr_rows)} runs, unchanged in {n_f1_flat}) while agreement rises in {n_agr_up} of {len(rr_rows)}; for the selected run the trade is {sgn(deltas['rr_dev_f1'])} F1 for {sgn(deltas['rr_dev_agr'])} agreement. "
+      f"The last-epoch F1 is {min(rr_overfit.values()):.1f}–{max(rr_overfit.values()):.1f} points below the best epoch, so it overfits within a few epochs. "
+      f"We hypothesise that the paraphrase-score feature drives the trade (it favours spans both phrasings score highly); this is not yet ablated. Its clearest benefit is on the adversarial paraphrases, where it can lean on the easier original question ({f1(kl['sets']['gan_adv']['f1'])} → {f1(kl['sets']['gan_adv']['rr_f1'])} F1 for the selected run; small set). "
+      "Both system versions are reported.")
     graded_rows = [(n, d) for n, d in rr_rows if d["reranker"]["target_mode"] == "graded"]
     if graded_rows:
-        dd = lambda d, st, a, b: (d["sets"][st][a] - d["sets"][st][b]) if (d["sets"].get(st) and d["sets"][st].get(a) is not None and d["sets"][st].get(b) is not None) else None  # noqa: E731
+        names = " and ".join("`" + n + "`" for n, _ in graded_rows)
         w("")
-        w(f"**Graded-target rerankers ({' and '.join('`' + n + '`' for n, _ in graded_rows)}).** These rerankers were trained after the training target changed from a one-hot label (the first exact-match candidate, else the best-F1 candidate; best epoch by held-out F1) to graded relevance (exact-match candidates 1, partial-overlap candidates 0.3 × F1, normalised to a distribution; best epoch by held-out EM, then F1), so their rows are not strictly comparable with the other {len(rr_rows) - len(graded_rows)}. "
-          + " ".join(f"For `{n}` the dev trade is {sgn(dd(d,'dev','rr_f1','f1'))} F1 / {sgn(dd(d,'dev','rr_em','em'))} EM for {sgn(dd(d,'dev','rr_agr','agr'))} agreement, and the reranker changes F1 by {sgn(dd(d,'addsent','rr_f1','f1'))} on AddSent, {sgn(dd(d,'addonesent','rr_f1','f1'))} on AddOneSent, {sgn(dd(d,'gan_dev','rr_f1','f1'))} on the Gan & Ng paraphrases and {sgn(dd(d,'gan_adv','rr_f1','f1'))} on the adversarial paraphrases." for n, d in graded_rows)
-          + " The near-zero dev cost on the large extractor may come from the stronger extractor (its top-1 is right more often, so there is less to override), from the graded targets, or both; separating the two needs the base-model rerankers retrained with graded targets, which the reranker-ablation scripts added on 4 Nov 2026 can do without retraining any extractor.")
+        w(f"**Graded targets.** {names} were trained after the target changed from one-hot (first exact-match candidate, else best F1) to graded relevance (exact match 1, partial overlap 0.3 × F1), so they are not strictly comparable with the other {len(rr_rows) - len(graded_rows)} rows. "
+          + " ".join(f"`{n}`: {sgn(dv(d,'rr_f1') - dv(d,'f1'))} F1 for {sgn(dv(d,'rr_agr') - dv(d,'agr'))} agreement on dev, F1 up on {of4(rob_up[n])} robustness sets." for n, d in graded_rows)
+          + (f" Among the base-model rerankers only {' and '.join('`' + n + '`' for n in base_all4)} also gain{'s' if len(base_all4) == 1 else ''} on all four, mostly by smaller margins." if base_all4 else " No base-model reranker gains on all four.")
+          + " Whether this comes from the stronger extractor or from the new targets needs the base rerankers retrained with graded targets; the reranker-ablation scripts added on 4 Nov 2026 do that without retraining any extractor.")
     w("")
 
     # 9 ---------------------------------------------------------------------------------------------------------
     w("## 9. Optimal-transport and span-matching ablation")
     w("")
     if ot and dual:
-        w(f"Replacing the KL penalty by the 1-D Wasserstein penalty (`ot`) or by Wasserstein plus Hungarian span matching (`dual`), with the same paraphrase data, gives dev agreement of {f1(dv(ot,'agr'))} % and {f1(dv(dual,'agr'))} % against {f1(dv(kl,'agr'))} % for KL at λ = 1, with EM / F1 of {f1(dv(ot,'em'))} / {f1(dv(ot,'f1'))} and {f1(dv(dual,'em'))} / {f1(dv(dual,'f1'))}. "
-          f"Both are within {max(abs(deltas['ot_vs_aug_agr']), abs(deltas['dual_vs_aug_agr'])):.1f} points of the augmentation-only run ({sgn(deltas['ot_vs_aug_agr'])} and {sgn(deltas['dual_vs_aug_agr'])}), so at their default weights (λ_OT = 0.5, μ = 0.1, not tuned) these penalties add nothing beyond the paraphrase data, whereas KL adds {sgn(deltas['kl_vs_aug_agr'])}. "
-          f"On AddSent they reach {f1(ot['sets']['addsent']['f1'])} and {f1(dual['sets']['addsent']['f1'])} F1 versus {f1(kl['sets']['addsent']['f1'])}. KL remains the primary method; these runs are a negative ablation.")
+        w(f"Replacing the KL penalty by the 1-D Wasserstein penalty (`ot`) or by Wasserstein plus Hungarian span matching (`dual`) gives dev agreement {f1(dv(ot,'agr'))} % and {f1(dv(dual,'agr'))} % against {f1(dv(kl,'agr'))} % for KL, at EM / F1 {f1(dv(ot,'em'))} / {f1(dv(ot,'f1'))} and {f1(dv(dual,'em'))} / {f1(dv(dual,'f1'))}. "
+          f"Both are within {max(abs(deltas['ot_vs_aug_agr']), abs(deltas['dual_vs_aug_agr'])):.1f} points of augmentation-only ({sgn(deltas['ot_vs_aug_agr'])}, {sgn(deltas['dual_vs_aug_agr'])}) whereas KL adds {sgn(deltas['kl_vs_aug_agr'])}: at their default, untuned weights (λ_OT = 0.5, μ = 0.1) these penalties add nothing beyond the paraphrase data. KL remains the method; this is a negative ablation.")
     w("")
 
     # 10 --------------------------------------------------------------------------------------------------------
     w("## 10. Question-type analysis (dev)")
     w("")
     bt_ce, bt_kl, bt_rr = ce["sets"]["dev"]["by_type"], kl["sets"]["dev"]["by_type"], kl["sets"]["dev"]["rr_by_type"]
-    w("EM / F1 by question type for the baseline and the selected consistency run (extractor only), and F1 with the reranker for the selected run. Types are assigned from the question's wh-word; *how many/much* also covers *how long / old / far / often / tall / big / large*.")
+    w(f"Types from the question's wh-word (*how many/much* also covers *how long / old / far / often / tall / big / large*). Baseline and selected run, extractor only; last column with the reranker.")
     w("")
-    w("| Type | n | Baseline EM / F1 | kl λ=1 EM / F1 | Δ F1 | kl λ=1 F1 +reranker |")
+    w(f"| Type | n | Baseline EM / F1 | kl {sel_lam} EM / F1 | Δ F1 | kl {sel_lam} F1 +reranker |")
     w("| :-- | --: | :-- | :-- | --: | --: |")
     rows = sorted(bt_kl.items(), key=lambda kv: -kv[1]["n"])
     for t, m in rows:
@@ -403,23 +403,21 @@ def main() -> int:
     w("")
     hardest = sorted(rows, key=lambda kv: kv[1]["f1"])[:3]
     easiest = sorted(rows, key=lambda kv: -kv[1]["f1"])[:2]
-    hard_s = ", ".join("*" + t + "* (" + f1(m["f1"]) + " F1)" for t, m in hardest)
-    easy_s = ", ".join("*" + t + "* (" + f1(m["f1"]) + ")" for t, m in easiest)
     n_rr_lower = sum(1 for t, m in rows if bt_rr.get(t, {}).get("f1", m["f1"]) < m["f1"])
-    w(f"The hardest types are {hard_s}; the easiest are {easy_s}. Consistency training changes per-type F1 by at most {max(abs(m['f1'] - bt_ce[t]['f1']) for t, m in rows if t in bt_ce):.1f} points, i.e. it does not redistribute accuracy across question types; its effect is on stability, which this table does not measure. "
-      f"The reranker lowers F1 for {n_rr_lower} of the {len(rows)} types, consistent with Section 8.")
+    w(f"Hardest: {', '.join('*' + t + '* (' + f1(m['f1']) + ')' for t, m in hardest)}; easiest: {', '.join('*' + t + '* (' + f1(m['f1']) + ')' for t, m in easiest)}. "
+      f"Consistency training changes per-type F1 by at most {max(abs(m['f1'] - bt_ce[t]['f1']) for t, m in rows if t in bt_ce):.1f} points, so it does not redistribute accuracy across types; the reranker lowers F1 for {n_rr_lower} of {len(rows)} types, consistent with Section 8.")
     w("")
 
     # 11 --------------------------------------------------------------------------------------------------------
     w("## 11. Caveats")
     w("")
-    w(f"- Single training seed per configuration; no confidence intervals beyond the binomial standard errors quoted above. Dev EM/F1 differences below about half a point, the {sgn(deltas['kl_vs_aug_agr'])}-point agreement gain of KL over augmentation alone, and all differences on the {ce['sets']['gan_adv']['n']}-question adversarial-paraphrase set should be treated as unconfirmed.")
-    w(f"- Agreement is measured only on questions with an accepted back-translated paraphrase ({dev_pairs:,} of {dev_n:,} on dev); the filter admits some meaning-changing paraphrases, which caps attainable agreement below 100 %.")
-    w(f"- Checkpoint selection and the λ rule used a {ce['val_max_examples']:,}-question sample of the held-out articles; the full-set numbers are reported alongside and lead to the same λ.")
-    w("- The OT / Hungarian weights were not tuned, so Section 9 compares them at default weights.")
-    w("- Validation articles were used for checkpoint selection, λ selection and reranker training; dev and the external sets were never used for any decision.")
+    w(f"- One training seed per configuration. Dev EM/F1 differences under about half a point, the {sgn(deltas['kl_vs_aug_agr'])}-point agreement gain of KL over augmentation alone, and everything on the {ce['sets']['gan_adv']['n']}-question adversarial-paraphrase set are unconfirmed.")
+    w(f"- Agreement is measured only on questions with an accepted paraphrase ({dev_pairs:,} of {dev_n:,} on dev); the 0.85 filter admits some meaning-changing paraphrases, which caps attainable agreement.")
+    w(f"- The λ rule's tolerance ({args.tolerance:g}) was fixed before the runs but not formally pre-registered, and it is load-bearing (Section 5).")
+    w("- OT / Hungarian weights were not tuned (Section 9).")
     if dl_ce:
-        w("- The DeBERTa-v3-large runs use a smaller per-step batch and a lower learning rate than the base runs (Section 2), and their rerankers were trained with the graded targets (Section 8), so the large-versus-base comparison is not a pure backbone comparison.")
+        w("- The DeBERTa-v3-large runs use a smaller per-step batch and lower learning rate (Section 2) and graded reranker targets (Section 8), so large-versus-base is not a pure backbone comparison.")
+    w("- Held-out training articles were used for every decision (checkpoint, λ, reranker); dev and the external sets never were.")
     w("")
 
     # 12 --------------------------------------------------------------------------------------------------------
@@ -429,9 +427,9 @@ def main() -> int:
     w("python visualize.py --best " + args.selected + "        # regenerates figures/ and report/tables/ from runs/")
     w("python scripts/make_results_report.py              # regenerates this file and docs/results_digest.json")
     w("```")
-    w("Per-run sources: `runs/<run>/config.json` (hyper-parameters, split sizes, paraphrase attachment), `runs/<run>/train_summary.json` (steps, time, selection-sample and full held-out F1/agreement), `runs/<run>/reranker_summary.json` (including the per-epoch history), `runs/<run>/eval_<set>/results.json` and `official_eval*.json` (official scorer output). "
-      "Training, reranker fitting and the dev evaluations were produced by the training jobs on 3 Nov 2026; the four external sets were re-evaluated the same evening after a fix to the Gan & Ng original-question scoring (commit 3d62dc6). Hardware (NUS SoC cluster, H100 NVL MIG 3g.47gb slices) and Slurm job ids (training 1068703–1068711, re-evaluation 1069429–1069438) are taken from the cluster logs, which are not part of the repository."
-      + (" The DeBERTa-v3-large runs (training, reranker and all evaluations in one job each) were produced on 4 Nov 2026 as Slurm jobs 1072440 (`ce`) and 1072441 (`kl`); their `train_summary.json` also records the peak GPU memory quoted in Section 6." if dl_ce else ""))
+    w("Sources per run: `config.json`, `train_summary.json`, `reranker_summary.json`, `eval_<set>/results.json` and `official_eval*.json`. "
+      "NUS SoC cluster, H100 NVL; base-model training jobs 1068703–1068711 and re-evaluation jobs 1069429–1069438 (3 Nov 2026, after the Gan & Ng original-question scoring fix in commit 3d62dc6)"
+      + ("; DeBERTa-v3-large jobs 1072440 (`ce`) and 1072441 (`kl`) on 4 Nov 2026" if dl_ce else "") + ". Cluster logs are not part of the repository.")
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as f:
         f.write("\n".join(L) + "\n")
