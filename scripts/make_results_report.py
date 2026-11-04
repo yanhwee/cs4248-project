@@ -66,8 +66,15 @@ def collect(runs_dir: str) -> Dict[str, Dict[str, Any]]:
         cfg, summ = load(f"{d}/config.json"), load(f"{d}/train_summary.json")
         if not cfg or not summ:
             continue
+        variants = {}
+        for vd_ in sorted(glob.glob(os.path.join(d, "rerank_variants", "*"))):
+            if os.path.isdir(vd_):
+                ev = {s: load(f"{vd_}/eval_{s}/results.json") for s in SETS}
+                if any(ev.values()):
+                    variants[os.path.basename(vd_)] = ev
         out[name] = {"config": cfg, "summary": summ, "reranker": load(f"{d}/reranker_summary.json"),
-                     "evals": {s: load(f"{d}/eval_{s}/results.json") for s in SETS}, "dir": d}
+                     "evals": {s: load(f"{d}/eval_{s}/results.json") for s in SETS}, "dir": d, "variants": variants,
+                     "rr_summaries": {t: load(f"{d}/reranker_summary_{t}.json") for t in ("pair", "nopair") if os.path.exists(f"{d}/reranker_summary_{t}.json")}}
     return out
 
 
@@ -121,6 +128,23 @@ def digest_run(name: str, r: Dict[str, Any]) -> Dict[str, Any]:
             entry["orig_f1"] = r1(x["paired_view_official_on_orig_file"]["f1"])
             entry["rr_orig_f1"] = r1((y.get("paired_view_official_on_orig_file") or {}).get("f1"))
         d["sets"][st] = entry
+    d["variants"] = {}
+    for vn, evs in (r.get("variants") or {}).items():
+        vsets: Dict[str, Any] = {}
+        meta: Dict[str, Any] = {}
+        for st, e in evs.items():
+            if not e or not e.get("reranker"):
+                continue
+            x, y = e["extractor"], e["reranker"]
+            meta = e.get("reranker_variant") or meta
+            vsets[st] = {"n": e["n_questions"], "pairs": e["n_pairs"], "em": r1(x["official"]["exact"]), "f1": r1(x["official"]["f1"]),
+                         "agr": r1((x.get("consistency") or {}).get("agreement_em")), "rr_em": r1(y["official"]["exact"]), "rr_f1": r1(y["official"]["f1"]),
+                         "rr_agr": r1((y.get("consistency") or {}).get("agreement_em")),
+                         "fix": (y.get("changes") or {}).get("FIX"), "brk": (y.get("changes") or {}).get("BREAK"), "source": f"{r['dir']}/rerank_variants/{vn}/eval_{st}/results.json"}
+        if vsets:
+            d["variants"][vn] = {"meta": meta, "sets": vsets}
+    d["rr_summaries"] = {t: {"n_dev_items": sm["n_dev_items"], "dev_top1": sm["dev_top1"], "dev_reranked": sm["dev_reranked"], "heldout_selection_grid": sm.get("heldout_selection_grid"),
+                            "n_features": len(sm.get("scalar_features_used") or []), "elapsed_sec": sm.get("elapsed_sec")} for t, sm in (r.get("rr_summaries") or {}).items() if sm}
     return d
 
 
@@ -237,6 +261,8 @@ def main() -> int:
     if dl_kl:
         rr_line += f" On DeBERTa-v3-large the cost falls to {sgn(dv(dl_kl,'rr_f1') - dv(dl_kl,'f1'))} F1 and F1 rises on {of4(rob_up['deb_large_kl'])} robustness sets, but with newer reranker targets (Section 8)."
     w(rr_line)
+    if any(D[n].get("variants") for n in order):
+        w("- **Reranker ablation.** The paraphrase features carry the agreement and adversarial-paraphrase gains; blending reranker and extractor scores instead of letting the reranker overrule removes the dev accuracy loss and adds a few tenths of EM on all three extractors tested, at the cost of most of the agreement. Neither is adopted (Section 9).")
     w(f"- **λ = {D[pick_s]['lambda_kl']:g}**, chosen on held-out training articles as the largest λ with F1 within {args.tolerance:g} points of the best" + (" (same choice on the full held-out set)." if pick_s == pick_f else f" (the full held-out set would give λ = {D[pick_f]['lambda_kl']:g})."))
     w("")
 
@@ -368,7 +394,7 @@ def main() -> int:
     n_agr_up = sum(1 for _, d in rr_rows if dv(d, "rr_agr") > dv(d, "agr"))
     w(f"**Reading.** The correct span is among the top-20 candidates for {min(d['reranker']['top1']['oracle_exact'] for _, d in rr_rows):.1f}–{max(d['reranker']['top1']['oracle_exact'] for _, d in rr_rows):.1f} % of held-out questions, but the reranker recovers almost none of that: on dev, F1 never rises (it falls in {n_f1_down} of {len(rr_rows)} runs, unchanged in {n_f1_flat}) while agreement rises in {n_agr_up} of {len(rr_rows)}; for the selected run the trade is {sgn(deltas['rr_dev_f1'])} F1 for {sgn(deltas['rr_dev_agr'])} agreement. "
       f"The last-epoch F1 is {min(rr_overfit.values()):.1f}–{max(rr_overfit.values()):.1f} points below the best epoch, so it overfits within a few epochs. "
-      f"We hypothesise that the paraphrase-score feature drives the trade (it favours spans both phrasings score highly); this is not yet ablated. Its clearest benefit is on the adversarial paraphrases, where it can lean on the easier original question ({f1(kl['sets']['gan_adv']['f1'])} → {f1(kl['sets']['gan_adv']['rr_f1'])} F1 for the selected run; small set). "
+      f"We hypothesise that the paraphrase-score feature drives the trade (it favours spans both phrasings score highly); " + ("Section 9 tests this by ablation. " if any(D[n].get("variants") for n in order) else "this is not yet ablated. ") + f"Its clearest benefit is on the adversarial paraphrases, where it can lean on the easier original question ({f1(kl['sets']['gan_adv']['f1'])} → {f1(kl['sets']['gan_adv']['rr_f1'])} F1 for the selected run; small set). "
       "Both system versions are reported.")
     graded_rows = [(n, d) for n, d in rr_rows if d["reranker"]["target_mode"] == "graded"]
     if graded_rows:
@@ -377,11 +403,168 @@ def main() -> int:
         w(f"**Graded targets.** {names} were trained after the target changed from one-hot (first exact-match candidate, else best F1) to graded relevance (exact match 1, partial overlap 0.3 × F1), so they are not strictly comparable with the other {len(rr_rows) - len(graded_rows)} rows. "
           + " ".join(f"`{n}`: {sgn(dv(d,'rr_f1') - dv(d,'f1'))} F1 for {sgn(dv(d,'rr_agr') - dv(d,'agr'))} agreement on dev, F1 up on {of4(rob_up[n])} robustness sets." for n, d in graded_rows)
           + (f" Among the base-model rerankers only {' and '.join('`' + n + '`' for n in base_all4)} also gain{'s' if len(base_all4) == 1 else ''} on all four, mostly by smaller margins." if base_all4 else " No base-model reranker gains on all four.")
-          + " Whether this comes from the stronger extractor or from the new targets needs the base rerankers retrained with graded targets; the reranker-ablation scripts added on 4 Nov 2026 do that without retraining any extractor.")
+          + (" Section 9 retrains the base rerankers with graded targets and separates the two effects." if any(D[n].get("variants") for n in order) else " Whether this comes from the stronger extractor or from the new targets needs the base rerankers retrained with graded targets; the reranker-ablation scripts added on 4 Nov 2026 do that without retraining any extractor."))
     w("")
 
     # 9 ---------------------------------------------------------------------------------------------------------
-    w("## 9. Optimal-transport and span-matching ablation")
+    var_runs = [n for n in order if D[n].get("variants")]
+    if var_runs:
+        w("## 9. Reranker ablation: features, decision rule, confidence gate")
+        w("")
+        vr0 = D[var_runs[0]]
+        w(f"On {', '.join('`' + n + '`' for n in var_runs)} the reranker was retrained twice on the held-out articles (graded targets, same seed): with the three paraphrase-derived features (*pair*) and without them (*no pair*). "
+          "Each was then used in two ways: the reranker's argmax replaces the extractor's answer (*argmax*, the current rule), or the two log-probabilities are added with weight α on the reranker (*blend*), optionally behind a *gate* that keeps the extractor's answer unless the reranker prefers another span by more than the margin in nats. "
+          f"Δ = variant − extractor, dev set; FIX / BREAK = answers turned right / wrong (exact match).")
+        w("")
+
+        def vmeta(v):  # metadata recorded in results.json
+            m = v["meta"]
+            return bool(m.get("use_pair_score", True)), m.get("select_mode", "reranker"), float(m.get("alpha", 1.0)), m.get("override_margin")
+
+        def vkey(item):
+            pair, mode, alpha, gate = vmeta(item[1])
+            return (0 if pair else 1, 0 if mode == "reranker" else 1, alpha if mode == "residual" else 0.0, -1.0 if gate is None else gate)
+
+        def vlabel(name, v):
+            pair, mode, alpha, gate = vmeta(v)
+            s = name.split("_")[0] + " · " + ("pair" if pair else "no pair") + " · " + ("argmax" if mode == "reranker" else "blend α=" + format(alpha, "g"))
+            return s + (" · gate " + format(gate, "g") if gate is not None else "")
+
+        def vd(v, st, a, b):
+            e = v["sets"].get(st)
+            return None if (not e or e.get(a) is None or e.get(b) is None) else e[a] - e[b]
+
+        def tri(v, st):
+            return f"{sgn(vd(v, st, 'rr_em', 'em'))} / {sgn(vd(v, st, 'rr_f1', 'f1'))} / {sgn(vd(v, st, 'rr_agr', 'agr'))}"
+
+        vnames = sorted(vr0["variants"].items(), key=vkey)
+        vnames = [n for n, _ in vnames]
+        w("| Variant | " + " | ".join(f"{label[n]}: Δ EM / Δ F1 / Δ agreement" for n in var_runs) + " |")
+        w("| :-- |" + " :-- |" * len(var_runs))
+        for vn in vnames:
+            cells = []
+            for n in var_runs:
+                v = D[n]["variants"].get(vn)
+                cells.append(tri(v, "dev") if v and "dev" in v["sets"] else "--")
+            w(f"| {vlabel(vn, vr0['variants'][vn])} | " + " | ".join(cells) + " |")
+        w("")
+
+        # --- held-out selection: best (EM, then F1) over both rerankers' grids -----------------------------------
+        def norm_gate(g):
+            return None if g is None or float(g) == 0.0 else float(g)
+
+        def grid_pick(d):
+            cands = []
+            for tag, summ in (d.get("rr_summaries") or {}).items():
+                for g in summ.get("heldout_selection_grid") or []:
+                    cands.append((tag, g["mode"], float(g["alpha"]), norm_gate(g["override_margin"]), g["exact"], g["f1"]))
+            if not cands:
+                return None
+            cands.sort(key=lambda c: (-c[4], -c[5], c[3] is not None, c[1] != "reranker"))
+            return cands[0]
+
+        def match_variant(d, pick):
+            tag, mode, alpha, gate = pick[0], pick[1], pick[2], pick[3]
+            for vn, v in d["variants"].items():
+                p, m, a, g = vmeta(v)
+                if p == (tag == "pair") and m == mode and norm_gate(g) == gate and (m != "residual" or abs(a - alpha) < 1e-9):
+                    return vn
+            return None
+
+        ses = [se_pct(D[n]["rr_summaries"]["pair"]["dev_top1"]["exact"], D[n]["rr_summaries"]["pair"]["n_dev_items"]) for n in var_runs if D[n].get("rr_summaries")]
+        w(f"**Held-out selection.** Before looking at dev, the rule \"best held-out EM, then F1\" over all configurations of both rerankers ({vr0['rr_summaries']['pair']['n_dev_items']:,} held-out questions, standard error {min(ses):.1f}–{max(ses):.1f} EM points) would choose the following; the chosen values are early-stopped on the same questions and therefore optimistic:")
+        w("")
+        w("| Run | Held-out EM / F1, extractor | Chosen configuration | Held-out EM / F1, chosen | Dev Δ EM / Δ F1 / Δ agreement of the choice |")
+        w("| :-- | :-- | :-- | :-- | :-- |")
+        picks = {}
+        for n in var_runs:
+            d = D[n]
+            pk = grid_pick(d)
+            if not pk:
+                continue
+            vn = match_variant(d, pk)
+            picks[n] = vn
+            top = d["rr_summaries"]["pair"]["dev_top1"]
+            conf = ("pair" if pk[0] == "pair" else "no pair") + " · " + ("argmax" if pk[1] == "reranker" else ("extractor only" if pk[1] == "extractor" else "blend α=" + format(pk[2], "g"))) + (" · gate " + format(pk[3], "g") if pk[3] is not None else "")
+            dev_txt = tri(d["variants"][vn], "dev") if vn else "not evaluated on dev"
+            w(f"| {label[n]} | {f1(r1(top['exact']))} / {f1(r1(top['f1']))} | {conf}" + (f" (= {vn.split('_')[0]})" if vn else "") + f" | {f1(r1(pk[4]))} / {f1(r1(pk[5]))} | {dev_txt} |")
+        w("")
+
+        # --- robustness for A, B and E ---------------------------------------------------------------------------
+        def find_variant(d, pair, mode, alpha=1.0, gate=None):
+            for vn, v in d["variants"].items():
+                p, m, a, g = vmeta(v)
+                if p == pair and m == mode and norm_gate(g) == gate and (m != "residual" or abs(a - alpha) < 1e-9):
+                    return vn
+            return None
+
+        w("Robustness sets for the three main variants (Δ = variant − extractor):")
+        w("")
+        w("| Run | Variant | AddSent Δ F1 | AddSent Δ agreement | AddOneSent Δ F1 | G&N para Δ F1 | G&N adv Δ F1 |")
+        w("| :-- | :-- | --: | --: | --: | --: | --: |")
+        for n in var_runs:
+            d = D[n]
+            for spec in ((True, "reranker", 1.0), (False, "reranker", 1.0), (False, "residual", 1.0)):
+                vn = find_variant(d, *spec)
+                if not vn:
+                    continue
+                v = d["variants"][vn]
+                w(f"| {label[n]} | {vlabel(vn, v)} | {sgn(vd(v,'addsent','rr_f1','f1'))} | {sgn(vd(v,'addsent','rr_agr','agr'))} | {sgn(vd(v,'addonesent','rr_f1','f1'))} | {sgn(vd(v,'gan_dev','rr_f1','f1'))} | {sgn(vd(v,'gan_adv','rr_f1','f1'))} |")
+        w("")
+
+        # --- reading ---------------------------------------------------------------------------------------------
+        A = {n: find_variant(D[n], True, "reranker") for n in var_runs}
+        B = {n: find_variant(D[n], False, "reranker") for n in var_runs}
+        E = {n: find_variant(D[n], False, "residual", 1.0) for n in var_runs}
+        ok = all(A[n] and B[n] and E[n] for n in var_runs)
+        if ok:
+            agrA = [vd(D[n]["variants"][A[n]], "dev", "rr_agr", "agr") for n in var_runs]
+            agrB = [vd(D[n]["variants"][B[n]], "dev", "rr_agr", "agr") for n in var_runs]
+            advA = [vd(D[n]["variants"][A[n]], "gan_adv", "rr_f1", "f1") for n in var_runs]
+            advB = [vd(D[n]["variants"][B[n]], "gan_adv", "rr_f1", "f1") for n in var_runs]
+            emE = [vd(D[n]["variants"][E[n]], "dev", "rr_em", "em") for n in var_runs]
+            f1E = [vd(D[n]["variants"][E[n]], "dev", "rr_f1", "f1") for n in var_runs]
+            agrE = [vd(D[n]["variants"][E[n]], "dev", "rr_agr", "agr") for n in var_runs]
+            fbE = [(D[n]["variants"][E[n]]["sets"]["dev"]["fix"], D[n]["variants"][E[n]]["sets"]["dev"]["brk"]) for n in var_runs]
+            em_up_E, f1_up_E, f1_ok_E = all(e > 0 for e in emE), all(f > 0 for f in f1E), all(f >= 0 for f in f1E)
+            e_claim = ("raises dev EM and F1 on all three extractors" if em_up_E and f1_up_E else
+                       "raises dev EM on all three extractors without lowering F1" if em_up_E and f1_ok_E else "changes dev EM / F1")
+            lst = lambda xs: ", ".join(sgn(x) for x in xs)  # noqa: E731
+            lst = lambda xs: ", ".join(sgn(x) for x in xs)  # noqa: E731
+            w(f"**Features.** The paraphrase features carry the agreement gain ({lst(agrA)} agreement points on dev with them, {lst(agrB)} without; order {', '.join(label[n] for n in var_runs)}) and the adversarial-paraphrase gain ({lst(advA)} F1 with, {lst(advB)} without). This confirms the hypothesis of Section 8.")
+            w("")
+            gate_shift = 0.0
+            for n in var_runs:
+                for vn, v in D[n]["variants"].items():
+                    pp, mm, aa, gg = vmeta(v)
+                    if norm_gate(gg) is None or "dev" not in v["sets"]:
+                        continue
+                    base_vn = find_variant(D[n], pp, mm, aa, None)
+                    if base_vn and "dev" in D[n]["variants"][base_vn]["sets"]:
+                        b_, g_ = D[n]["variants"][base_vn]["sets"]["dev"], v["sets"]["dev"]
+                        gate_shift = max(gate_shift, *(abs(g_[k] - b_[k]) for k in ("rr_em", "rr_f1", "rr_agr") if g_.get(k) is not None and b_.get(k) is not None))
+            w(f"**Decision rule.** Blending instead of taking the reranker's argmax (α = 1, no pair features) " + e_claim + f" ({lst(emE)} EM, {lst(f1E)} F1; fixes : breaks {', '.join(f'{a}:{b}' for a, b in fbE)}), but by a few tenths of a point and keeping only {lst(agrE)} of the agreement. Gates reduce both fixes and breaks; relative to the ungated rule they shift dev EM, F1 or agreement by at most {gate_shift:.1f} points.")
+            w("")
+            cmp = []
+            for n in var_runs:
+                s_ = D[n]["sets"]["dev"]
+                a = D[n]["variants"][A[n]]
+                cmp.append((n, D[n]["reranker"]["target_mode"], s_["rr_f1"] - s_["f1"], s_["rr_agr"] - s_["agr"], vd(a, "dev", "rr_f1", "f1"), vd(a, "dev", "rr_agr", "agr")))
+            onehot = [c for c in cmp if c[1] != "graded"]
+            graded = [c for c in cmp if c[1] == "graded"]
+            txt = "**Targets and noise.** Variant A is the committed reranker's configuration retrained with graded targets. "
+            if onehot:
+                txt += "Against the one-hot rerankers of Section 8 the target alone moves the dev trade: " + "; ".join(f"{label[c[0]]} {sgn(c[2])} F1 / {sgn(c[3])} agreement → {sgn(c[4])} / {sgn(c[5])}" for c in onehot) + ". "
+            if graded:
+                txt += "For " + " and ".join(label[c[0]] for c in graded) + " both are graded, so the shift (" + "; ".join(f"{sgn(c[2])} → {sgn(c[4])} F1, {sgn(c[3])} → {sgn(c[5])} agreement" for c in graded) + ") is the run-to-run noise of reranker training; differences of that size in this section mean nothing."
+            w(txt)
+            w("")
+            n_lose = sum(1 for n in var_runs if picks.get(n) and vd(D[n]["variants"][picks[n]], "dev", "rr_f1", "f1") < 0)
+            w(f"**Selection.** The held-out rule would pick {', '.join(picks[n].split('_')[0] for n in var_runs if picks.get(n))} for the three runs (table above), {n_lose} of which {'loses' if n_lose == 1 else 'lose'} dev F1; {vr0['rr_summaries']['pair']['n_dev_items']:,} questions cannot separate configurations a few tenths apart. No variant is adopted: the pair-feature argmax reranker stays the agreement version and the extractor alone the accuracy version.")
+        w("")
+
+    # 10 --------------------------------------------------------------------------------------------------------
+    w("## 10. Optimal-transport and span-matching ablation")
     w("")
     if ot and dual:
         w(f"Replacing the KL penalty by the 1-D Wasserstein penalty (`ot`) or by Wasserstein plus Hungarian span matching (`dual`) gives dev agreement {f1(dv(ot,'agr'))} % and {f1(dv(dual,'agr'))} % against {f1(dv(kl,'agr'))} % for KL, at EM / F1 {f1(dv(ot,'em'))} / {f1(dv(ot,'f1'))} and {f1(dv(dual,'em'))} / {f1(dv(dual,'f1'))}. "
@@ -389,7 +572,7 @@ def main() -> int:
     w("")
 
     # 10 --------------------------------------------------------------------------------------------------------
-    w("## 10. Question-type analysis (dev)")
+    w("## 11. Question-type analysis (dev)")
     w("")
     bt_ce, bt_kl, bt_rr = ce["sets"]["dev"]["by_type"], kl["sets"]["dev"]["by_type"], kl["sets"]["dev"]["rr_by_type"]
     w(f"Types from the question's wh-word (*how many/much* also covers *how long / old / far / often / tall / big / large*). Baseline and selected run, extractor only; last column with the reranker.")
@@ -409,19 +592,21 @@ def main() -> int:
     w("")
 
     # 11 --------------------------------------------------------------------------------------------------------
-    w("## 11. Caveats")
+    w("## 12. Caveats")
     w("")
     w(f"- One training seed per configuration. Dev EM/F1 differences under about half a point, the {sgn(deltas['kl_vs_aug_agr'])}-point agreement gain of KL over augmentation alone, and everything on the {ce['sets']['gan_adv']['n']}-question adversarial-paraphrase set are unconfirmed.")
     w(f"- Agreement is measured only on questions with an accepted paraphrase ({dev_pairs:,} of {dev_n:,} on dev); the 0.85 filter admits some meaning-changing paraphrases, which caps attainable agreement.")
     w(f"- The λ rule's tolerance ({args.tolerance:g}) was fixed before the runs but not formally pre-registered, and it is load-bearing (Section 5).")
-    w("- OT / Hungarian weights were not tuned (Section 9).")
+    w("- OT / Hungarian weights were not tuned (Section 10).")
+    if var_runs:
+        w(f"- The reranker ablation selects on {vr0['rr_summaries']['pair']['n_dev_items']:,} held-out questions, too few to separate configurations a few tenths of a point apart; its dev differences below about half a point are unconfirmed (Section 9).")
     if dl_ce:
         w("- The DeBERTa-v3-large runs use a smaller per-step batch and lower learning rate (Section 2) and graded reranker targets (Section 8), so large-versus-base is not a pure backbone comparison.")
     w("- Held-out training articles were used for every decision (checkpoint, λ, reranker); dev and the external sets never were.")
     w("")
 
     # 12 --------------------------------------------------------------------------------------------------------
-    w("## 12. Provenance")
+    w("## 13. Provenance")
     w("")
     w("```")
     w("python visualize.py --best " + args.selected + "        # regenerates figures/ and report/tables/ from runs/")
@@ -429,7 +614,8 @@ def main() -> int:
     w("```")
     w("Sources per run: `config.json`, `train_summary.json`, `reranker_summary.json`, `eval_<set>/results.json` and `official_eval*.json`. "
       "NUS SoC cluster, H100 NVL; base-model training jobs 1068703–1068711 and re-evaluation jobs 1069429–1069438 (3 Nov 2026, after the Gan & Ng original-question scoring fix in commit 3d62dc6)"
-      + ("; DeBERTa-v3-large jobs 1072440 (`ce`) and 1072441 (`kl`) on 4 Nov 2026" if dl_ce else "") + ". Cluster logs are not part of the repository.")
+      + ("; DeBERTa-v3-large jobs 1072440 (`ce`) and 1072441 (`kl`) on 4 Nov 2026" if dl_ce else "")
+      + ("; reranker-ablation jobs 1073460–1073462 on 4 Nov 2026 (`scripts/submit_reranker_variants.sh`, outputs under `runs/<run>/rerank_variants/`)" if any(D[n].get("variants") for n in order) else "") + ". Cluster logs are not part of the repository.")
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as f:
         f.write("\n".join(L) + "\n")

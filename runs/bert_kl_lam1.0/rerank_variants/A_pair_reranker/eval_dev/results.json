@@ -1,0 +1,223 @@
+{
+  "eval_set": "dev",
+  "data_file": "provided/dev-v1.1.json",
+  "orig_file": null,
+  "weights": "weights/bert_kl_lam1.0/best.pt",
+  "model": "bert-base-uncased",
+  "loss_mode": "kl",
+  "reranker_path": "weights/bert_kl_lam1.0/reranker_pair.pt",
+  "rerank_margin": null,
+  "top_k": 20,
+  "reranker_variant": {
+    "tag": "A_pair_reranker",
+    "use_pair_score": true,
+    "scalar_features_used": [
+      "score",
+      "raw_score",
+      "null_score",
+      "start_logit",
+      "end_logit",
+      "gap_to_top",
+      "prob",
+      "rank",
+      "len_tokens",
+      "len_chars",
+      "n_windows",
+      "pair_score",
+      "pair_gap",
+      "pair_missing"
+    ],
+    "select_mode": "reranker",
+    "alpha": 1.0,
+    "override_margin": null,
+    "rerank_margin": null,
+    "trained_with": {
+      "tag": "_pair",
+      "target_mode": "graded",
+      "partial_weight": 0.3,
+      "pair_features": true,
+      "extractor": "weights/bert_kl_lam1.0/best.pt",
+      "top_k": 20,
+      "use_pair_score": true
+    }
+  },
+  "n_questions": 10570,
+  "paired_view": "back-translated paraphrase",
+  "n_pairs": 8622,
+  "official_scorer": "/home/c/chengke/cs4248-project/provided/evaluate-v2.0.py",
+  "extractor": {
+    "official": {
+      "exact": 81.44749290444655,
+      "f1": 88.59098285060611,
+      "total": 10570,
+      "HasAns_exact": 81.44749290444655,
+      "HasAns_f1": 88.59098285060611,
+      "HasAns_total": 10570
+    },
+    "by_question_type": {
+      "how": {
+        "n": 301,
+        "exact": 61.794019933554814,
+        "f1": 77.9126904106239
+      },
+      "how many/much": {
+        "n": 923,
+        "exact": 85.80715059588299,
+        "f1": 91.61113028925277
+      },
+      "other": {
+        "n": 94,
+        "exact": 57.4468085106383,
+        "f1": 74.35065242607777
+      },
+      "what": {
+        "n": 5812,
+        "exact": 79.80041293874741,
+        "f1": 87.62220453966147
+      },
+      "when": {
+        "n": 924,
+        "exact": 92.96536796536796,
+        "f1": 95.26937288300921
+      },
+      "where": {
+        "n": 511,
+        "exact": 77.69080234833659,
+        "f1": 87.65173789362996
+      },
+      "which": {
+        "n": 646,
+        "exact": 82.19814241486068,
+        "f1": 87.72475587558371
+      },
+      "who": {
+        "n": 1204,
+        "exact": 88.62126245847176,
+        "f1": 91.79203421260598
+      },
+      "why": {
+        "n": 155,
+        "exact": 54.83870967741935,
+        "f1": 78.33510614589922
+      }
+    },
+    "consistency": {
+      "pairs": 8622,
+      "agreement_em": 87.87984226397587,
+      "agreement_f1": 91.96568033899383
+    },
+    "candidate_ceiling": {
+      "top_k": 20,
+      "n": 10570,
+      "recall_em": 98.04162724692526,
+      "best_f1": 98.86214454223948
+    },
+    "recall_at_k": {
+      "recall_em@1": 81.44749290444655,
+      "best_f1@1": 88.5909829682044,
+      "recall_em@3": 91.8543046357616,
+      "best_f1@3": 94.94489231110747,
+      "recall_em@5": 94.49385052034059,
+      "best_f1@5": 96.55598127567751,
+      "recall_em@10": 96.5752128666036,
+      "best_f1@10": 97.95862587540637,
+      "recall_em@20": 98.04162724692526,
+      "best_f1@20": 98.86214454223948
+    }
+  },
+  "reranker": {
+    "official": {
+      "exact": 81.48533585619678,
+      "f1": 88.4364830879695,
+      "total": 10570,
+      "HasAns_exact": 81.48533585619678,
+      "HasAns_f1": 88.4364830879695,
+      "HasAns_total": 10570
+    },
+    "by_question_type": {
+      "how": {
+        "n": 301,
+        "exact": 60.79734219269103,
+        "f1": 76.55094422586203
+      },
+      "how many/much": {
+        "n": 923,
+        "exact": 85.15709642470206,
+        "f1": 91.35921920862327
+      },
+      "other": {
+        "n": 94,
+        "exact": 61.702127659574465,
+        "f1": 76.75989512503904
+      },
+      "what": {
+        "n": 5812,
+        "exact": 80.07570543702684,
+        "f1": 87.72902958744105
+      },
+      "when": {
+        "n": 924,
+        "exact": 92.31601731601732,
+        "f1": 94.66803698946556
+      },
+      "where": {
+        "n": 511,
+        "exact": 78.27788649706459,
+        "f1": 87.71643900399518
+      },
+      "which": {
+        "n": 646,
+        "exact": 82.19814241486068,
+        "f1": 87.62368264690247
+      },
+      "who": {
+        "n": 1204,
+        "exact": 88.45514950166113,
+        "f1": 91.2326006743737
+      },
+      "why": {
+        "n": 155,
+        "exact": 53.54838709677419,
+        "f1": 74.61526376245658
+      }
+    },
+    "consistency": {
+      "pairs": 8622,
+      "agreement_em": 92.80909301786129,
+      "agreement_f1": 95.67282255571348
+    },
+    "delta": {
+      "d_em": 0.03784295175023544,
+      "d_f1": -0.15449976263660403,
+      "d_agreement_em": 4.9292507538854125
+    },
+    "changes": {
+      "n": 10570,
+      "FIX": 211,
+      "FIX_pct": 1.9962157048249765,
+      "BREAK": 207,
+      "BREAK_pct": 1.95837275307474,
+      "SAME_CORRECT": 8402,
+      "SAME_CORRECT_pct": 79.48912015137181,
+      "SAME_WRONG": 1750,
+      "SAME_WRONG_pct": 16.556291390728475,
+      "net_em_change": 4,
+      "n_prediction_changed": 878,
+      "mean_f1_change_when_changed": -0.01859980058164303
+    }
+  },
+  "elapsed_sec": 158.9,
+  "extractor_config": {
+    "model": "bert-base-uncased",
+    "loss_mode": "kl",
+    "lambda_kl": 1.0,
+    "lambda_ot": 0.5,
+    "mu_hung": 0.1,
+    "max_seq_len": 384,
+    "doc_stride": 128,
+    "epochs": 2,
+    "lr": 3e-05,
+    "val_frac": 0.05,
+    "split_seed": 42
+  }
+}

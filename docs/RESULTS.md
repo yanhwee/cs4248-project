@@ -9,6 +9,7 @@
 - **The backbone is the accuracy lever.** DeBERTa-v3-base 88.3 / 93.9, DeBERTa-v3-large 90.3 / 95.5 EM / F1, against 81.1 / 88.5 for BERT-base; no objective change moves accuracy by more than half a point.
 - **Robustness gains are small and come mostly from the paraphrase data.** AddSent F1 64.9 → 66.1 (+1.2, of which +1.0 from augmentation alone); AddSent agreement +6.2.
 - **The reranker trades accuracy for agreement.** Selected run, dev: -0.9 F1 for +5.0 agreement; its largest gain is on the 56-question adversarial-paraphrase set (63.6 → 75.6 F1), which is too small for firm conclusions. On DeBERTa-v3-large the cost falls to -0.1 F1 and F1 rises on all four robustness sets, but with newer reranker targets (Section 8).
+- **Reranker ablation.** The paraphrase features carry the agreement and adversarial-paraphrase gains; blending reranker and extractor scores instead of letting the reranker overrule removes the dev accuracy loss and adds a few tenths of EM on all three extractors tested, at the cost of most of the agreement. Neither is adopted (Section 9).
 - **λ = 1**, chosen on held-out training articles as the largest λ with F1 within 0.5 points of the best (same choice on the full held-out set).
 
 ## 2. What was run
@@ -120,15 +121,61 @@ Held-out columns: the reranker is trained on 80 % of the held-out articles and e
 | DeBERTa-large ce (baseline) | graded | 79.0 / 89.9 | 79.4 / 90.0 (ep. 2) | 89.0 | 98.4 | -0.1 | -0.1 | +4.0 | +0.2 | +7.4 |
 | DeBERTa-large kl λ=1 | graded | 78.6 / 89.5 | 79.7 / 89.5 (ep. 5) | 88.1 | 98.9 | +0.0 | -0.1 | +2.4 | +0.6 | +4.5 |
 
-**Reading.** The correct span is among the top-20 candidates for 96.0–98.9 % of held-out questions, but the reranker recovers almost none of that: on dev, F1 never rises (it falls in 10 of 11 runs, unchanged in 1) while agreement rises in 11 of 11; for the selected run the trade is -0.9 F1 for +5.0 agreement. The last-epoch F1 is 0.8–5.1 points below the best epoch, so it overfits within a few epochs. We hypothesise that the paraphrase-score feature drives the trade (it favours spans both phrasings score highly); this is not yet ablated. Its clearest benefit is on the adversarial paraphrases, where it can lean on the easier original question (63.6 → 75.6 F1 for the selected run; small set). Both system versions are reported.
+**Reading.** The correct span is among the top-20 candidates for 96.0–98.9 % of held-out questions, but the reranker recovers almost none of that: on dev, F1 never rises (it falls in 10 of 11 runs, unchanged in 1) while agreement rises in 11 of 11; for the selected run the trade is -0.9 F1 for +5.0 agreement. The last-epoch F1 is 0.8–5.1 points below the best epoch, so it overfits within a few epochs. We hypothesise that the paraphrase-score feature drives the trade (it favours spans both phrasings score highly); Section 9 tests this by ablation. Its clearest benefit is on the adversarial paraphrases, where it can lean on the easier original question (63.6 → 75.6 F1 for the selected run; small set). Both system versions are reported.
 
-**Graded targets.** `deb_large_ce` and `deb_large_kl` were trained after the target changed from one-hot (first exact-match candidate, else best F1) to graded relevance (exact match 1, partial overlap 0.3 × F1), so they are not strictly comparable with the other 9 rows. `deb_large_ce`: -0.1 F1 for +4.0 agreement on dev, F1 up on all four robustness sets. `deb_large_kl`: -0.1 F1 for +2.4 agreement on dev, F1 up on all four robustness sets. Among the base-model rerankers only `bert_kl_lam0.5` also gains on all four, mostly by smaller margins. Whether this comes from the stronger extractor or from the new targets needs the base rerankers retrained with graded targets; the reranker-ablation scripts added on 4 Nov 2026 do that without retraining any extractor.
+**Graded targets.** `deb_large_ce` and `deb_large_kl` were trained after the target changed from one-hot (first exact-match candidate, else best F1) to graded relevance (exact match 1, partial overlap 0.3 × F1), so they are not strictly comparable with the other 9 rows. `deb_large_ce`: -0.1 F1 for +4.0 agreement on dev, F1 up on all four robustness sets. `deb_large_kl`: -0.1 F1 for +2.4 agreement on dev, F1 up on all four robustness sets. Among the base-model rerankers only `bert_kl_lam0.5` also gains on all four, mostly by smaller margins. Section 9 retrains the base rerankers with graded targets and separates the two effects.
 
-## 9. Optimal-transport and span-matching ablation
+## 9. Reranker ablation: features, decision rule, confidence gate
+
+On `bert_kl_lam1.0`, `deb_kl`, `deb_large_kl` the reranker was retrained twice on the held-out articles (graded targets, same seed): with the three paraphrase-derived features (*pair*) and without them (*no pair*). Each was then used in two ways: the reranker's argmax replaces the extractor's answer (*argmax*, the current rule), or the two log-probabilities are added with weight α on the reranker (*blend*), optionally behind a *gate* that keeps the extractor's answer unless the reranker prefers another span by more than the margin in nats. Δ = variant − extractor, dev set; FIX / BREAK = answers turned right / wrong (exact match).
+
+| Variant | BERT kl λ=1: Δ EM / Δ F1 / Δ agreement | DeBERTa kl λ=1: Δ EM / Δ F1 / Δ agreement | DeBERTa-large kl λ=1: Δ EM / Δ F1 / Δ agreement |
+| :-- | :-- | :-- | :-- |
+| A · pair · argmax | +0.1 / -0.2 / +4.9 | -1.4 / -0.8 / +1.6 | +0.2 / +0.0 / +1.5 |
+| B · no pair · argmax | +0.3 / -0.2 / +0.9 | -0.4 / -0.4 / -0.1 | +0.3 / +0.1 / +0.5 |
+| B · no pair · argmax · gate 0.1 | +0.6 / +0.0 / +0.5 | -0.1 / -0.3 / -0.3 | +0.2 / +0.0 / +0.4 |
+| B · no pair · argmax · gate 0.25 | +0.6 / +0.1 / +0.4 | +0.0 / -0.2 / +0.0 | +0.2 / +0.0 / +0.4 |
+| C · no pair · blend α=0.25 | +0.3 / +0.1 / +0.4 | +0.2 / +0.1 / +0.1 | +0.1 / +0.0 / +0.2 |
+| D · no pair · blend α=0.5 | +0.4 / +0.1 / +0.6 | +0.3 / +0.1 / +0.3 | +0.1 / +0.0 / +0.3 |
+| E · no pair · blend α=1 | +0.4 / +0.1 / +0.6 | +0.4 / +0.1 / +0.3 | +0.2 / +0.0 / +0.4 |
+| E · no pair · blend α=1 · gate 0.1 | +0.5 / +0.1 / +0.5 | +0.5 / +0.1 / +0.3 | +0.1 / +0.0 / +0.4 |
+| E · no pair · blend α=1 · gate 0.25 | +0.5 / +0.2 / +0.5 | +0.3 / +0.1 / +0.2 | +0.2 / +0.0 / +0.3 |
+
+**Held-out selection.** Before looking at dev, the rule "best held-out EM, then F1" over all configurations of both rerankers (758 held-out questions, standard error 1.5–1.7 EM points) would choose the following; the chosen values are early-stopped on the same questions and therefore optimistic:
+
+| Run | Held-out EM / F1, extractor | Chosen configuration | Held-out EM / F1, chosen | Dev Δ EM / Δ F1 / Δ agreement of the choice |
+| :-- | :-- | :-- | :-- | :-- |
+| BERT kl λ=1 | 70.6 / 82.4 | pair · argmax (= A) | 71.8 / 83.0 | +0.1 / -0.2 / +4.9 |
+| DeBERTa kl λ=1 | 76.5 / 87.6 | no pair · argmax (= B) | 77.7 / 88.0 | -0.4 / -0.4 / -0.1 |
+| DeBERTa-large kl λ=1 | 78.6 / 89.5 | no pair · argmax (= B) | 79.8 / 89.7 | +0.3 / +0.1 / +0.5 |
+
+Robustness sets for the three main variants (Δ = variant − extractor):
+
+| Run | Variant | AddSent Δ F1 | AddSent Δ agreement | AddOneSent Δ F1 | G&N para Δ F1 | G&N adv Δ F1 |
+| :-- | :-- | --: | --: | --: | --: | --: |
+| BERT kl λ=1 | A · pair · argmax | -0.1 | +5.5 | +0.0 | +1.1 | +7.9 |
+| BERT kl λ=1 | B · no pair · argmax | -0.1 | -0.2 | +0.3 | +0.8 | +0.7 |
+| BERT kl λ=1 | E · no pair · blend α=1 | +0.2 | +0.9 | +0.2 | +0.8 | -0.5 |
+| DeBERTa kl λ=1 | A · pair · argmax | -0.4 | +2.7 | -0.3 | +0.0 | +7.7 |
+| DeBERTa kl λ=1 | B · no pair · argmax | -0.4 | -0.2 | -0.2 | -0.2 | +2.4 |
+| DeBERTa kl λ=1 | E · no pair · blend α=1 | -0.1 | -0.1 | -0.1 | +0.4 | +2.4 |
+| DeBERTa-large kl λ=1 | A · pair · argmax | +0.6 | +2.1 | +0.6 | +0.4 | +0.9 |
+| DeBERTa-large kl λ=1 | B · no pair · argmax | +0.5 | +0.6 | +0.7 | +0.1 | +0.0 |
+| DeBERTa-large kl λ=1 | E · no pair · blend α=1 | +0.2 | +0.8 | +0.2 | +0.0 | +0.0 |
+
+**Features.** The paraphrase features carry the agreement gain (+4.9, +1.6, +1.5 agreement points on dev with them, +0.9, -0.1, +0.5 without; order BERT kl λ=1, DeBERTa kl λ=1, DeBERTa-large kl λ=1) and the adversarial-paraphrase gain (+7.9, +7.7, +0.9 F1 with, +0.7, +2.4, +0.0 without). This confirms the hypothesis of Section 8.
+
+**Decision rule.** Blending instead of taking the reranker's argmax (α = 1, no pair features) raises dev EM on all three extractors without lowering F1 (+0.4, +0.4, +0.2 EM, +0.1, +0.1, +0.0 F1; fixes : breaks 94:53, 82:41, 40:24), but by a few tenths of a point and keeping only +0.6, +0.3, +0.4 of the agreement. Gates reduce both fixes and breaks; relative to the ungated rule they shift dev EM, F1 or agreement by at most 0.5 points.
+
+**Targets and noise.** Variant A is the committed reranker's configuration retrained with graded targets. Against the one-hot rerankers of Section 8 the target alone moves the dev trade: BERT kl λ=1 -0.9 F1 / +5.0 agreement → -0.2 / +4.9; DeBERTa kl λ=1 +0.0 F1 / +0.8 agreement → -0.8 / +1.6. For DeBERTa-large kl λ=1 both are graded, so the shift (-0.1 → +0.0 F1, +2.4 → +1.5 agreement) is the run-to-run noise of reranker training; differences of that size in this section mean nothing.
+
+**Selection.** The held-out rule would pick A, B, B for the three runs (table above), 2 of which lose dev F1; 758 questions cannot separate configurations a few tenths apart. No variant is adopted: the pair-feature argmax reranker stays the agreement version and the extractor alone the accuracy version.
+
+## 10. Optimal-transport and span-matching ablation
 
 Replacing the KL penalty by the 1-D Wasserstein penalty (`ot`) or by Wasserstein plus Hungarian span matching (`dual`) gives dev agreement 86.3 % and 86.7 % against 87.9 % for KL, at EM / F1 80.9 / 88.2 and 81.1 / 88.3. Both are within 0.2 points of augmentation-only (-0.2, +0.2) whereas KL adds +1.4: at their default, untuned weights (λ_OT = 0.5, μ = 0.1) these penalties add nothing beyond the paraphrase data. KL remains the method; this is a negative ablation.
 
-## 10. Question-type analysis (dev)
+## 11. Question-type analysis (dev)
 
 Types from the question's wh-word (*how many/much* also covers *how long / old / far / often / tall / big / large*). Baseline and selected run, extractor only; last column with the reranker.
 
@@ -146,19 +193,20 @@ Types from the question's wh-word (*how many/much* also covers *how long / old /
 
 Hardest: *other* (74.4), *how* (77.9), *why* (78.3); easiest: *when* (95.3), *who* (91.8). Consistency training changes per-type F1 by at most 1.3 points, so it does not redistribute accuracy across types; the reranker lowers F1 for 9 of 9 types, consistent with Section 8.
 
-## 11. Caveats
+## 12. Caveats
 
 - One training seed per configuration. Dev EM/F1 differences under about half a point, the +1.4-point agreement gain of KL over augmentation alone, and everything on the 56-question adversarial-paraphrase set are unconfirmed.
 - Agreement is measured only on questions with an accepted paraphrase (8,622 of 10,570 on dev); the 0.85 filter admits some meaning-changing paraphrases, which caps attainable agreement.
 - The λ rule's tolerance (0.5) was fixed before the runs but not formally pre-registered, and it is load-bearing (Section 5).
-- OT / Hungarian weights were not tuned (Section 9).
+- OT / Hungarian weights were not tuned (Section 10).
+- The reranker ablation selects on 758 held-out questions, too few to separate configurations a few tenths of a point apart; its dev differences below about half a point are unconfirmed (Section 9).
 - The DeBERTa-v3-large runs use a smaller per-step batch and lower learning rate (Section 2) and graded reranker targets (Section 8), so large-versus-base is not a pure backbone comparison.
 - Held-out training articles were used for every decision (checkpoint, λ, reranker); dev and the external sets never were.
 
-## 12. Provenance
+## 13. Provenance
 
 ```
 python visualize.py --best bert_kl_lam1.0        # regenerates figures/ and report/tables/ from runs/
 python scripts/make_results_report.py              # regenerates this file and docs/results_digest.json
 ```
-Sources per run: `config.json`, `train_summary.json`, `reranker_summary.json`, `eval_<set>/results.json` and `official_eval*.json`. NUS SoC cluster, H100 NVL; base-model training jobs 1068703–1068711 and re-evaluation jobs 1069429–1069438 (3 Nov 2026, after the Gan & Ng original-question scoring fix in commit 3d62dc6); DeBERTa-v3-large jobs 1072440 (`ce`) and 1072441 (`kl`) on 4 Nov 2026. Cluster logs are not part of the repository.
+Sources per run: `config.json`, `train_summary.json`, `reranker_summary.json`, `eval_<set>/results.json` and `official_eval*.json`. NUS SoC cluster, H100 NVL; base-model training jobs 1068703–1068711 and re-evaluation jobs 1069429–1069438 (3 Nov 2026, after the Gan & Ng original-question scoring fix in commit 3d62dc6); DeBERTa-v3-large jobs 1072440 (`ce`) and 1072441 (`kl`) on 4 Nov 2026; reranker-ablation jobs 1073460–1073462 on 4 Nov 2026 (`scripts/submit_reranker_variants.sh`, outputs under `runs/<run>/rerank_variants/`). Cluster logs are not part of the repository.

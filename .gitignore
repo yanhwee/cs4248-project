@@ -45,6 +45,17 @@ runs/*/*
 runs/*/eval_*/*
 !runs/*/eval_*/results.json
 !runs/*/eval_*/official_eval*.json
+# reranker-ablation outputs (scripts/run_reranker_variants.sh): summaries and official-scorer results only
+!runs/*/reranker_summary_*.json
+!runs/*/rerank_variants/
+runs/*/rerank_variants/*
+!runs/*/rerank_variants/summary_*.md
+!runs/*/rerank_variants/*/
+runs/*/rerank_variants/*/*
+!runs/*/rerank_variants/*/eval_*/
+runs/*/rerank_variants/*/eval_*/*
+!runs/*/rerank_variants/*/eval_*/results.json
+!runs/*/rerank_variants/*/eval_*/official_eval*.json
 # smoke-test runs are never committed (this rule must come after the re-includes above)
 runs/smoke*/
 

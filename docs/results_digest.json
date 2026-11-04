@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-04T17:03:11",
+  "generated": "2026-11-04T23:49:06",
   "selected": "bert_kl_lam1.0",
   "tolerance": 0.5,
   "rule_pick_sample": "bert_kl_lam1.0",
@@ -747,7 +747,9 @@
           },
           "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_aug/eval_addonesent/results.json"
         }
-      }
+      },
+      "variants": {},
+      "rr_summaries": {}
     },
     "bert_ce": {
       "run": "bert_ce",
@@ -1325,7 +1327,9 @@
           },
           "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ce/eval_addonesent/results.json"
         }
-      }
+      },
+      "variants": {},
+      "rr_summaries": {}
     },
     "bert_dual": {
       "run": "bert_dual",
@@ -1908,7 +1912,9 @@
           },
           "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_dual/eval_addonesent/results.json"
         }
-      }
+      },
+      "variants": {},
+      "rr_summaries": {}
     },
     "bert_kl_lam0.5": {
       "run": "bert_kl_lam0.5",
@@ -2491,7 +2497,9 @@
           },
           "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam0.5/eval_addonesent/results.json"
         }
-      }
+      },
+      "variants": {},
+      "rr_summaries": {}
     },
     "bert_kl_lam1.0": {
       "run": "bert_kl_lam1.0",
@@ -3073,6 +3081,1192 @@
             }
           },
           "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/eval_addonesent/results.json"
+        }
+      },
+      "variants": {
+        "A_pair_reranker": {
+          "meta": {
+            "tag": "A_pair_reranker",
+            "use_pair_score": true,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows",
+              "pair_score",
+              "pair_gap",
+              "pair_missing"
+            ],
+            "select_mode": "reranker",
+            "alpha": 1.0,
+            "override_margin": null,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_pair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/bert_kl_lam1.0/best.pt",
+              "top_k": 20,
+              "use_pair_score": true
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 81.4,
+              "f1": 88.6,
+              "agr": 87.9,
+              "rr_em": 81.5,
+              "rr_f1": 88.4,
+              "rr_agr": 92.8,
+              "fix": 211,
+              "brk": 207,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/A_pair_reranker/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 78.3,
+              "f1": 86.1,
+              "agr": 91.0,
+              "rr_em": 79.6,
+              "rr_f1": 87.2,
+              "rr_agr": 94.6,
+              "fix": 32,
+              "brk": 19,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/A_pair_reranker/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 58.9,
+              "f1": 63.6,
+              "agr": 62.5,
+              "rr_em": 64.3,
+              "rr_f1": 71.5,
+              "rr_agr": 78.6,
+              "fix": 3,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/A_pair_reranker/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 59.9,
+              "f1": 66.1,
+              "agr": 84.1,
+              "rr_em": 60.2,
+              "rr_f1": 66.0,
+              "rr_agr": 89.6,
+              "fix": 92,
+              "brk": 81,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/A_pair_reranker/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 68.1,
+              "f1": 74.5,
+              "agr": 84.4,
+              "rr_em": 68.7,
+              "rr_f1": 74.5,
+              "rr_agr": 90.3,
+              "fix": 50,
+              "brk": 40,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/A_pair_reranker/eval_addonesent/results.json"
+            }
+          }
+        },
+        "B_nopair_reranker": {
+          "meta": {
+            "tag": "B_nopair_reranker",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "reranker",
+            "alpha": 1.0,
+            "override_margin": null,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/bert_kl_lam1.0/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 81.4,
+              "f1": 88.6,
+              "agr": 87.9,
+              "rr_em": 81.7,
+              "rr_f1": 88.4,
+              "rr_agr": 88.8,
+              "fix": 221,
+              "brk": 196,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 78.3,
+              "f1": 86.1,
+              "agr": 91.0,
+              "rr_em": 79.8,
+              "rr_f1": 86.9,
+              "rr_agr": 91.8,
+              "fix": 32,
+              "brk": 17,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 58.9,
+              "f1": 63.6,
+              "agr": 62.5,
+              "rr_em": 58.9,
+              "rr_f1": 64.3,
+              "rr_agr": 67.9,
+              "fix": 0,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 59.9,
+              "f1": 66.1,
+              "agr": 84.1,
+              "rr_em": 60.6,
+              "rr_f1": 66.0,
+              "rr_agr": 83.9,
+              "fix": 76,
+              "brk": 51,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 68.1,
+              "f1": 74.5,
+              "agr": 84.4,
+              "rr_em": 69.1,
+              "rr_f1": 74.8,
+              "rr_agr": 85.2,
+              "fix": 43,
+              "brk": 25,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker/eval_addonesent/results.json"
+            }
+          }
+        },
+        "B_nopair_reranker_gate0.1": {
+          "meta": {
+            "tag": "B_nopair_reranker_gate0.1",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "reranker",
+            "alpha": 1.0,
+            "override_margin": 0.1,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/bert_kl_lam1.0/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 81.4,
+              "f1": 88.6,
+              "agr": 87.9,
+              "rr_em": 82.0,
+              "rr_f1": 88.6,
+              "rr_agr": 88.4,
+              "fix": 163,
+              "brk": 107,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.1/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 78.3,
+              "f1": 86.1,
+              "agr": 91.0,
+              "rr_em": 79.6,
+              "rr_f1": 86.8,
+              "rr_agr": 92.1,
+              "fix": 24,
+              "brk": 11,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 58.9,
+              "f1": 63.6,
+              "agr": 62.5,
+              "rr_em": 58.9,
+              "rr_f1": 64.3,
+              "rr_agr": 67.9,
+              "fix": 0,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 59.9,
+              "f1": 66.1,
+              "agr": 84.1,
+              "rr_em": 60.8,
+              "rr_f1": 66.3,
+              "rr_agr": 84.3,
+              "fix": 62,
+              "brk": 30,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.1/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 68.1,
+              "f1": 74.5,
+              "agr": 84.4,
+              "rr_em": 69.2,
+              "rr_f1": 74.8,
+              "rr_agr": 85.8,
+              "fix": 34,
+              "brk": 15,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.1/eval_addonesent/results.json"
+            }
+          }
+        },
+        "B_nopair_reranker_gate0.25": {
+          "meta": {
+            "tag": "B_nopair_reranker_gate0.25",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "reranker",
+            "alpha": 1.0,
+            "override_margin": 0.25,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/bert_kl_lam1.0/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 81.4,
+              "f1": 88.6,
+              "agr": 87.9,
+              "rr_em": 82.0,
+              "rr_f1": 88.7,
+              "rr_agr": 88.3,
+              "fix": 101,
+              "brk": 45,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.25/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 78.3,
+              "f1": 86.1,
+              "agr": 91.0,
+              "rr_em": 79.5,
+              "rr_f1": 86.8,
+              "rr_agr": 92.2,
+              "fix": 17,
+              "brk": 5,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 58.9,
+              "f1": 63.6,
+              "agr": 62.5,
+              "rr_em": 58.9,
+              "rr_f1": 64.3,
+              "rr_agr": 67.9,
+              "fix": 0,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 59.9,
+              "f1": 66.1,
+              "agr": 84.1,
+              "rr_em": 60.3,
+              "rr_f1": 66.1,
+              "rr_agr": 84.6,
+              "fix": 36,
+              "brk": 19,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.25/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 68.1,
+              "f1": 74.5,
+              "agr": 84.4,
+              "rr_em": 68.6,
+              "rr_f1": 74.6,
+              "rr_agr": 85.5,
+              "fix": 18,
+              "brk": 9,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.25/eval_addonesent/results.json"
+            }
+          }
+        },
+        "C_nopair_res0.25": {
+          "meta": {
+            "tag": "C_nopair_res0.25",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "residual",
+            "alpha": 0.25,
+            "override_margin": null,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/bert_kl_lam1.0/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 81.4,
+              "f1": 88.6,
+              "agr": 87.9,
+              "rr_em": 81.7,
+              "rr_f1": 88.7,
+              "rr_agr": 88.3,
+              "fix": 45,
+              "brk": 19,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/C_nopair_res0.25/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 78.3,
+              "f1": 86.1,
+              "agr": 91.0,
+              "rr_em": 78.2,
+              "rr_f1": 86.2,
+              "rr_agr": 91.1,
+              "fix": 3,
+              "brk": 4,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/C_nopair_res0.25/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 58.9,
+              "f1": 63.6,
+              "agr": 62.5,
+              "rr_em": 58.9,
+              "rr_f1": 63.1,
+              "rr_agr": 66.1,
+              "fix": 0,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/C_nopair_res0.25/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 59.9,
+              "f1": 66.1,
+              "agr": 84.1,
+              "rr_em": 60.3,
+              "rr_f1": 66.3,
+              "rr_agr": 84.6,
+              "fix": 19,
+              "brk": 5,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/C_nopair_res0.25/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 68.1,
+              "f1": 74.5,
+              "agr": 84.4,
+              "rr_em": 68.6,
+              "rr_f1": 74.8,
+              "rr_agr": 85.5,
+              "fix": 11,
+              "brk": 3,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/C_nopair_res0.25/eval_addonesent/results.json"
+            }
+          }
+        },
+        "D_nopair_res0.5": {
+          "meta": {
+            "tag": "D_nopair_res0.5",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "residual",
+            "alpha": 0.5,
+            "override_margin": null,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/bert_kl_lam1.0/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 81.4,
+              "f1": 88.6,
+              "agr": 87.9,
+              "rr_em": 81.8,
+              "rr_f1": 88.7,
+              "rr_agr": 88.5,
+              "fix": 68,
+              "brk": 32,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/D_nopair_res0.5/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 78.3,
+              "f1": 86.1,
+              "agr": 91.0,
+              "rr_em": 78.8,
+              "rr_f1": 86.6,
+              "rr_agr": 91.3,
+              "fix": 10,
+              "brk": 5,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/D_nopair_res0.5/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 58.9,
+              "f1": 63.6,
+              "agr": 62.5,
+              "rr_em": 58.9,
+              "rr_f1": 63.1,
+              "rr_agr": 67.9,
+              "fix": 0,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/D_nopair_res0.5/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 59.9,
+              "f1": 66.1,
+              "agr": 84.1,
+              "rr_em": 60.4,
+              "rr_f1": 66.3,
+              "rr_agr": 84.9,
+              "fix": 28,
+              "brk": 7,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/D_nopair_res0.5/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 68.1,
+              "f1": 74.5,
+              "agr": 84.4,
+              "rr_em": 68.7,
+              "rr_f1": 74.8,
+              "rr_agr": 86.2,
+              "fix": 14,
+              "brk": 4,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/D_nopair_res0.5/eval_addonesent/results.json"
+            }
+          }
+        },
+        "E_nopair_res1.0": {
+          "meta": {
+            "tag": "E_nopair_res1.0",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "residual",
+            "alpha": 1.0,
+            "override_margin": null,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/bert_kl_lam1.0/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 81.4,
+              "f1": 88.6,
+              "agr": 87.9,
+              "rr_em": 81.8,
+              "rr_f1": 88.7,
+              "rr_agr": 88.5,
+              "fix": 94,
+              "brk": 53,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 78.3,
+              "f1": 86.1,
+              "agr": 91.0,
+              "rr_em": 79.4,
+              "rr_f1": 86.9,
+              "rr_agr": 91.2,
+              "fix": 17,
+              "brk": 6,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 58.9,
+              "f1": 63.6,
+              "agr": 62.5,
+              "rr_em": 58.9,
+              "rr_f1": 63.1,
+              "rr_agr": 66.1,
+              "fix": 0,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 59.9,
+              "f1": 66.1,
+              "agr": 84.1,
+              "rr_em": 60.6,
+              "rr_f1": 66.3,
+              "rr_agr": 85.0,
+              "fix": 37,
+              "brk": 11,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 68.1,
+              "f1": 74.5,
+              "agr": 84.4,
+              "rr_em": 68.8,
+              "rr_f1": 74.7,
+              "rr_agr": 86.7,
+              "fix": 19,
+              "brk": 6,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0/eval_addonesent/results.json"
+            }
+          }
+        },
+        "E_nopair_res1.0_gate0.1": {
+          "meta": {
+            "tag": "E_nopair_res1.0_gate0.1",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "residual",
+            "alpha": 1.0,
+            "override_margin": 0.1,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/bert_kl_lam1.0/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 81.4,
+              "f1": 88.6,
+              "agr": 87.9,
+              "rr_em": 81.9,
+              "rr_f1": 88.7,
+              "rr_agr": 88.4,
+              "fix": 91,
+              "brk": 41,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.1/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 78.3,
+              "f1": 86.1,
+              "agr": 91.0,
+              "rr_em": 79.2,
+              "rr_f1": 86.8,
+              "rr_agr": 91.8,
+              "fix": 14,
+              "brk": 5,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 58.9,
+              "f1": 63.6,
+              "agr": 62.5,
+              "rr_em": 58.9,
+              "rr_f1": 63.1,
+              "rr_agr": 66.1,
+              "fix": 0,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 59.9,
+              "f1": 66.1,
+              "agr": 84.1,
+              "rr_em": 60.6,
+              "rr_f1": 66.3,
+              "rr_agr": 85.0,
+              "fix": 36,
+              "brk": 11,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.1/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 68.1,
+              "f1": 74.5,
+              "agr": 84.4,
+              "rr_em": 68.8,
+              "rr_f1": 74.7,
+              "rr_agr": 86.4,
+              "fix": 19,
+              "brk": 6,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.1/eval_addonesent/results.json"
+            }
+          }
+        },
+        "E_nopair_res1.0_gate0.25": {
+          "meta": {
+            "tag": "E_nopair_res1.0_gate0.25",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "residual",
+            "alpha": 1.0,
+            "override_margin": 0.25,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/bert_kl_lam1.0/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 81.4,
+              "f1": 88.6,
+              "agr": 87.9,
+              "rr_em": 81.9,
+              "rr_f1": 88.8,
+              "rr_agr": 88.4,
+              "fix": 69,
+              "brk": 20,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.25/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 78.3,
+              "f1": 86.1,
+              "agr": 91.0,
+              "rr_em": 79.3,
+              "rr_f1": 86.8,
+              "rr_agr": 91.7,
+              "fix": 13,
+              "brk": 3,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 58.9,
+              "f1": 63.6,
+              "agr": 62.5,
+              "rr_em": 58.9,
+              "rr_f1": 63.1,
+              "rr_agr": 66.1,
+              "fix": 0,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 59.9,
+              "f1": 66.1,
+              "agr": 84.1,
+              "rr_em": 60.3,
+              "rr_f1": 66.2,
+              "rr_agr": 84.7,
+              "fix": 25,
+              "brk": 10,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.25/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 68.1,
+              "f1": 74.5,
+              "agr": 84.4,
+              "rr_em": 68.7,
+              "rr_f1": 74.7,
+              "rr_agr": 85.6,
+              "fix": 15,
+              "brk": 5,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.25/eval_addonesent/results.json"
+            }
+          }
+        }
+      },
+      "rr_summaries": {
+        "pair": {
+          "n_dev_items": 758,
+          "dev_top1": {
+            "n": 758,
+            "exact": 70.58047493403694,
+            "f1": 82.42316903756605,
+            "recall_em": 96.7018469656992,
+            "best_f1": 97.87334872404787,
+            "oracle_exact": 96.7018469656992,
+            "fix": 0,
+            "break": 0
+          },
+          "dev_reranked": {
+            "n": 758,
+            "exact": 71.76781002638522,
+            "f1": 82.98589943706953,
+            "recall_em": 96.7018469656992,
+            "best_f1": 97.87334872404787,
+            "oracle_exact": 96.7018469656992,
+            "fix": 15,
+            "break": 6
+          },
+          "heldout_selection_grid": [
+            {
+              "mode": "extractor",
+              "alpha": 0.0,
+              "override_margin": null,
+              "exact": 70.58047493403694,
+              "f1": 82.42316903756605,
+              "fix": 0,
+              "break": 0
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": null,
+              "exact": 71.76781002638522,
+              "f1": 82.98589943706953,
+              "fix": 15,
+              "break": 6
+            },
+            {
+              "mode": "residual",
+              "alpha": 0.25,
+              "override_margin": null,
+              "exact": 70.71240105540898,
+              "f1": 82.57708284583343,
+              "fix": 1,
+              "break": 0
+            },
+            {
+              "mode": "residual",
+              "alpha": 0.5,
+              "override_margin": null,
+              "exact": 70.71240105540898,
+              "f1": 82.54542057670413,
+              "fix": 2,
+              "break": 1
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": null,
+              "exact": 71.10817941952507,
+              "f1": 82.62411335085588,
+              "fix": 5,
+              "break": 1
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.0,
+              "exact": 71.76781002638522,
+              "f1": 82.98589943706953,
+              "fix": 15,
+              "break": 6
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.1,
+              "exact": 71.37203166226912,
+              "f1": 82.60416362928996,
+              "fix": 9,
+              "break": 3
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.25,
+              "exact": 70.84432717678101,
+              "f1": 82.32230147209799,
+              "fix": 5,
+              "break": 3
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.5,
+              "exact": 70.97625329815304,
+              "f1": 82.53478013110777,
+              "fix": 3,
+              "break": 0
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.0,
+              "exact": 71.10817941952507,
+              "f1": 82.62411335085588,
+              "fix": 5,
+              "break": 1
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.1,
+              "exact": 70.97625329815304,
+              "f1": 82.5801379770652,
+              "fix": 4,
+              "break": 1
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.25,
+              "exact": 70.97625329815304,
+              "f1": 82.61180024619449,
+              "fix": 4,
+              "break": 1
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.5,
+              "exact": 70.84432717678101,
+              "f1": 82.47987412482246,
+              "fix": 2,
+              "break": 0
+            }
+          ],
+          "n_features": 14,
+          "elapsed_sec": 110.0
+        },
+        "nopair": {
+          "n_dev_items": 758,
+          "dev_top1": {
+            "n": 758,
+            "exact": 70.58047493403694,
+            "f1": 82.42316903756605,
+            "recall_em": 96.7018469656992,
+            "best_f1": 97.87334872404787,
+            "oracle_exact": 96.7018469656992,
+            "fix": 0,
+            "break": 0
+          },
+          "dev_reranked": {
+            "n": 758,
+            "exact": 71.63588390501319,
+            "f1": 82.97449516183025,
+            "recall_em": 96.7018469656992,
+            "best_f1": 97.87334872404787,
+            "oracle_exact": 96.7018469656992,
+            "fix": 13,
+            "break": 5
+          },
+          "heldout_selection_grid": [
+            {
+              "mode": "extractor",
+              "alpha": 0.0,
+              "override_margin": null,
+              "exact": 70.58047493403694,
+              "f1": 82.42316903756605,
+              "fix": 0,
+              "break": 0
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": null,
+              "exact": 71.63588390501319,
+              "f1": 82.97449516183025,
+              "fix": 13,
+              "break": 5
+            },
+            {
+              "mode": "residual",
+              "alpha": 0.25,
+              "override_margin": null,
+              "exact": 70.71240105540898,
+              "f1": 82.54542057670413,
+              "fix": 1,
+              "break": 0
+            },
+            {
+              "mode": "residual",
+              "alpha": 0.5,
+              "override_margin": null,
+              "exact": 70.84432717678101,
+              "f1": 82.62787440256166,
+              "fix": 3,
+              "break": 1
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": null,
+              "exact": 71.2401055408971,
+              "f1": 82.68646078923156,
+              "fix": 6,
+              "break": 1
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.0,
+              "exact": 71.63588390501319,
+              "f1": 82.97449516183025,
+              "fix": 13,
+              "break": 5
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.1,
+              "exact": 71.2401055408971,
+              "f1": 82.43736738195838,
+              "fix": 8,
+              "break": 3
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.25,
+              "exact": 71.50395778364116,
+              "f1": 82.85381849748634,
+              "fix": 8,
+              "break": 1
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.5,
+              "exact": 70.71240105540898,
+              "f1": 82.37538641945005,
+              "fix": 1,
+              "break": 0
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.0,
+              "exact": 71.2401055408971,
+              "f1": 82.68646078923156,
+              "fix": 6,
+              "break": 1
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.1,
+              "exact": 71.10817941952507,
+              "f1": 82.64248541544087,
+              "fix": 5,
+              "break": 1
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.25,
+              "exact": 71.10817941952507,
+              "f1": 82.67414768457017,
+              "fix": 5,
+              "break": 1
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.5,
+              "exact": 70.71240105540898,
+              "f1": 82.4507727745198,
+              "fix": 1,
+              "break": 0
+            }
+          ],
+          "n_features": 11,
+          "elapsed_sec": 109.7
         }
       }
     },
@@ -3657,7 +4851,9 @@
           },
           "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam2.0/eval_addonesent/results.json"
         }
-      }
+      },
+      "variants": {},
+      "rr_summaries": {}
     },
     "bert_ot": {
       "run": "bert_ot",
@@ -4240,7 +5436,9 @@
           },
           "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ot/eval_addonesent/results.json"
         }
-      }
+      },
+      "variants": {},
+      "rr_summaries": {}
     },
     "deb_ce": {
       "run": "deb_ce",
@@ -4818,7 +6016,9 @@
           },
           "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_ce/eval_addonesent/results.json"
         }
-      }
+      },
+      "variants": {},
+      "rr_summaries": {}
     },
     "deb_kl": {
       "run": "deb_kl",
@@ -5400,6 +6600,1192 @@
             }
           },
           "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/eval_addonesent/results.json"
+        }
+      },
+      "variants": {
+        "A_pair_reranker": {
+          "meta": {
+            "tag": "A_pair_reranker",
+            "use_pair_score": true,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows",
+              "pair_score",
+              "pair_gap",
+              "pair_missing"
+            ],
+            "select_mode": "reranker",
+            "alpha": 1.0,
+            "override_margin": null,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_pair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": true
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 91.8,
+              "rr_em": 86.9,
+              "rr_f1": 93.0,
+              "rr_agr": 93.4,
+              "fix": 172,
+              "brk": 323,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/A_pair_reranker/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 85.7,
+              "f1": 91.0,
+              "agr": 93.7,
+              "rr_em": 85.0,
+              "rr_f1": 91.0,
+              "rr_agr": 95.4,
+              "fix": 33,
+              "brk": 40,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/A_pair_reranker/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 76.8,
+              "f1": 82.9,
+              "agr": 82.1,
+              "rr_em": 85.7,
+              "rr_f1": 90.6,
+              "rr_agr": 96.4,
+              "fix": 5,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/A_pair_reranker/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 78.8,
+              "f1": 84.2,
+              "agr": 90.2,
+              "rr_em": 77.7,
+              "rr_f1": 83.8,
+              "rr_agr": 92.9,
+              "fix": 95,
+              "brk": 133,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/A_pair_reranker/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 82.5,
+              "f1": 87.9,
+              "agr": 89.9,
+              "rr_em": 81.7,
+              "rr_f1": 87.6,
+              "rr_agr": 93.0,
+              "fix": 47,
+              "brk": 62,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/A_pair_reranker/eval_addonesent/results.json"
+            }
+          }
+        },
+        "B_nopair_reranker": {
+          "meta": {
+            "tag": "B_nopair_reranker",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "reranker",
+            "alpha": 1.0,
+            "override_margin": null,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 91.8,
+              "rr_em": 87.9,
+              "rr_f1": 93.4,
+              "rr_agr": 91.7,
+              "fix": 165,
+              "brk": 208,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 85.7,
+              "f1": 91.0,
+              "agr": 93.7,
+              "rr_em": 85.1,
+              "rr_f1": 90.8,
+              "rr_agr": 94.0,
+              "fix": 17,
+              "brk": 23,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 76.8,
+              "f1": 82.9,
+              "agr": 82.1,
+              "rr_em": 80.4,
+              "rr_f1": 85.3,
+              "rr_agr": 89.3,
+              "fix": 2,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 78.8,
+              "f1": 84.2,
+              "agr": 90.2,
+              "rr_em": 79.2,
+              "rr_f1": 83.8,
+              "rr_agr": 90.0,
+              "fix": 85,
+              "brk": 71,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 82.5,
+              "f1": 87.9,
+              "agr": 89.9,
+              "rr_em": 83.3,
+              "rr_f1": 87.7,
+              "rr_agr": 90.1,
+              "fix": 40,
+              "brk": 27,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker/eval_addonesent/results.json"
+            }
+          }
+        },
+        "B_nopair_reranker_gate0.1": {
+          "meta": {
+            "tag": "B_nopair_reranker_gate0.1",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "reranker",
+            "alpha": 1.0,
+            "override_margin": 0.1,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 91.8,
+              "rr_em": 88.2,
+              "rr_f1": 93.5,
+              "rr_agr": 91.5,
+              "fix": 112,
+              "brk": 127,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 85.7,
+              "f1": 91.0,
+              "agr": 93.7,
+              "rr_em": 85.4,
+              "rr_f1": 90.9,
+              "rr_agr": 93.9,
+              "fix": 13,
+              "brk": 16,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 76.8,
+              "f1": 82.9,
+              "agr": 82.1,
+              "rr_em": 78.6,
+              "rr_f1": 83.5,
+              "rr_agr": 85.7,
+              "fix": 1,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 78.8,
+              "f1": 84.2,
+              "agr": 90.2,
+              "rr_em": 79.0,
+              "rr_f1": 83.8,
+              "rr_agr": 90.1,
+              "fix": 62,
+              "brk": 53,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 82.5,
+              "f1": 87.9,
+              "agr": 89.9,
+              "rr_em": 82.9,
+              "rr_f1": 87.6,
+              "rr_agr": 90.3,
+              "fix": 28,
+              "brk": 22,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_addonesent/results.json"
+            }
+          }
+        },
+        "B_nopair_reranker_gate0.25": {
+          "meta": {
+            "tag": "B_nopair_reranker_gate0.25",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "reranker",
+            "alpha": 1.0,
+            "override_margin": 0.25,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 91.8,
+              "rr_em": 88.3,
+              "rr_f1": 93.6,
+              "rr_agr": 91.8,
+              "fix": 65,
+              "brk": 70,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 85.7,
+              "f1": 91.0,
+              "agr": 93.7,
+              "rr_em": 85.6,
+              "rr_f1": 90.8,
+              "rr_agr": 93.8,
+              "fix": 9,
+              "brk": 10,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 76.8,
+              "f1": 82.9,
+              "agr": 82.1,
+              "rr_em": 78.6,
+              "rr_f1": 83.5,
+              "rr_agr": 85.7,
+              "fix": 1,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 78.8,
+              "f1": 84.2,
+              "agr": 90.2,
+              "rr_em": 78.5,
+              "rr_f1": 83.8,
+              "rr_agr": 90.2,
+              "fix": 37,
+              "brk": 46,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 82.5,
+              "f1": 87.9,
+              "agr": 89.9,
+              "rr_em": 82.3,
+              "rr_f1": 87.6,
+              "rr_agr": 90.1,
+              "fix": 14,
+              "brk": 19,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_addonesent/results.json"
+            }
+          }
+        },
+        "C_nopair_res0.25": {
+          "meta": {
+            "tag": "C_nopair_res0.25",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "residual",
+            "alpha": 0.25,
+            "override_margin": null,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 91.8,
+              "rr_em": 88.5,
+              "rr_f1": 93.9,
+              "rr_agr": 91.9,
+              "fix": 32,
+              "brk": 11,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/C_nopair_res0.25/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 85.7,
+              "f1": 91.0,
+              "agr": 93.7,
+              "rr_em": 86.0,
+              "rr_f1": 91.4,
+              "rr_agr": 93.8,
+              "fix": 3,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/C_nopair_res0.25/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 76.8,
+              "f1": 82.9,
+              "agr": 82.1,
+              "rr_em": 80.4,
+              "rr_f1": 85.3,
+              "rr_agr": 87.5,
+              "fix": 2,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/C_nopair_res0.25/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 78.8,
+              "f1": 84.2,
+              "agr": 90.2,
+              "rr_em": 78.8,
+              "rr_f1": 84.2,
+              "rr_agr": 90.0,
+              "fix": 5,
+              "brk": 5,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/C_nopair_res0.25/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 82.5,
+              "f1": 87.9,
+              "agr": 89.9,
+              "rr_em": 82.4,
+              "rr_f1": 87.9,
+              "rr_agr": 90.2,
+              "fix": 1,
+              "brk": 4,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/C_nopair_res0.25/eval_addonesent/results.json"
+            }
+          }
+        },
+        "D_nopair_res0.5": {
+          "meta": {
+            "tag": "D_nopair_res0.5",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "residual",
+            "alpha": 0.5,
+            "override_margin": null,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 91.8,
+              "rr_em": 88.6,
+              "rr_f1": 93.9,
+              "rr_agr": 92.1,
+              "fix": 49,
+              "brk": 22,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/D_nopair_res0.5/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 85.7,
+              "f1": 91.0,
+              "agr": 93.7,
+              "rr_em": 86.0,
+              "rr_f1": 91.3,
+              "rr_agr": 93.8,
+              "fix": 6,
+              "brk": 3,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/D_nopair_res0.5/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 76.8,
+              "f1": 82.9,
+              "agr": 82.1,
+              "rr_em": 80.4,
+              "rr_f1": 85.3,
+              "rr_agr": 87.5,
+              "fix": 2,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/D_nopair_res0.5/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 78.8,
+              "f1": 84.2,
+              "agr": 90.2,
+              "rr_em": 78.8,
+              "rr_f1": 84.2,
+              "rr_agr": 90.4,
+              "fix": 12,
+              "brk": 13,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/D_nopair_res0.5/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 82.5,
+              "f1": 87.9,
+              "agr": 89.9,
+              "rr_em": 82.4,
+              "rr_f1": 88.0,
+              "rr_agr": 90.5,
+              "fix": 7,
+              "brk": 9,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/D_nopair_res0.5/eval_addonesent/results.json"
+            }
+          }
+        },
+        "E_nopair_res1.0": {
+          "meta": {
+            "tag": "E_nopair_res1.0",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "residual",
+            "alpha": 1.0,
+            "override_margin": null,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 91.8,
+              "rr_em": 88.7,
+              "rr_f1": 93.9,
+              "rr_agr": 92.1,
+              "fix": 82,
+              "brk": 41,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 85.7,
+              "f1": 91.0,
+              "agr": 93.7,
+              "rr_em": 86.1,
+              "rr_f1": 91.4,
+              "rr_agr": 93.6,
+              "fix": 9,
+              "brk": 5,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 76.8,
+              "f1": 82.9,
+              "agr": 82.1,
+              "rr_em": 80.4,
+              "rr_f1": 85.3,
+              "rr_agr": 87.5,
+              "fix": 2,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 78.8,
+              "f1": 84.2,
+              "agr": 90.2,
+              "rr_em": 78.8,
+              "rr_f1": 84.1,
+              "rr_agr": 90.1,
+              "fix": 22,
+              "brk": 21,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 82.5,
+              "f1": 87.9,
+              "agr": 89.9,
+              "rr_em": 82.5,
+              "rr_f1": 87.8,
+              "rr_agr": 90.5,
+              "fix": 10,
+              "brk": 11,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0/eval_addonesent/results.json"
+            }
+          }
+        },
+        "E_nopair_res1.0_gate0.1": {
+          "meta": {
+            "tag": "E_nopair_res1.0_gate0.1",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "residual",
+            "alpha": 1.0,
+            "override_margin": 0.1,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 91.8,
+              "rr_em": 88.8,
+              "rr_f1": 93.9,
+              "rr_agr": 92.1,
+              "fix": 77,
+              "brk": 31,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 85.7,
+              "f1": 91.0,
+              "agr": 93.7,
+              "rr_em": 86.1,
+              "rr_f1": 91.4,
+              "rr_agr": 93.6,
+              "fix": 9,
+              "brk": 5,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 76.8,
+              "f1": 82.9,
+              "agr": 82.1,
+              "rr_em": 80.4,
+              "rr_f1": 85.3,
+              "rr_agr": 87.5,
+              "fix": 2,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 78.8,
+              "f1": 84.2,
+              "agr": 90.2,
+              "rr_em": 78.8,
+              "rr_f1": 84.1,
+              "rr_agr": 90.1,
+              "fix": 19,
+              "brk": 20,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 82.5,
+              "f1": 87.9,
+              "agr": 89.9,
+              "rr_em": 82.5,
+              "rr_f1": 87.8,
+              "rr_agr": 90.5,
+              "fix": 10,
+              "brk": 11,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_addonesent/results.json"
+            }
+          }
+        },
+        "E_nopair_res1.0_gate0.25": {
+          "meta": {
+            "tag": "E_nopair_res1.0_gate0.25",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "residual",
+            "alpha": 1.0,
+            "override_margin": 0.25,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 91.8,
+              "rr_em": 88.6,
+              "rr_f1": 93.9,
+              "rr_agr": 92.0,
+              "fix": 53,
+              "brk": 24,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 85.7,
+              "f1": 91.0,
+              "agr": 93.7,
+              "rr_em": 86.1,
+              "rr_f1": 91.4,
+              "rr_agr": 93.7,
+              "fix": 7,
+              "brk": 3,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 76.8,
+              "f1": 82.9,
+              "agr": 82.1,
+              "rr_em": 80.4,
+              "rr_f1": 85.3,
+              "rr_agr": 87.5,
+              "fix": 2,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 78.8,
+              "f1": 84.2,
+              "agr": 90.2,
+              "rr_em": 78.7,
+              "rr_f1": 84.1,
+              "rr_agr": 90.1,
+              "fix": 16,
+              "brk": 18,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 82.5,
+              "f1": 87.9,
+              "agr": 89.9,
+              "rr_em": 82.4,
+              "rr_f1": 87.8,
+              "rr_agr": 90.1,
+              "fix": 8,
+              "brk": 10,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_addonesent/results.json"
+            }
+          }
+        }
+      },
+      "rr_summaries": {
+        "pair": {
+          "n_dev_items": 758,
+          "dev_top1": {
+            "n": 758,
+            "exact": 76.51715039577836,
+            "f1": 87.62423917556676,
+            "recall_em": 98.02110817941953,
+            "best_f1": 98.97247285515778,
+            "oracle_exact": 98.02110817941953,
+            "fix": 0,
+            "break": 0
+          },
+          "dev_reranked": {
+            "n": 758,
+            "exact": 77.04485488126649,
+            "f1": 87.47912686334736,
+            "recall_em": 98.02110817941953,
+            "best_f1": 98.97247285515778,
+            "oracle_exact": 98.02110817941953,
+            "fix": 21,
+            "break": 17
+          },
+          "heldout_selection_grid": [
+            {
+              "mode": "extractor",
+              "alpha": 0.0,
+              "override_margin": null,
+              "exact": 76.51715039577836,
+              "f1": 87.62423917556676,
+              "fix": 0,
+              "break": 0
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": null,
+              "exact": 77.04485488126649,
+              "f1": 87.47912686334736,
+              "fix": 21,
+              "break": 17
+            },
+            {
+              "mode": "residual",
+              "alpha": 0.25,
+              "override_margin": null,
+              "exact": 76.78100263852242,
+              "f1": 87.7454631786699,
+              "fix": 4,
+              "break": 2
+            },
+            {
+              "mode": "residual",
+              "alpha": 0.5,
+              "override_margin": null,
+              "exact": 76.91292875989446,
+              "f1": 87.74357851979315,
+              "fix": 5,
+              "break": 2
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": null,
+              "exact": 77.17678100263852,
+              "f1": 87.85017450369786,
+              "fix": 9,
+              "break": 4
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.0,
+              "exact": 77.04485488126649,
+              "f1": 87.47912686334736,
+              "fix": 21,
+              "break": 17
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.1,
+              "exact": 76.91292875989446,
+              "f1": 87.44313924698892,
+              "fix": 14,
+              "break": 11
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.25,
+              "exact": 76.78100263852242,
+              "f1": 87.4607293965052,
+              "fix": 9,
+              "break": 7
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.5,
+              "exact": 76.78100263852242,
+              "f1": 87.44477923357383,
+              "fix": 4,
+              "break": 2
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.0,
+              "exact": 77.17678100263852,
+              "f1": 87.85017450369786,
+              "fix": 9,
+              "break": 4
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.1,
+              "exact": 77.17678100263852,
+              "f1": 87.85436263453506,
+              "fix": 8,
+              "break": 3
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.25,
+              "exact": 76.78100263852242,
+              "f1": 87.72243651316303,
+              "fix": 5,
+              "break": 3
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.5,
+              "exact": 76.78100263852242,
+              "f1": 87.72129910771902,
+              "fix": 3,
+              "break": 1
+            }
+          ],
+          "n_features": 14,
+          "elapsed_sec": 55.9
+        },
+        "nopair": {
+          "n_dev_items": 758,
+          "dev_top1": {
+            "n": 758,
+            "exact": 76.51715039577836,
+            "f1": 87.62423917556676,
+            "recall_em": 98.02110817941953,
+            "best_f1": 98.97247285515778,
+            "oracle_exact": 98.02110817941953,
+            "fix": 0,
+            "break": 0
+          },
+          "dev_reranked": {
+            "n": 758,
+            "exact": 77.70448548812665,
+            "f1": 87.98091996675844,
+            "recall_em": 98.02110817941953,
+            "best_f1": 98.97247285515778,
+            "oracle_exact": 98.02110817941953,
+            "fix": 17,
+            "break": 8
+          },
+          "heldout_selection_grid": [
+            {
+              "mode": "extractor",
+              "alpha": 0.0,
+              "override_margin": null,
+              "exact": 76.51715039577836,
+              "f1": 87.62423917556676,
+              "fix": 0,
+              "break": 0
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": null,
+              "exact": 77.70448548812665,
+              "f1": 87.98091996675844,
+              "fix": 17,
+              "break": 8
+            },
+            {
+              "mode": "residual",
+              "alpha": 0.25,
+              "override_margin": null,
+              "exact": 76.51715039577836,
+              "f1": 87.69993573286308,
+              "fix": 2,
+              "break": 2
+            },
+            {
+              "mode": "residual",
+              "alpha": 0.5,
+              "override_margin": null,
+              "exact": 76.51715039577836,
+              "f1": 87.76024481691886,
+              "fix": 3,
+              "break": 3
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": null,
+              "exact": 76.51715039577836,
+              "f1": 87.62831869554682,
+              "fix": 5,
+              "break": 5
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.0,
+              "exact": 77.70448548812665,
+              "f1": 87.98091996675844,
+              "fix": 17,
+              "break": 8
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.1,
+              "exact": 77.44063324538259,
+              "f1": 87.91336074846852,
+              "fix": 12,
+              "break": 5
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.25,
+              "exact": 76.91292875989446,
+              "f1": 87.65836776391184,
+              "fix": 6,
+              "break": 3
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.5,
+              "exact": 76.91292875989446,
+              "f1": 87.84868491452434,
+              "fix": 3,
+              "break": 0
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.0,
+              "exact": 76.51715039577836,
+              "f1": 87.62831869554682,
+              "fix": 5,
+              "break": 5
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.1,
+              "exact": 76.64907651715039,
+              "f1": 87.67229406933751,
+              "fix": 4,
+              "break": 3
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.25,
+              "exact": 76.78100263852242,
+              "f1": 87.75710371879096,
+              "fix": 4,
+              "break": 2
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.5,
+              "exact": 76.78100263852242,
+              "f1": 87.88809141831082,
+              "fix": 2,
+              "break": 0
+            }
+          ],
+          "n_features": 11,
+          "elapsed_sec": 55.9
         }
       }
     },
@@ -5983,7 +8369,9 @@
           },
           "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_ce/eval_addonesent/results.json"
         }
-      }
+      },
+      "variants": {},
+      "rr_summaries": {}
     },
     "deb_large_kl": {
       "run": "deb_large_kl",
@@ -6569,6 +8957,1192 @@
             }
           },
           "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/eval_addonesent/results.json"
+        }
+      },
+      "variants": {
+        "A_pair_reranker": {
+          "meta": {
+            "tag": "A_pair_reranker",
+            "use_pair_score": true,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows",
+              "pair_score",
+              "pair_gap",
+              "pair_missing"
+            ],
+            "select_mode": "reranker",
+            "alpha": 1.0,
+            "override_margin": null,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_pair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_large_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": true
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 90.0,
+              "f1": 95.4,
+              "agr": 92.6,
+              "rr_em": 90.2,
+              "rr_f1": 95.4,
+              "rr_agr": 94.1,
+              "fix": 89,
+              "brk": 77,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/A_pair_reranker/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 95.1,
+              "rr_em": 89.1,
+              "rr_f1": 94.2,
+              "rr_agr": 97.0,
+              "fix": 16,
+              "brk": 8,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/A_pair_reranker/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 83.9,
+              "f1": 90.3,
+              "agr": 91.1,
+              "rr_em": 85.7,
+              "rr_f1": 91.2,
+              "rr_agr": 92.9,
+              "fix": 1,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/A_pair_reranker/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 81.2,
+              "f1": 87.0,
+              "agr": 90.3,
+              "rr_em": 82.2,
+              "rr_f1": 87.6,
+              "rr_agr": 92.4,
+              "fix": 55,
+              "brk": 20,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/A_pair_reranker/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 84.6,
+              "f1": 90.2,
+              "agr": 91.1,
+              "rr_em": 85.6,
+              "rr_f1": 90.8,
+              "rr_agr": 93.3,
+              "fix": 23,
+              "brk": 4,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/A_pair_reranker/eval_addonesent/results.json"
+            }
+          }
+        },
+        "B_nopair_reranker": {
+          "meta": {
+            "tag": "B_nopair_reranker",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "reranker",
+            "alpha": 1.0,
+            "override_margin": null,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_large_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 90.0,
+              "f1": 95.4,
+              "agr": 92.6,
+              "rr_em": 90.3,
+              "rr_f1": 95.5,
+              "rr_agr": 93.1,
+              "fix": 107,
+              "brk": 80,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 95.1,
+              "rr_em": 88.8,
+              "rr_f1": 93.9,
+              "rr_agr": 95.7,
+              "fix": 13,
+              "brk": 8,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 83.9,
+              "f1": 90.3,
+              "agr": 91.1,
+              "rr_em": 83.9,
+              "rr_f1": 90.3,
+              "rr_agr": 91.1,
+              "fix": 0,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 81.2,
+              "f1": 87.0,
+              "agr": 90.3,
+              "rr_em": 82.1,
+              "rr_f1": 87.5,
+              "rr_agr": 90.9,
+              "fix": 61,
+              "brk": 28,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 84.6,
+              "f1": 90.2,
+              "agr": 91.1,
+              "rr_em": 85.6,
+              "rr_f1": 90.9,
+              "rr_agr": 91.3,
+              "fix": 27,
+              "brk": 8,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker/eval_addonesent/results.json"
+            }
+          }
+        },
+        "B_nopair_reranker_gate0.1": {
+          "meta": {
+            "tag": "B_nopair_reranker_gate0.1",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "reranker",
+            "alpha": 1.0,
+            "override_margin": 0.1,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_large_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 90.0,
+              "f1": 95.4,
+              "agr": 92.6,
+              "rr_em": 90.2,
+              "rr_f1": 95.4,
+              "rr_agr": 93.0,
+              "fix": 53,
+              "brk": 33,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 95.1,
+              "rr_em": 88.7,
+              "rr_f1": 93.9,
+              "rr_agr": 96.3,
+              "fix": 8,
+              "brk": 4,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 83.9,
+              "f1": 90.3,
+              "agr": 91.1,
+              "rr_em": 83.9,
+              "rr_f1": 90.3,
+              "rr_agr": 91.1,
+              "fix": 0,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 81.2,
+              "f1": 87.0,
+              "agr": 90.3,
+              "rr_em": 82.1,
+              "rr_f1": 87.4,
+              "rr_agr": 90.7,
+              "fix": 47,
+              "brk": 16,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 84.6,
+              "f1": 90.2,
+              "agr": 91.1,
+              "rr_em": 85.4,
+              "rr_f1": 90.7,
+              "rr_agr": 91.0,
+              "fix": 18,
+              "brk": 3,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_addonesent/results.json"
+            }
+          }
+        },
+        "B_nopair_reranker_gate0.25": {
+          "meta": {
+            "tag": "B_nopair_reranker_gate0.25",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "reranker",
+            "alpha": 1.0,
+            "override_margin": 0.25,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_large_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 90.0,
+              "f1": 95.4,
+              "agr": 92.6,
+              "rr_em": 90.2,
+              "rr_f1": 95.4,
+              "rr_agr": 93.0,
+              "fix": 26,
+              "brk": 8,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 95.1,
+              "rr_em": 88.6,
+              "rr_f1": 93.9,
+              "rr_agr": 95.8,
+              "fix": 4,
+              "brk": 1,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 83.9,
+              "f1": 90.3,
+              "agr": 91.1,
+              "rr_em": 83.9,
+              "rr_f1": 90.3,
+              "rr_agr": 91.1,
+              "fix": 0,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 81.2,
+              "f1": 87.0,
+              "agr": 90.3,
+              "rr_em": 81.8,
+              "rr_f1": 87.4,
+              "rr_agr": 90.6,
+              "fix": 25,
+              "brk": 3,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 84.6,
+              "f1": 90.2,
+              "agr": 91.1,
+              "rr_em": 84.9,
+              "rr_f1": 90.5,
+              "rr_agr": 91.4,
+              "fix": 7,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_addonesent/results.json"
+            }
+          }
+        },
+        "C_nopair_res0.25": {
+          "meta": {
+            "tag": "C_nopair_res0.25",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "residual",
+            "alpha": 0.25,
+            "override_margin": null,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_large_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 90.0,
+              "f1": 95.4,
+              "agr": 92.6,
+              "rr_em": 90.1,
+              "rr_f1": 95.4,
+              "rr_agr": 92.8,
+              "fix": 18,
+              "brk": 11,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/C_nopair_res0.25/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 95.1,
+              "rr_em": 88.6,
+              "rr_f1": 93.8,
+              "rr_agr": 95.6,
+              "fix": 4,
+              "brk": 1,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/C_nopair_res0.25/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 83.9,
+              "f1": 90.3,
+              "agr": 91.1,
+              "rr_em": 83.9,
+              "rr_f1": 90.3,
+              "rr_agr": 91.1,
+              "fix": 0,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/C_nopair_res0.25/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 81.2,
+              "f1": 87.0,
+              "agr": 90.3,
+              "rr_em": 81.5,
+              "rr_f1": 87.2,
+              "rr_agr": 90.9,
+              "fix": 12,
+              "brk": 1,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/C_nopair_res0.25/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 84.6,
+              "f1": 90.2,
+              "agr": 91.1,
+              "rr_em": 84.8,
+              "rr_f1": 90.4,
+              "rr_agr": 91.5,
+              "fix": 4,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/C_nopair_res0.25/eval_addonesent/results.json"
+            }
+          }
+        },
+        "D_nopair_res0.5": {
+          "meta": {
+            "tag": "D_nopair_res0.5",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "residual",
+            "alpha": 0.5,
+            "override_margin": null,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_large_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 90.0,
+              "f1": 95.4,
+              "agr": 92.6,
+              "rr_em": 90.1,
+              "rr_f1": 95.4,
+              "rr_agr": 92.9,
+              "fix": 26,
+              "brk": 18,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/D_nopair_res0.5/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 95.1,
+              "rr_em": 88.6,
+              "rr_f1": 93.8,
+              "rr_agr": 95.7,
+              "fix": 4,
+              "brk": 1,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/D_nopair_res0.5/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 83.9,
+              "f1": 90.3,
+              "agr": 91.1,
+              "rr_em": 83.9,
+              "rr_f1": 90.3,
+              "rr_agr": 91.1,
+              "fix": 0,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/D_nopair_res0.5/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 81.2,
+              "f1": 87.0,
+              "agr": 90.3,
+              "rr_em": 81.5,
+              "rr_f1": 87.2,
+              "rr_agr": 90.8,
+              "fix": 17,
+              "brk": 4,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/D_nopair_res0.5/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 84.6,
+              "f1": 90.2,
+              "agr": 91.1,
+              "rr_em": 84.8,
+              "rr_f1": 90.4,
+              "rr_agr": 91.3,
+              "fix": 5,
+              "brk": 1,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/D_nopair_res0.5/eval_addonesent/results.json"
+            }
+          }
+        },
+        "E_nopair_res1.0": {
+          "meta": {
+            "tag": "E_nopair_res1.0",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "residual",
+            "alpha": 1.0,
+            "override_margin": null,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_large_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 90.0,
+              "f1": 95.4,
+              "agr": 92.6,
+              "rr_em": 90.2,
+              "rr_f1": 95.4,
+              "rr_agr": 93.0,
+              "fix": 40,
+              "brk": 24,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 95.1,
+              "rr_em": 88.7,
+              "rr_f1": 93.8,
+              "rr_agr": 95.9,
+              "fix": 6,
+              "brk": 2,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 83.9,
+              "f1": 90.3,
+              "agr": 91.1,
+              "rr_em": 83.9,
+              "rr_f1": 90.3,
+              "rr_agr": 91.1,
+              "fix": 0,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 81.2,
+              "f1": 87.0,
+              "agr": 90.3,
+              "rr_em": 81.8,
+              "rr_f1": 87.2,
+              "rr_agr": 91.1,
+              "fix": 31,
+              "brk": 8,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 84.6,
+              "f1": 90.2,
+              "agr": 91.1,
+              "rr_em": 85.1,
+              "rr_f1": 90.4,
+              "rr_agr": 91.5,
+              "fix": 10,
+              "brk": 1,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0/eval_addonesent/results.json"
+            }
+          }
+        },
+        "E_nopair_res1.0_gate0.1": {
+          "meta": {
+            "tag": "E_nopair_res1.0_gate0.1",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "residual",
+            "alpha": 1.0,
+            "override_margin": 0.1,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_large_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 90.0,
+              "f1": 95.4,
+              "agr": 92.6,
+              "rr_em": 90.1,
+              "rr_f1": 95.4,
+              "rr_agr": 93.0,
+              "fix": 29,
+              "brk": 20,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 95.1,
+              "rr_em": 88.6,
+              "rr_f1": 93.8,
+              "rr_agr": 95.9,
+              "fix": 5,
+              "brk": 2,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 83.9,
+              "f1": 90.3,
+              "agr": 91.1,
+              "rr_em": 83.9,
+              "rr_f1": 90.3,
+              "rr_agr": 91.1,
+              "fix": 0,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 81.2,
+              "f1": 87.0,
+              "agr": 90.3,
+              "rr_em": 81.9,
+              "rr_f1": 87.3,
+              "rr_agr": 90.9,
+              "fix": 30,
+              "brk": 6,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 84.6,
+              "f1": 90.2,
+              "agr": 91.1,
+              "rr_em": 85.1,
+              "rr_f1": 90.4,
+              "rr_agr": 91.3,
+              "fix": 10,
+              "brk": 1,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_addonesent/results.json"
+            }
+          }
+        },
+        "E_nopair_res1.0_gate0.25": {
+          "meta": {
+            "tag": "E_nopair_res1.0_gate0.25",
+            "use_pair_score": false,
+            "scalar_features_used": [
+              "score",
+              "raw_score",
+              "null_score",
+              "start_logit",
+              "end_logit",
+              "gap_to_top",
+              "prob",
+              "rank",
+              "len_tokens",
+              "len_chars",
+              "n_windows"
+            ],
+            "select_mode": "residual",
+            "alpha": 1.0,
+            "override_margin": 0.25,
+            "rerank_margin": null,
+            "trained_with": {
+              "tag": "_nopair",
+              "target_mode": "graded",
+              "partial_weight": 0.3,
+              "pair_features": true,
+              "extractor": "weights/deb_large_kl/best.pt",
+              "top_k": 20,
+              "use_pair_score": false
+            }
+          },
+          "sets": {
+            "dev": {
+              "n": 10570,
+              "pairs": 8622,
+              "em": 90.0,
+              "f1": 95.4,
+              "agr": 92.6,
+              "rr_em": 90.2,
+              "rr_f1": 95.4,
+              "rr_agr": 92.9,
+              "fix": 16,
+              "brk": 3,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_dev/results.json"
+            },
+            "gan_dev": {
+              "n": 1062,
+              "pairs": 1061,
+              "em": 88.3,
+              "f1": 93.8,
+              "agr": 95.1,
+              "rr_em": 88.5,
+              "rr_f1": 93.8,
+              "rr_agr": 95.5,
+              "fix": 2,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_dev/results.json"
+            },
+            "gan_adv": {
+              "n": 56,
+              "pairs": 56,
+              "em": 83.9,
+              "f1": 90.3,
+              "agr": 91.1,
+              "rr_em": 83.9,
+              "rr_f1": 90.3,
+              "rr_agr": 91.1,
+              "fix": 0,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_adv/results.json"
+            },
+            "addsent": {
+              "n": 3560,
+              "pairs": 3007,
+              "em": 81.2,
+              "f1": 87.0,
+              "agr": 90.3,
+              "rr_em": 81.7,
+              "rr_f1": 87.3,
+              "rr_agr": 90.6,
+              "fix": 19,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_addsent/results.json"
+            },
+            "addonesent": {
+              "n": 1787,
+              "pairs": 1491,
+              "em": 84.6,
+              "f1": 90.2,
+              "agr": 91.1,
+              "rr_em": 84.8,
+              "rr_f1": 90.4,
+              "rr_agr": 91.5,
+              "fix": 5,
+              "brk": 0,
+              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_addonesent/results.json"
+            }
+          }
+        }
+      },
+      "rr_summaries": {
+        "pair": {
+          "n_dev_items": 758,
+          "dev_top1": {
+            "n": 758,
+            "exact": 78.62796833773088,
+            "f1": 89.52652380793806,
+            "recall_em": 98.94459102902374,
+            "best_f1": 99.46781604263273,
+            "oracle_exact": 98.94459102902374,
+            "fix": 0,
+            "break": 0
+          },
+          "dev_reranked": {
+            "n": 758,
+            "exact": 79.02374670184696,
+            "f1": 89.46356096327416,
+            "recall_em": 98.94459102902374,
+            "best_f1": 99.46781604263273,
+            "oracle_exact": 98.94459102902374,
+            "fix": 7,
+            "break": 4
+          },
+          "heldout_selection_grid": [
+            {
+              "mode": "extractor",
+              "alpha": 0.0,
+              "override_margin": null,
+              "exact": 78.62796833773088,
+              "f1": 89.52652380793806,
+              "fix": 0,
+              "break": 0
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": null,
+              "exact": 79.02374670184696,
+              "f1": 89.46356096327416,
+              "fix": 7,
+              "break": 4
+            },
+            {
+              "mode": "residual",
+              "alpha": 0.25,
+              "override_margin": null,
+              "exact": 78.7598944591029,
+              "f1": 89.46832110733277,
+              "fix": 1,
+              "break": 0
+            },
+            {
+              "mode": "residual",
+              "alpha": 0.5,
+              "override_margin": null,
+              "exact": 78.7598944591029,
+              "f1": 89.46832110733277,
+              "fix": 1,
+              "break": 0
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": null,
+              "exact": 79.02374670184696,
+              "f1": 89.60181777776876,
+              "fix": 3,
+              "break": 0
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.0,
+              "exact": 79.02374670184696,
+              "f1": 89.46356096327416,
+              "fix": 7,
+              "break": 4
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.1,
+              "exact": 78.7598944591029,
+              "f1": 89.36465255108001,
+              "fix": 1,
+              "break": 0
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.25,
+              "exact": 78.62796833773088,
+              "f1": 89.38517439218232,
+              "fix": 0,
+              "break": 0
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.5,
+              "exact": 78.62796833773088,
+              "f1": 89.52652380793806,
+              "fix": 0,
+              "break": 0
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.0,
+              "exact": 79.02374670184696,
+              "f1": 89.60181777776876,
+              "fix": 3,
+              "break": 0
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.1,
+              "exact": 78.7598944591029,
+              "f1": 89.51710051355435,
+              "fix": 1,
+              "break": 0
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.25,
+              "exact": 78.7598944591029,
+              "f1": 89.51710051355435,
+              "fix": 1,
+              "break": 0
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.5,
+              "exact": 78.62796833773088,
+              "f1": 89.52652380793806,
+              "fix": 0,
+              "break": 0
+            }
+          ],
+          "n_features": 14,
+          "elapsed_sec": 88.5
+        },
+        "nopair": {
+          "n_dev_items": 758,
+          "dev_top1": {
+            "n": 758,
+            "exact": 78.62796833773088,
+            "f1": 89.52652380793806,
+            "recall_em": 98.94459102902374,
+            "best_f1": 99.46781604263273,
+            "oracle_exact": 98.94459102902374,
+            "fix": 0,
+            "break": 0
+          },
+          "dev_reranked": {
+            "n": 758,
+            "exact": 79.81530343007915,
+            "f1": 89.70029505884735,
+            "recall_em": 98.94459102902374,
+            "best_f1": 99.46781604263273,
+            "oracle_exact": 98.94459102902374,
+            "fix": 14,
+            "break": 5
+          },
+          "heldout_selection_grid": [
+            {
+              "mode": "extractor",
+              "alpha": 0.0,
+              "override_margin": null,
+              "exact": 78.62796833773088,
+              "f1": 89.52652380793806,
+              "fix": 0,
+              "break": 0
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": null,
+              "exact": 79.81530343007915,
+              "f1": 89.70029505884735,
+              "fix": 14,
+              "break": 5
+            },
+            {
+              "mode": "residual",
+              "alpha": 0.25,
+              "override_margin": null,
+              "exact": 78.89182058047493,
+              "f1": 89.51229648112347,
+              "fix": 2,
+              "break": 0
+            },
+            {
+              "mode": "residual",
+              "alpha": 0.5,
+              "override_margin": null,
+              "exact": 79.02374670184696,
+              "f1": 89.55627185491414,
+              "fix": 3,
+              "break": 0
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": null,
+              "exact": 79.28759894459102,
+              "f1": 89.5395193315653,
+              "fix": 5,
+              "break": 0
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.0,
+              "exact": 79.81530343007915,
+              "f1": 89.70029505884735,
+              "fix": 14,
+              "break": 5
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.1,
+              "exact": 79.02374670184696,
+              "f1": 89.46579591079858,
+              "fix": 5,
+              "break": 2
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.25,
+              "exact": 78.62796833773088,
+              "f1": 89.38517439218232,
+              "fix": 0,
+              "break": 0
+            },
+            {
+              "mode": "reranker",
+              "alpha": 1.0,
+              "override_margin": 0.5,
+              "exact": 78.62796833773088,
+              "f1": 89.45113745286834,
+              "fix": 0,
+              "break": 0
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.0,
+              "exact": 79.28759894459102,
+              "f1": 89.5395193315653,
+              "fix": 5,
+              "break": 0
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.1,
+              "exact": 79.02374670184696,
+              "f1": 89.4877835976939,
+              "fix": 3,
+              "break": 0
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.25,
+              "exact": 78.62796833773088,
+              "f1": 89.38517439218232,
+              "fix": 0,
+              "break": 0
+            },
+            {
+              "mode": "residual",
+              "alpha": 1.0,
+              "override_margin": 0.5,
+              "exact": 78.62796833773088,
+              "f1": 89.45113745286834,
+              "fix": 0,
+              "break": 0
+            }
+          ],
+          "n_features": 11,
+          "elapsed_sec": 85.4
         }
       }
     }
