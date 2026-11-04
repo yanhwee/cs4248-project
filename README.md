@@ -45,6 +45,8 @@ The one-shot version (sequential; GPU, Apple MPS or CPU):
 ```bash
 MODEL=bert-base-uncased MODES="ce aug kl" bash scripts/run_pipeline.sh
 MODEL=microsoft/deberta-v3-base RUN_PREFIX=deb MODES="kl" PRECISION=bf16 bash scripts/run_pipeline.sh
+MODEL=microsoft/deberta-v3-large RUN_PREFIX=deb_large MODES="ce kl" BATCH=8 GRAD_ACCUM=2 LR=1e-5 PRECISION=bf16 \
+  bash scripts/run_pipeline.sh                           # large encoder: GPU only (add EXTRA_TRAIN_ARGS=--grad_checkpointing if memory is short)
 ```
 
 The same steps by hand:
@@ -99,7 +101,9 @@ Loss modes (`--loss_mode`):
 | `kl` | CE(q) + CE(q′) + λ·KL_sym | **proposed** consistency training |
 | `ot` / `hungarian` / `dual` | CE(q) + CE(q′) + 1-D Wasserstein and/or Hungarian span matching | ablation (proposal item 2a) |
 
-Useful flags: `--precision fp16|bf16` (GPU), `--max_examples N` (subset), `--eval_every N`, `--device cpu|mps|cuda`.
+Useful flags: `--precision fp16|bf16` (GPU), `--max_examples N` (subset), `--eval_every N`, `--device cpu|mps|cuda`,
+`--grad_accum N` (effective batch = batch × N), `--grad_checkpointing` (activation checkpointing: ~30 % slower, far less GPU
+memory; for `microsoft/deberta-v3-large`). `train_summary.json` records `peak_gpu_mem_gb` for GPU runs.
 
 ### SoC compute cluster (Slurm)
 
@@ -124,6 +128,8 @@ exit; exit
 # 3. submit jobs from the repository root on xlogin
 bash scripts/submit_all_ablations.sh          # paraphrase-cache job, then one GPU job per run:
                                               #   bert ce / aug / kl (one job per lambda) / ot / dual, deberta ce / kl
+bash scripts/submit_deberta_large.sh          # afterwards: deberta-v3-large ce / kl (one job each; batch 8x2, lr 1e-5, 10 h limit;
+                                              #   GRAD_CKPT=1 after an out-of-memory failure, GPU=<type> for another GPU from gpufree)
 #   or single jobs:
 sbatch scripts/job.sbatch                     # bert-base: ce, aug, kl -> reranker -> all evaluations, in one job
 sbatch --job-name=g17_deb --export=ALL,MODEL=microsoft/deberta-v3-base,RUN_PREFIX=deb,MODES="kl" scripts/job.sbatch
@@ -163,7 +169,8 @@ What this means:
   needs about a day and one `kl` run several days.
 - **Apple-silicon GPU** (`--device mps --batch_size 8 --grad_accum 2`): a 2-epoch BERT-base `ce` run is ≈ 3 h and a
   `kl` run ≈ 7 h, so single BERT-base runs are feasible overnight on a 16 GB Mac. Batch 16 runs out of GPU memory in
-  paired modes, and DeBERTa-v3-base is roughly twice as slow and may not fit.
+  paired modes, and DeBERTa-v3-base is roughly twice as slow and may not fit. DeBERTa-v3-large (`scripts/submit_deberta_large.sh`)
+  is cluster-only: it is ~3.5× the compute of the base model and its optimiser state alone exceeds a 16 GB Mac.
 - The **full grid** (BERT `ce`/`aug`/`kl`, DeBERTa-v3 `ce`/`kl`, optional OT ablations, λ sweep) belongs on the SoC
   cluster; a T4 or A100 with fp16/bf16 is several times faster than MPS and runs the jobs in parallel.
 
@@ -186,7 +193,7 @@ figures/*.pdf|png|md, report/tables/*.tex, report/figures/*.pdf
 ```
 g17qa/              core package (data, paraphrase, model, losses, decode, reranker, metrics, utils)
 prepare_paraphrases.py  train.py  train_reranker.py  evaluate.py  visualize.py  tsne_pairs.py  download_eval_sets.py
-scripts/            smoke_test_cpu.sh, run_pipeline.sh, job.sbatch, submit_all_ablations.sh, setup_env_cluster.sh, benchmark_cpu.py
+scripts/            smoke_test_cpu.sh, run_pipeline.sh, job.sbatch, submit_all_ablations.sh, submit_deberta_large.sh, setup_env_cluster.sh, benchmark_cpu.py
 tests/test_core.py  unit tests (metrics vs official scorer, windows/labels, losses, decoding)
 provided/           official scorer evaluate-v2.0.py (in git) + train/dev JSON from Canvas (not in git)
 data/external/      Gan & Ng paraphrased sets, Adversarial SQuAD (download_eval_sets.py; not in git)

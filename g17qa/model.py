@@ -14,7 +14,7 @@ hf_logging.set_verbosity_error()  # hide the (expected) report about unused MLM/
 
 
 class SpanExtractor(nn.Module):
-    def __init__(self, model_name: str, dropout: float = 0.1):
+    def __init__(self, model_name: str, dropout: float = 0.1, gradient_checkpointing: bool = False):
         super().__init__()
         self.model_name = model_name
         try:
@@ -24,6 +24,10 @@ class SpanExtractor(nn.Module):
         # transformers>=5 loads weights in the dtype stored in the checkpoint (fp16 for microsoft/deberta-v3-base);
         # keep fp32 master weights so the head matches and AMP/GradScaler behave as expected
         self.encoder.float()
+        if gradient_checkpointing:
+            # recompute activations in the backward pass: ~30 % more compute for a several-fold cut in activation
+            # memory, which is what lets a large encoder (e.g. microsoft/deberta-v3-large) train on a 40-47 GB GPU
+            self.encoder.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
         hidden = self.encoder.config.hidden_size
         self.dropout = nn.Dropout(dropout)
         self.qa_outputs = nn.Linear(hidden, 2)

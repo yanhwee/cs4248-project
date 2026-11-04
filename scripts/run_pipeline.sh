@@ -3,6 +3,8 @@
 #
 #   MODEL=bert-base-uncased MODES="ce aug kl" bash scripts/run_pipeline.sh
 #   MODEL=microsoft/deberta-v3-base MODES="kl" PRECISION=bf16 RUN_PREFIX=deb bash scripts/run_pipeline.sh
+#   MODEL=microsoft/deberta-v3-large MODES="ce kl" RUN_PREFIX=deb_large BATCH=8 GRAD_ACCUM=2 LR=1e-5 PRECISION=bf16 \
+#     EXTRA_TRAIN_ARGS=--grad_checkpointing bash scripts/run_pipeline.sh      # large encoder (see scripts/submit_deberta_large.sh)
 #
 # Stages (each is skipped when its output already exists, so the script can be re-run after an interruption):
 #   1. paraphrase caches for train and dev (MarianMT + similarity filter)
@@ -18,6 +20,8 @@ MODES=${MODES:-"ce aug kl"}
 RUN_PREFIX=${RUN_PREFIX:-bert}
 EPOCHS=${EPOCHS:-2}
 BATCH=${BATCH:-16}
+GRAD_ACCUM=${GRAD_ACCUM:-1}         # optimiser step every GRAD_ACCUM batches (effective batch = BATCH x GRAD_ACCUM)
+LR=${LR:-3e-5}                      # 3e-5 for base encoders; 1e-5 for microsoft/deberta-v3-large
 PRECISION=${PRECISION:-fp16}        # fp16 for T4/V100, bf16 for A100/CPU, fp32 otherwise
 DEVICE=${DEVICE:-auto}
 LAMBDA_KL=${LAMBDA_KL:-1.0}         # single lambda for the kl run ...
@@ -31,7 +35,7 @@ PARA_DEV=data/paraphrases/dev.jsonl
 EXTRA_TRAIN_ARGS=${EXTRA_TRAIN_ARGS:-}
 has_stage() { case " $STAGES " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 
-echo "== pipeline: model=$MODEL modes=[$MODES] epochs=$EPOCHS batch=$BATCH precision=$PRECISION device=$DEVICE stages=[$STAGES] =="
+echo "== pipeline: model=$MODEL modes=[$MODES] epochs=$EPOCHS batch=$BATCH x$GRAD_ACCUM lr=$LR precision=$PRECISION device=$DEVICE stages=[$STAGES] =="
 echo "   started on $(hostname) at $(date)"
 $PY download_eval_sets.py
 
@@ -72,7 +76,7 @@ for JOB in $JOBS; do
         rm -rf "weights/$RUN" "runs/$RUN"
       fi
       $PY train.py --run_name "$RUN" --model "$MODEL" --loss_mode "$MODE" --paraphrase_cache "$PARA_TRAIN" \
-        --epochs "$EPOCHS" --batch_size "$BATCH" --precision "$PRECISION" --device "$DEVICE" --lambda_kl "$LAM" \
+        --epochs "$EPOCHS" --batch_size "$BATCH" --grad_accum "$GRAD_ACCUM" --lr "$LR" --precision "$PRECISION" --device "$DEVICE" --lambda_kl "$LAM" \
         --max_examples "$MAX_EXAMPLES" $EXTRA_TRAIN_ARGS
     fi
   fi

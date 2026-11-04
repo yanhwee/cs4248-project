@@ -184,6 +184,20 @@ Consequences the group should know:
 2. There is no flag that restores the old *epoch selection by F1*, so `--target_mode f1` reproduces the old targets but not necessarily the old checkpoint choice.
 3. In `evaluate.py` the ceiling is divided by the number of questions in the set while `n` counts only questions with at least one candidate; the two coincide in practice (every question yields candidates), so Recall@k is a recall over all questions.
 
+## Addendum (4 Nov 2026): DeBERTa-v3-large runs
+
+Set-up for fine-tuning `microsoft/deberta-v3-large` (24 layers, hidden 1024, ~435 M parameters; the base model has 12 layers, hidden 768, ~184 M) with the same pipeline, as runs `deb_large_ce` and `deb_large_kl` (λ = 1).
+
+- `g17qa/model.py`: `SpanExtractor(..., gradient_checkpointing=True)` enables activation checkpointing in the encoder (`gradient_checkpointing_enable`, non-reentrant). Off by default; checkpoints saved with it load unchanged.
+- `train.py`: new flag `--grad_checkpointing`; `train_summary.json` gains `peak_gpu_mem_gb` (`torch.cuda.max_memory_allocated`, `null` off-GPU) and the final log line prints it, so the memory headroom of a run is on record.
+- `scripts/run_pipeline.sh`: new variables `GRAD_ACCUM` (default 1) and `LR` (default 3e-5) passed to `train.py`; defaults reproduce the existing runs exactly.
+- `scripts/submit_deberta_large.sh` (new): submits one Slurm job per mode through `scripts/job.sbatch` with `BATCH=8 GRAD_ACCUM=2` (effective batch 16, identical to the base runs so the comparison is clean), `LR=1e-5`, `PRECISION=bf16`, `EPOCHS=2`, `--time=10:00:00`, `STAGES="train reranker eval"`. It reuses the paraphrase caches and refuses to submit if they are missing. `GRAD_CKPT=1` adds `--grad_checkpointing`; `GPU=<type>` picks another GPU type; `MODES="ce"` runs a subset.
+- `scripts/make_results_report.py`: labels for `deb_large_ce` / `deb_large_kl` (the report already lists unknown runs under their run names; `visualize.py` groups by the model recorded in `config.json`, so it needs no change).
+
+Why these settings. The learning rate 3e-5 of the base runs is above the range normally used for large DeBERTa encoders (1e-5 or lower) and frequently diverges; 1e-5 with the same 10 % warm-up is the conventional choice. The per-step batch is halved because the paired modes put both q and q′ windows through the encoder (16 pairs = 32 sequences of 384 tokens), which at 24 layers × hidden 1024 is estimated at ~45 GB of activations plus ~7 GB of weights, gradients and Adam state — too close to the 47 GB MIG slice; at batch 8 the estimate is ~25 GB for kl and ~15 GB for ce. These are estimates, not measurements: if a job stops with CUDA out of memory, resubmit it with `GRAD_CKPT=1` (about 30 % slower), or with `GPU=<type>` if `gpufree` lists a GPU with more memory. Expected time on one h100-47 slice, scaled ×3.5 from the base runs (17 min ce, 33 min kl): ~1 h ce, ~2 h kl, plus ~15 min for the reranker and the five evaluation sets; the 10 h limit leaves room for a slower slice. Each run writes two fp32 checkpoints of ~1.7 GB (`best.pt`, `last.pt`).
+
+Verified locally: `python tests/test_core.py` (11/11); a tiny-BERT CPU run of `train.py` with `--grad_accum 2 --grad_checkpointing` (32 batches → 16 optimiser steps, config and summary record both settings); `bash -n` on both shell scripts. Not verified: GPU memory and time on the cluster (no GPU locally). Local CPU/MPS training of the large model is not feasible (the base BERT already needs ~12 h per epoch on CPU; the 16 GB MPS device cannot hold the large model's optimiser state).
+
 ## Direction notes (decisions the group should confirm)
 
 - **Reranker form (decided 3 Nov 2026).** The system is fixed as two versions: *extractor only* (top-1 span) and *extractor + learned span reranker* (the small MLP over the extractor's own representations, trained only on the held-out training articles). No LLM-based reranker is pursued. Every `evaluate.py` run and every generated table reports both versions, so the reranker's contribution is always visible rather than assumed. The report's method section states this explicitly.

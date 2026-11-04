@@ -135,10 +135,11 @@ def main() -> int:
         print("no runs found", file=sys.stderr)
         return 1
     D = {n: digest_run(n, r) for n, r in runs.items()}
-    order = ["bert_ce", "bert_aug", "bert_kl_lam0.5", "bert_kl_lam1.0", "bert_kl_lam2.0", "bert_ot", "bert_dual", "deb_ce", "deb_kl"]
+    order = ["bert_ce", "bert_aug", "bert_kl_lam0.5", "bert_kl_lam1.0", "bert_kl_lam2.0", "bert_ot", "bert_dual", "deb_ce", "deb_kl", "deb_large_ce", "deb_large_kl"]
     order = [n for n in order if n in D] + [n for n in D if n not in order]
     label = {n: {"bert_ce": "BERT ce (baseline)", "bert_aug": "BERT aug", "bert_kl_lam0.5": "BERT kl λ=0.5", "bert_kl_lam1.0": "BERT kl λ=1", "bert_kl_lam2.0": "BERT kl λ=2",
-                 "bert_ot": "BERT ot", "bert_dual": "BERT dual", "deb_ce": "DeBERTa ce (baseline)", "deb_kl": "DeBERTa kl λ=1"}.get(n, n) for n in order}
+                 "bert_ot": "BERT ot", "bert_dual": "BERT dual", "deb_ce": "DeBERTa ce (baseline)", "deb_kl": "DeBERTa kl λ=1",
+                 "deb_large_ce": "DeBERTa-large ce (baseline)", "deb_large_kl": "DeBERTa-large kl λ=1"}.get(n, n) for n in order}
     ce, aug, kl, kl2, deb_ce, deb_kl, ot, dual = (D.get(k) for k in ("bert_ce", "bert_aug", args.selected, "bert_kl_lam2.0", "deb_ce", "deb_kl", "bert_ot", "bert_dual"))
     if not (ce and kl and aug):
         print("need bert_ce, bert_aug and the selected kl run", file=sys.stderr)

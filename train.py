@@ -59,7 +59,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--max_answer_len", type=int, default=30)
     p.add_argument("--epochs", type=int, default=2)
     p.add_argument("--batch_size", type=int, default=16)
-    p.add_argument("--grad_accum", type=int, default=1)
+    p.add_argument("--grad_accum", type=int, default=1, help="optimiser step every N batches (effective batch = batch_size x N)")
+    p.add_argument("--grad_checkpointing", action="store_true", help="activation checkpointing in the encoder: ~30%% slower, several-fold less GPU memory (large encoders)")
     p.add_argument("--lr", type=float, default=3e-5)
     p.add_argument("--weight_decay", type=float, default=0.01)
     p.add_argument("--warmup_ratio", type=float, default=0.1)
@@ -147,7 +148,7 @@ def main() -> None:
     print(f"features: {len(feats)} windows ({n_pair_feats} with a paraphrase view) | {len(loader)} batches/epoch")
 
     # ---- model / optimiser -------------------------------------------------------------------
-    model = SpanExtractor(args.model).to(device)
+    model = SpanExtractor(args.model, gradient_checkpointing=args.grad_checkpointing).to(device)
     print(f"parameters: {count_trainable_parameters(model) / 1e6:.1f}M trainable")
     no_decay = ("bias", "LayerNorm.weight", "layer_norm.weight")
     groups = [
@@ -258,10 +259,12 @@ def main() -> None:
         "best_val_pairs": best_entry.get("pairs"), "selection_note": "best checkpoint within the run by validation F1; choose lambda across runs on validation F1 and agreement",
         "val_history": val_history, "final_full_val": final, "train_time_sec": round(timer.elapsed(), 1),
         "steps": global_step, "best_checkpoint": os.path.join(wdir, "best.pt"), "last_checkpoint": os.path.join(wdir, "last.pt"),
+        "peak_gpu_mem_gb": round(torch.cuda.max_memory_allocated(device) / 2**30, 2) if device.type == "cuda" else None,
     }
     write_json(summary, os.path.join(run_dir, "train_summary.json"))
     agr = f" | agreement {best_entry['agreement_em']:.2f}" if best_entry.get("pairs") else ""
-    print(f"done in {timer.elapsed() / 60:.1f} min | best val F1 {best_f1:.2f}{agr} | checkpoints in {wdir}")
+    mem = f" | peak GPU memory {summary['peak_gpu_mem_gb']:.1f} GB" if summary["peak_gpu_mem_gb"] is not None else ""
+    print(f"done in {timer.elapsed() / 60:.1f} min | best val F1 {best_f1:.2f}{agr}{mem} | checkpoints in {wdir}")
 
 
 if __name__ == "__main__":
