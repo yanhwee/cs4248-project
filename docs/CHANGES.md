@@ -195,3 +195,17 @@ Consequences the group should know:
 2. `python visualize.py --best <run>` and the two `tsne_pairs.py` calls; fill every `\TBD{}` in `report/main.tex`; compile and check the 4 + 1 page limit.
 3. Pick the qualitative examples from `runs/<run>/eval_dev/disagreements.jsonl`.
 4. Slides and the 15-minute video (not covered here).
+
+## Addendum (4 Nov 2026): reranker ablations — `pair_score` switch, residual fusion, confidence gate, FIX/BREAK analysis
+
+Branch `reranker-ablations` (from `ck` at 063394d). Only the reranker and its evaluation were touched; the extractor, paraphrase pipeline, losses, splits and existing checkpoints/artefacts are unchanged. All defaults reproduce the previous behaviour.
+
+| File | Change |
+| :-- | :-- |
+| `g17qa/reranker.py` | `PAIR_FEATURES`, `scalar_feature_indices`, `SpanReranker(scalar_idx=…)` (MLP input = selected columns; non-persistent index buffer so old checkpoints load); `train_reranker(use_pair_score=…)`; checkpoints record `scalar_idx`, `scalar_features_used`, `use_pair_score`; `select_index` (modes `extractor` / `reranker` / `residual`, `alpha`, `override_margin`, the old `margin`); `rerank_logits`; `choose` / `evaluate_items` / `apply_reranker` take the new kwargs (defaults = old behaviour; `apply_reranker(return_details=True)` also returns per-candidate scores); `classify_change`, `change_counts`, `analyze_changes` (FIX / BREAK / SAME_CORRECT / SAME_WRONG), `recall_at_ks` |
+| `train_reranker.py` | `--use_pair_score` / `--no_pair_score`, `--tag` (output names `reranker<tag>.pt`, `reranker_summary<tag>.json`); summary records `use_pair_score`, `scalar_features_used`, `tag` and a `heldout_selection_grid` (EM / F1 / FIX / BREAK for extractor, reranker, residual alpha 0.25/0.5/1.0 and gate margins, on the held-out articles, so alpha can be chosen without the dev set) |
+| `evaluate.py` | `--select_mode`, `--alpha`, `--override_margin`, `--tag` (outputs to `runs/<run>/rerank_variants/<tag>/eval_<set>/`), `--n_change_examples`; `results.json` gains `reranker_variant`, `extractor.recall_at_k`, `reranker.delta` (dEM, dF1, dAgreement), `reranker.changes` (FIX/BREAK counts and %); new `rerank_changes.jsonl`; removed a duplicated `load_reranker` line left by the PR #2 merge |
+| `scripts/run_reranker_variants.sh`, `job_reranker_variants.sbatch`, `submit_reranker_variants.sh`, `summarize_reranker_variants.py` | variants A–E on existing extractors, one Slurm job per extractor, and a generated Markdown table per run/eval set |
+| `tests/test_reranker.py` | 10 hermetic tests (synthetic candidates, no model download) |
+
+Residual fusion: `final_i = log p_ext(i) + alpha * log p_rr(i)`, where both are per-question log-softmaxes over the candidate list (the reranker is trained with a softmax over exactly these candidates; extractor score differences are log-odds under its start/end softmaxes). `alpha = 0` is exactly the extractor ranking.

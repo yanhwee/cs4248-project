@@ -21,6 +21,17 @@ built from per-candidate relevance (`target_mode`):
 Questions with no positive candidate are skipped for training but still counted at evaluation time. Because the
 reranker can only choose among the top-k, evaluation reports its ceilings: `recall_em` (Recall@k EM, the best EM
 any reranker could reach) and `best_f1` (best-F1@k).
+
+Ablation / selection options (all default to the original behaviour):
+
+  use_pair_score=False   drops the three paraphrase-derived scalar features (PAIR_FEATURES: pair_score, pair_gap,
+                         pair_missing) from the MLP input; the model then never sees the other view's scores.
+  selection modes        how the final answer is picked from the reranker's scores (see `select_index`):
+                           extractor  keep the extractor's own top-1 (no reranking)
+                           reranker   argmax of the reranker score (original behaviour)
+                           residual   argmax of  log p_ext(i) + alpha * log p_rr(i)   (conservative fusion)
+                         plus an optional confidence gate (`override_margin`): the extractor top-1 is only replaced if
+                         the reranker prefers the replacement over it by more than that margin.
 """
 
 from __future__ import annotations
@@ -41,6 +52,16 @@ SCALAR_FEATURES = [
     "score", "raw_score", "null_score", "start_logit", "end_logit", "gap_to_top", "prob",
     "rank", "len_tokens", "len_chars", "n_windows", "pair_score", "pair_gap", "pair_missing",
 ]
+
+
+# Scalar features that are derived from the paraphrase view. `use_pair_score=False` removes all of them.
+PAIR_FEATURES = ("pair_score", "pair_gap", "pair_missing")
+SELECT_MODES = ("extractor", "reranker", "residual")
+
+
+def scalar_feature_indices(use_pair_score: bool = True) -> List[int]:
+    """Columns of `candidate_scalars` fed to the MLP."""
+    return [i for i, n in enumerate(SCALAR_FEATURES) if use_pair_score or n not in PAIR_FEATURES]
 
 
 def candidate_scalars(cands: Sequence[Candidate], n_windows: int) -> np.ndarray:
@@ -131,10 +152,19 @@ def candidate_ceiling(items: Sequence[Dict[str, Any]]) -> Dict[str, float]:
 
 
 class SpanReranker(nn.Module):
-    def __init__(self, hidden_size: int, n_scalars: int, scalar_mean: np.ndarray, scalar_std: np.ndarray, proj: int = 128, dropout: float = 0.1):
+    """`scalar_idx` selects the columns of the full (len(SCALAR_FEATURES)-wide) scalar matrix the MLP reads;
+    `scalar_mean`/`scalar_std` and `n_scalars` refer to those selected columns. None = all columns (original model)."""
+
+    def __init__(self, hidden_size: int, n_scalars: int, scalar_mean: np.ndarray, scalar_std: np.ndarray, proj: int = 128, dropout: float = 0.1,
+                 scalar_idx: Optional[Sequence[int]] = None):
         super().__init__()
+        if scalar_idx is not None and len(scalar_idx) != n_scalars:
+            raise ValueError(f"n_scalars={n_scalars} does not match len(scalar_idx)={len(scalar_idx)}")
         self.hidden_size = hidden_size
         self.n_scalars = n_scalars
+        self.scalar_idx = None if scalar_idx is None else [int(i) for i in scalar_idx]
+        # non-persistent: not part of the state_dict, so checkpoints written before this option still load
+        self.register_buffer("_scalar_idx", torch.tensor(self.scalar_idx if self.scalar_idx is not None else [], dtype=torch.long), persistent=False)
         self.register_buffer("scalar_mean", torch.tensor(scalar_mean, dtype=torch.float32))
         self.register_buffer("scalar_std", torch.tensor(scalar_std, dtype=torch.float32))
         self.vec_norm = nn.LayerNorm(4 * hidden_size)
@@ -142,8 +172,20 @@ class SpanReranker(nn.Module):
         self.sc_proj = nn.Linear(n_scalars, 32)
         self.mlp = nn.Sequential(nn.GELU(), nn.Dropout(dropout), nn.Linear(proj + 32, proj), nn.GELU(), nn.Dropout(dropout), nn.Linear(proj, 1))
 
+    @property
+    def use_pair_score(self) -> bool:
+        if self.scalar_idx is None:
+            return True
+        return all(SCALAR_FEATURES.index(n) in self.scalar_idx for n in PAIR_FEATURES)
+
+    @property
+    def feature_names(self) -> List[str]:
+        return list(SCALAR_FEATURES) if self.scalar_idx is None else [SCALAR_FEATURES[i] for i in self.scalar_idx]
+
     def forward(self, vecs: torch.Tensor, scalars: torch.Tensor) -> torch.Tensor:
-        """vecs [B,K,4d] float, scalars [B,K,n] -> scores [B,K]"""
+        """vecs [B,K,4d] float, scalars [B,K,len(SCALAR_FEATURES)] (full width) -> scores [B,K]"""
+        if self.scalar_idx is not None:
+            scalars = scalars.index_select(-1, self._scalar_idx.to(scalars.device))
         v = self.vec_proj(self.vec_norm(vecs.float()))
         s = self.sc_proj((scalars.float() - self.scalar_mean) / self.scalar_std)
         return self.mlp(torch.cat([v, s], -1)).squeeze(-1)
@@ -167,36 +209,169 @@ def _pad_items(items: Sequence[Dict[str, Any]], device: torch.device, target_mod
     return (torch.from_numpy(vecs).to(device), torch.from_numpy(scal).to(device), torch.from_numpy(mask).to(device), torch.from_numpy(tgt).to(device))
 
 
+def log_softmax_np(x: np.ndarray) -> np.ndarray:
+    """Numerically stable log-softmax over a 1-D array (entries may be -inf)."""
+    x = np.asarray(x, dtype=np.float64)
+    m = x.max()
+    return x - (m + np.log(np.exp(x - m).sum()))
+
+
+def select_index(
+    ext_scores: np.ndarray,
+    rr_logits: Optional[np.ndarray],
+    mode: str = "reranker",
+    alpha: float = 1.0,
+    override_margin: Optional[float] = None,
+    margin: Optional[float] = None,
+) -> Tuple[int, Dict[str, Any]]:
+    """Pick one candidate. `ext_scores` are the extractor scores in extractor order (index 0 = extractor top-1),
+    `rr_logits` the raw reranker outputs for the same candidates.
+
+    Normalisation. Both score sets are turned into per-question log-probabilities over the candidate list with a
+    log-softmax before they are combined. This is the sensible common scale because (i) the reranker is trained
+    with a softmax cross-entropy over exactly these candidates, so its logits are only defined up to a per-question
+    shift and log_softmax recovers the distribution it was trained to produce; (ii) the extractor score is
+    start_logit + end_logit - null, whose differences between spans are log-odds under the extractor's own
+    start/end softmaxes, so log_softmax gives its posterior over the same candidates. Both are then in nats of a
+    categorical distribution over the candidates and `alpha` is the exponent of the reranker in the product
+    p_final ~ p_ext * p_rr**alpha. The shift-invariance also means a constant offset (e.g. the null score) is
+    irrelevant. raw (un-normalised) scores are not used because their scales differ by orders of magnitude.
+
+      extractor : argmax log p_ext             (= index 0, the extractor top-1)
+      reranker  : argmax log p_rr              (= argmax of the logits; original behaviour)
+      residual  : argmax log p_ext + alpha * log p_rr;  alpha=0 reproduces the extractor ranking, alpha->inf the reranker
+
+    `margin` (original option): candidates scoring more than `margin` below the extractor top-1 are excluded.
+    `override_margin` (gate): if the selection is not the extractor top-1, it is only kept when
+    log p_rr(selection) - log p_rr(extractor top-1) > override_margin; otherwise the extractor top-1 is retained.
+    Returns (index, info) where info holds the normalised scores for diagnostics.
+    """
+    if mode not in SELECT_MODES:
+        raise ValueError(f"mode must be one of {SELECT_MODES}, got {mode!r}")
+    ext = np.asarray(ext_scores, dtype=np.float64)
+    n = len(ext)
+    allowed = np.ones(n, dtype=bool)
+    if margin is not None:
+        allowed = ext >= ext.max() - margin
+    lp_ext = log_softmax_np(ext)
+    info: Dict[str, Any] = {"ext_logp": lp_ext, "rr_logp": None, "final": lp_ext, "gated": False}
+    if mode == "extractor" or rr_logits is None:
+        return int(np.argmax(np.where(allowed, lp_ext, -np.inf))), info
+    lp_rr = log_softmax_np(np.asarray(rr_logits, dtype=np.float64))
+    final = lp_rr if mode == "reranker" else lp_ext + alpha * lp_rr
+    info.update(rr_logp=lp_rr, final=final)
+    k = int(np.argmax(np.where(allowed, final, -np.inf)))
+    top = int(np.argmax(ext))  # extractor top-1 (index 0 for sorted candidates)
+    if override_margin is not None and k != top and not (lp_rr[k] - lp_rr[top] > override_margin):
+        info["gated"] = True
+        k = top
+    return k, info
+
+
 @torch.no_grad()
-def choose(model: SpanReranker, items: Sequence[Dict[str, Any]], device: torch.device, margin: Optional[float] = None, batch_size: int = 128) -> List[int]:
-    """Index chosen per item. With `margin`, only candidates within `margin` of the top extractor score compete."""
+def rerank_logits(model: SpanReranker, items: Sequence[Dict[str, Any]], device: torch.device, batch_size: int = 128) -> List[np.ndarray]:
+    """Raw reranker logits per item (one array of length K_i each)."""
     model.eval()
-    out: List[int] = []
+    out: List[np.ndarray] = []
     for i in range(0, len(items), batch_size):
         chunk = items[i : i + batch_size]
         vecs, scal, mask, _ = _pad_items(chunk, device)
-        scores = model(vecs, scal).masked_fill(~mask, float("-inf"))
-        if margin is not None:
-            ext = scal[..., 0]  # SCALAR_FEATURES[0] == "score"
-            top = ext.masked_fill(~mask, float("-inf")).max(-1, keepdim=True).values
-            scores = scores.masked_fill(ext < top - margin, float("-inf"))
-        out.extend(scores.argmax(-1).tolist())
+        sc = model(vecs, scal).float().cpu().numpy()
+        out.extend(sc[b, : len(it["texts"])] for b, it in enumerate(chunk))
     return out
 
 
-def evaluate_items(model: Optional[SpanReranker], items: Sequence[Dict[str, Any]], golds: Dict[str, Sequence[str]], device: torch.device, margin: Optional[float] = None) -> Dict[str, float]:
+def choose(model: SpanReranker, items: Sequence[Dict[str, Any]], device: torch.device, margin: Optional[float] = None, batch_size: int = 128,
+           mode: str = "reranker", alpha: float = 1.0, override_margin: Optional[float] = None) -> List[int]:
+    """Index chosen per item. Defaults reproduce the original behaviour (pure reranker argmax). With `margin`, only
+    candidates within `margin` of the top extractor score compete; see `select_index` for mode/alpha/override_margin."""
+    logits = rerank_logits(model, items, device, batch_size)
+    return [select_index(it["scalars"][:, 0], lg, mode, alpha, override_margin, margin)[0] for it, lg in zip(items, logits)]  # column 0 == "score"
+
+
+def classify_change(ext_correct: bool, rr_correct: bool) -> str:
+    """FIX: extractor wrong -> reranker right; BREAK: extractor right -> reranker wrong; else SAME_CORRECT / SAME_WRONG."""
+    if ext_correct and rr_correct:
+        return "SAME_CORRECT"
+    if ext_correct:
+        return "BREAK"
+    if rr_correct:
+        return "FIX"
+    return "SAME_WRONG"
+
+
+def change_counts(labels: Sequence[str]) -> Dict[str, Any]:
+    """Counts and percentages of FIX / BREAK / SAME_CORRECT / SAME_WRONG labels."""
+    n = len(labels)
+    out: Dict[str, Any] = {"n": n}
+    for k in ("FIX", "BREAK", "SAME_CORRECT", "SAME_WRONG"):
+        c = sum(1 for x in labels if x == k)
+        out[k] = c
+        out[f"{k}_pct"] = 100.0 * c / n if n else 0.0
+    out["net_em_change"] = out["FIX"] - out["BREAK"]
+    return out
+
+
+def analyze_changes(outputs: Dict[str, QuestionOutput], ext_preds: Dict[str, str], rr_preds: Dict[str, str], golds: Dict[str, Sequence[str]],
+                    questions: Dict[str, str], details: Dict[str, Dict[str, Any]], max_examples: int = 100) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    """FIX / BREAK / SAME_CORRECT / SAME_WRONG counts over all questions (correct = normalised exact match against any
+    gold answer, as in the official scorer) and up to `max_examples` FIX and `max_examples` BREAK rows carrying the
+    question, golds, both predictions and every candidate with its extractor score, reranker score and pair_score."""
+    labels: List[str] = []
+    df1: List[float] = []
+    rows: Dict[str, List[Dict[str, Any]]] = {"FIX": [], "BREAK": []}
+    for q, o in outputs.items():
+        lab = classify_change(exact_match_score(ext_preds[q], golds[q]) > 0, exact_match_score(rr_preds[q], golds[q]) > 0)
+        labels.append(lab)
+        if ext_preds[q] != rr_preds[q]:
+            df1.append(f1_score(rr_preds[q], golds[q]) - f1_score(ext_preds[q], golds[q]))
+        if lab in rows and len(rows[lab]) < max_examples and q in details:
+            d = details[q]
+            rows[lab].append({
+                "id": q, "type": lab, "question": questions.get(q), "gold": list(golds[q]), "extractor_top1": ext_preds[q], "reranker_pred": rr_preds[q],
+                "gated": bool(d["gated"]),
+                "candidates": [
+                    dict(c.to_json(), extractor_logp=round(float(d["ext_logp"][i]), 4), reranker_logit=round(float(d["rr_logit"][i]), 4),
+                         reranker_logp=round(float(d["rr_logp"][i]), 4), final_score=round(float(d["final"][i]), 4),
+                         is_exact_match=bool(exact_match_score(c.text, golds[q]) > 0))
+                    for i, c in enumerate(o.candidates)
+                ],
+            })
+    counts = change_counts(labels)
+    counts["n_prediction_changed"] = len(df1)
+    counts["mean_f1_change_when_changed"] = float(np.mean(df1)) if df1 else 0.0
+    return counts, rows["FIX"] + rows["BREAK"]
+
+
+def recall_at_ks(items: Sequence[Dict[str, Any]], ks: Sequence[int] = (1, 3, 5, 10, 20)) -> Dict[str, float]:
+    """Recall@k EM and best-F1@k (%) of the extractor's ranking, for each k (candidates are in extractor order)."""
+    out: Dict[str, float] = {}
+    n = len(items)
+    for k in ks:
+        out[f"recall_em@{k}"] = 100.0 * sum(float(it["em"][:k].any()) for it in items) / n if n else 0.0
+        out[f"best_f1@{k}"] = 100.0 * sum(float(it["f1"][:k].max()) if len(it["f1"][:k]) else 0.0 for it in items) / n if n else 0.0
+    return out
+
+
+def evaluate_items(model: Optional[SpanReranker], items: Sequence[Dict[str, Any]], golds: Dict[str, Sequence[str]], device: torch.device, margin: Optional[float] = None,
+                   mode: str = "reranker", alpha: float = 1.0, override_margin: Optional[float] = None) -> Dict[str, float]:
     """Top-1 EM/F1 of the reranker (or of the extractor's own ranking when model is None) plus the ceilings."""
     if not items:
         return {"n": 0, "exact": 0.0, "f1": 0.0, "recall_em": 0.0, "best_f1": 0.0, "oracle_exact": 0.0}
-    idx = choose(model, items, device, margin) if model is not None else [0] * len(items)
+    idx = choose(model, items, device, margin, mode=mode, alpha=alpha, override_margin=override_margin) if model is not None else [0] * len(items)
     em = f1 = 0.0
+    labels = []
     for it, k in zip(items, idx):
         g = golds[it["qid"]]
-        em += exact_match_score(it["texts"][k], g)
+        e = exact_match_score(it["texts"][k], g)
+        em += e
         f1 += f1_score(it["texts"][k], g)
+        labels.append(classify_change(bool(it["em"][0]), bool(e)))
     n = len(items)
     ceil = candidate_ceiling(items)
-    return {"n": n, "exact": 100.0 * em / n, "f1": 100.0 * f1 / n, "recall_em": ceil["recall_em"], "best_f1": ceil["best_f1"], "oracle_exact": ceil["recall_em"]}
+    cc = change_counts(labels)
+    return {"n": n, "exact": 100.0 * em / n, "f1": 100.0 * f1 / n, "recall_em": ceil["recall_em"], "best_f1": ceil["best_f1"], "oracle_exact": ceil["recall_em"],
+            "fix": cc["FIX"], "break": cc["BREAK"]}
 
 
 def train_reranker(
@@ -213,6 +388,7 @@ def train_reranker(
     seed: int = 42,
     target_mode: str = "graded",
     partial_weight: float = 0.3,
+    use_pair_score: bool = True,
     log=print,
 ) -> Tuple[SpanReranker, List[Dict[str, Any]]]:
     if not train_items:
@@ -223,15 +399,18 @@ def train_reranker(
     if not trainable:
         raise ValueError(f"none of the training questions has a positive candidate under target_mode={target_mode!r} among the extractor's top-k candidates; the extractor is too weak to train a reranker")
     all_sc = np.concatenate([it["scalars"] for it in trainable], 0)
-    mean, std = all_sc.mean(0), all_sc.std(0) + 1e-6
-    model = SpanReranker(hidden_size, all_sc.shape[1], mean, std, proj=proj).to(device)
+    # use_pair_score=True keeps scalar_idx=None, i.e. exactly the original model; False selects the non-paraphrase columns
+    sidx = None if use_pair_score else scalar_feature_indices(False)
+    cols = all_sc if sidx is None else all_sc[:, sidx]
+    mean, std = cols.mean(0), cols.std(0) + 1e-6
+    model = SpanReranker(hidden_size, cols.shape[1], mean, std, proj=proj, scalar_idx=sidx).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     rng = random.Random(seed)
     history: List[Dict[str, Any]] = []
     best_state, best_key = None, (-1.0, -1.0)
     base = evaluate_items(None, dev_items, golds, device)
     tr_ceil = candidate_ceiling(train_items)
-    log(f"reranker: target_mode={target_mode} partial_weight={partial_weight} | {len(trainable)} trainable items ({len(train_items) - len(trainable)} without a positive candidate)")
+    log(f"reranker: use_pair_score={use_pair_score} ({model.n_scalars} scalar features) target_mode={target_mode} partial_weight={partial_weight} | {len(trainable)} trainable items ({len(train_items) - len(trainable)} without a positive candidate)")
     log(f"  train ceiling: Recall@k EM {tr_ceil['recall_em']:.2f} best-F1@k {tr_ceil['best_f1']:.2f}")
     log(f"  dev top-1 EM {base['exact']:.2f} F1 {base['f1']:.2f} | dev ceiling: Recall@k EM {base['recall_em']:.2f} best-F1@k {base['best_f1']:.2f}")
     for ep in range(1, epochs + 1):
@@ -270,7 +449,10 @@ def save_reranker(model: SpanReranker, path: str, extra: Optional[Dict[str, Any]
         "hidden_size": model.hidden_size,
         "n_scalars": model.n_scalars,
         "proj": model.vec_proj.out_features,
-        "scalar_features": SCALAR_FEATURES,
+        "scalar_features": SCALAR_FEATURES,          # all columns produced by candidate_scalars
+        "scalar_idx": model.scalar_idx,              # columns the MLP reads; None = all (checkpoints before the ablation option)
+        "scalar_features_used": model.feature_names,
+        "use_pair_score": model.use_pair_score,
         "state_dict": {k: v.detach().cpu() for k, v in model.state_dict().items()},
     }
     if extra:
@@ -281,15 +463,21 @@ def save_reranker(model: SpanReranker, path: str, extra: Optional[Dict[str, Any]
 def load_reranker(path: str, device: torch.device) -> SpanReranker:
     ckpt = torch.load(path, map_location="cpu", weights_only=False)
     n = ckpt["n_scalars"]
-    model = SpanReranker(ckpt["hidden_size"], n, np.zeros(n), np.ones(n), proj=ckpt.get("proj", 128))
+    model = SpanReranker(ckpt["hidden_size"], n, np.zeros(n), np.ones(n), proj=ckpt.get("proj", 128), scalar_idx=ckpt.get("scalar_idx"))
     model.load_state_dict(ckpt["state_dict"])
+    model.meta = {k: ckpt.get(k) for k in ("tag", "target_mode", "partial_weight", "pair_features", "extractor", "top_k")}  # provenance only
+    model.meta["use_pair_score"] = model.use_pair_score
     return model.to(device).eval()
 
 
-def apply_reranker(model: SpanReranker, outputs: Dict[str, QuestionOutput], device: torch.device, margin: Optional[float] = None) -> Tuple[Dict[str, str], Dict[str, str]]:
-    """Return (reranked predictions for q, reranked predictions for q')."""
+def apply_reranker(model: SpanReranker, outputs: Dict[str, QuestionOutput], device: torch.device, margin: Optional[float] = None,
+                   mode: str = "reranker", alpha: float = 1.0, override_margin: Optional[float] = None, return_details: bool = False):
+    """Return (reranked predictions for q, reranked predictions for q'); with `return_details` also a third dict
+    {qid: {"index", "rr_logit", "rr_logp", "ext_logp", "final", "gated"}} for the q view (used for the FIX/BREAK dump).
+    Defaults reproduce the original pure-reranker behaviour."""
     preds_q: Dict[str, str] = {}
     preds_p: Dict[str, str] = {}
+    details: Dict[str, Dict[str, Any]] = {}
     for view, store in (("candidates", preds_q), ("candidates_p", preds_p)):
         items, qids = [], []
         for qid, o in outputs.items():
@@ -304,6 +492,9 @@ def apply_reranker(model: SpanReranker, outputs: Dict[str, QuestionOutput], devi
             items.append({"qid": qid, "vecs": np.stack([c.vec for c in cands]), "scalars": candidate_scalars(cands, o.n_windows), "target": -1, "texts": [c.text for c in cands]})
             qids.append(qid)
         if items:
-            for qid, k, it in zip(qids, choose(model, items, device, margin), items):
+            for qid, it, lg in zip(qids, items, rerank_logits(model, items, device)):
+                k, info = select_index(it["scalars"][:, 0], lg, mode, alpha, override_margin, margin)
                 store[qid] = it["texts"][k]
-    return preds_q, preds_p
+                if view == "candidates":
+                    details[qid] = {"index": k, "rr_logit": lg, "rr_logp": info["rr_logp"], "ext_logp": info["ext_logp"], "final": info["final"], "gated": info["gated"]}
+    return (preds_q, preds_p, details) if return_details else (preds_q, preds_p)

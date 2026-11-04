@@ -28,13 +28,14 @@ import os
 import time
 from typing import Any, Dict, Optional
 
+import numpy as np
 
 from g17qa.data import attach_paraphrases, gold_answers, load_paired_files, load_squad, write_squad_subset
 from g17qa.decode import QuestionOutput, run_extractor
 from g17qa.metrics import consistency_metrics, per_bucket_metrics, question_type, run_official_scorer
 from g17qa.model import load_checkpoint
 from g17qa.paraphrase import generate_paraphrase_cache
-from g17qa.reranker import apply_reranker, candidate_match, load_reranker
+from g17qa.reranker import SELECT_MODES, analyze_changes, apply_reranker, candidate_match, load_reranker, recall_at_ks
 from g17qa.utils import PROJECT_ROOT, amp_dtype_for, ensure_dir, get_device, write_json
 
 EVAL_SETS: Dict[str, Dict[str, Optional[str]]] = {
@@ -59,6 +60,15 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--paraphrase_threshold", type=float, default=0.85)
     p.add_argument("--reranker", default=None, help="weights/<run>/reranker.pt")
     p.add_argument("--rerank_margin", type=float, default=None, help="only rerank candidates within this score of the top-1")
+    p.add_argument("--select_mode", choices=list(SELECT_MODES), default="reranker",
+                   help="how the final answer is chosen when --reranker is given: reranker = argmax of the reranker (default, original "
+                        "behaviour); residual = argmax of log p_ext + alpha * log p_rr; extractor = keep the extractor top-1")
+    p.add_argument("--alpha", type=float, default=1.0, help="residual mode: weight of the reranker log-probability (e.g. 0.25 / 0.5 / 1.0)")
+    p.add_argument("--override_margin", type=float, default=None,
+                   help="confidence gate: only replace the extractor top-1 if the reranker prefers the replacement by more than this many nats")
+    p.add_argument("--tag", default="", help="name of this reranker variant; outputs then go to runs/<run>/rerank_variants/<tag>/eval_<set>/ "
+                                             "so the default eval_<set> artefacts are never overwritten")
+    p.add_argument("--n_change_examples", type=int, default=100, help="max FIX and max BREAK examples saved to rerank_changes.jsonl")
     p.add_argument("--top_k", type=int, default=20)
     p.add_argument("--max_examples", type=int, default=0)
     p.add_argument("--batch_size", type=int, default=32)
@@ -91,7 +101,8 @@ def main() -> None:
 
     model, tokenizer, cfg = load_checkpoint(args.weights, device)
     run_name = cfg.get("run_name") or os.path.basename(os.path.dirname(os.path.abspath(args.weights)))
-    out_dir = ensure_dir(args.out_dir or os.path.join("runs", run_name, f"eval_{args.eval_set}"))
+    default_out = os.path.join("runs", run_name, "rerank_variants", args.tag, f"eval_{args.eval_set}") if args.tag else os.path.join("runs", run_name, f"eval_{args.eval_set}")
+    out_dir = ensure_dir(args.out_dir or default_out)
     print(f"extractor {args.weights} ({cfg.get('model')}) | set {args.eval_set} ({data_file}) | device {device} | out {out_dir}")
 
     # ---- examples and the paired view -------------------------------------------------------
@@ -151,6 +162,11 @@ def main() -> None:
     results: Dict[str, Any] = {
         "eval_set": args.eval_set, "data_file": data_file, "orig_file": orig_file, "weights": args.weights, "model": cfg.get("model"),
         "loss_mode": cfg.get("loss_mode"), "reranker_path": args.reranker, "rerank_margin": args.rerank_margin, "top_k": args.top_k,
+        "reranker_variant": None if reranker is None else {
+            "tag": args.tag, "use_pair_score": reranker.use_pair_score, "scalar_features_used": reranker.feature_names,
+            "select_mode": args.select_mode, "alpha": args.alpha, "override_margin": args.override_margin, "rerank_margin": args.rerank_margin,
+            "trained_with": getattr(reranker, "meta", {}),
+        },
         "n_questions": len(examples), "paired_view": pair_kind if paired else None,
         "n_pairs": sum(1 for o in outputs.values() if o.paired), "official_scorer": args.official_script,
     }
@@ -161,29 +177,48 @@ def main() -> None:
         if orig_file:
             ext["paired_view_official_on_orig_file"] = score(full_paired_view(preds_p, preds), "_orig", scored_orig, id_map)
     # ceiling of any reranker over the extractor's top-k: Recall@k EM and best-F1@k
-    matches = [candidate_match(o.candidates, golds[q]) for q, o in outputs.items() if o.candidates]
+    all_matches = [candidate_match(o.candidates, golds[q]) for q, o in outputs.items()]
+    matches = [m for m, o in zip(all_matches, outputs.values()) if o.candidates]
     if matches:
         ext["candidate_ceiling"] = {
             "top_k": args.top_k, "n": len(matches),
             "recall_em": 100.0 * sum(float(em.any()) for em, _ in matches) / len(examples),
             "best_f1": 100.0 * sum(float(f1.max()) for _, f1 in matches) / len(examples),
         }
+        ext["recall_at_k"] = recall_at_ks(
+            [{"em": em, "f1": f1} for em, f1 in all_matches],
+            [k for k in (1, 3, 5, 10, 20) if k <= args.top_k])
         print(f"ceiling    | Recall@{args.top_k} EM {ext['candidate_ceiling']['recall_em']:.2f} | best-F1@{args.top_k} {ext['candidate_ceiling']['best_f1']:.2f}")
     results["extractor"] = ext
     print(f"extractor  | official EM {ext['official']['exact']:.2f} F1 {ext['official']['f1']:.2f} (n={ext['official']['total']})"
           + (f" | consistency EM-agreement {ext['consistency']['agreement_em']:.2f} over {ext['consistency']['pairs']} pairs" if paired else ""))
 
     if reranker is not None:
-        rp, rpp = apply_reranker(reranker, outputs, device, args.rerank_margin)
+        rp, rpp, det = apply_reranker(reranker, outputs, device, args.rerank_margin, mode=args.select_mode, alpha=args.alpha,
+                                      override_margin=args.override_margin, return_details=True)
         rr: Dict[str, Any] = {"official": score(rp, "_rerank", scored_main)}
         rr["by_question_type"] = per_bucket_metrics(rp, golds, qtypes)
         if paired:
             rr["consistency"] = consistency_metrics(rp, rpp)
             if orig_file:
                 rr["paired_view_official_on_orig_file"] = score(full_paired_view(rpp, rp), "_rerank_orig", scored_orig, id_map)
+        # extractor-only vs reranked, and the per-question FIX / BREAK / SAME classification (correct = exact match)
+        rr["delta"] = {
+            "d_em": rr["official"]["exact"] - ext["official"]["exact"], "d_f1": rr["official"]["f1"] - ext["official"]["f1"],
+            "d_agreement_em": (rr["consistency"]["agreement_em"] - ext["consistency"]["agreement_em"]) if paired else None,
+        }
+        rr["changes"], change_rows = analyze_changes(outputs, preds, rp, golds, {e.qid: e.question for e in examples}, det, args.n_change_examples)
+        with open(os.path.join(out_dir, "rerank_changes.jsonl"), "w", encoding="utf-8") as f:
+            for r in change_rows:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
         results["reranker"] = rr
+        c = rr["changes"]
         print(f"+reranker  | official EM {rr['official']['exact']:.2f} F1 {rr['official']['f1']:.2f}"
               + (f" | consistency EM-agreement {rr['consistency']['agreement_em']:.2f}" if paired else ""))
+        print(f"delta      | dEM {rr['delta']['d_em']:+.2f} dF1 {rr['delta']['d_f1']:+.2f}"
+              + (f" dAgreement {rr['delta']['d_agreement_em']:+.2f}" if paired else "")
+              + f" | FIX {c['FIX']} ({c['FIX_pct']:.2f}%) BREAK {c['BREAK']} ({c['BREAK_pct']:.2f}%) SAME_CORRECT {c['SAME_CORRECT']} SAME_WRONG {c['SAME_WRONG']}"
+              + f" | mode {args.select_mode} alpha {args.alpha} gate {args.override_margin} pair_score {reranker.use_pair_score}")
 
     # ---- candidate dump and qualitative disagreements -------------------------------------------
     with open(os.path.join(out_dir, "candidates.jsonl"), "w", encoding="utf-8") as f:
