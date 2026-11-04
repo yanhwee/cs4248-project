@@ -34,7 +34,7 @@ from g17qa.decode import QuestionOutput, run_extractor
 from g17qa.metrics import consistency_metrics, per_bucket_metrics, question_type, run_official_scorer
 from g17qa.model import load_checkpoint
 from g17qa.paraphrase import generate_paraphrase_cache
-from g17qa.reranker import apply_reranker, load_reranker
+from g17qa.reranker import apply_reranker, candidate_match, load_reranker
 from g17qa.utils import PROJECT_ROOT, amp_dtype_for, ensure_dir, get_device, write_json
 
 EVAL_SETS: Dict[str, Dict[str, Optional[str]]] = {
@@ -160,6 +160,15 @@ def main() -> None:
         ext["consistency"] = consistency_metrics(preds, preds_p)
         if orig_file:
             ext["paired_view_official_on_orig_file"] = score(full_paired_view(preds_p, preds), "_orig", scored_orig, id_map)
+    # ceiling of any reranker over the extractor's top-k: Recall@k EM and best-F1@k
+    matches = [candidate_match(o.candidates, golds[q]) for q, o in outputs.items() if o.candidates]
+    if matches:
+        ext["candidate_ceiling"] = {
+            "top_k": args.top_k, "n": len(matches),
+            "recall_em": 100.0 * sum(float(em.any()) for em, _ in matches) / len(examples),
+            "best_f1": 100.0 * sum(float(f1.max()) for _, f1 in matches) / len(examples),
+        }
+        print(f"ceiling    | Recall@{args.top_k} EM {ext['candidate_ceiling']['recall_em']:.2f} | best-F1@{args.top_k} {ext['candidate_ceiling']['best_f1']:.2f}")
     results["extractor"] = ext
     print(f"extractor  | official EM {ext['official']['exact']:.2f} F1 {ext['official']['f1']:.2f} (n={ext['official']['total']})"
           + (f" | consistency EM-agreement {ext['consistency']['agreement_em']:.2f} over {ext['consistency']['pairs']} pairs" if paired else ""))

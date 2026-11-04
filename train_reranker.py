@@ -22,7 +22,7 @@ from typing import Any, Dict
 from g17qa.data import attach_paraphrases, gold_answers, load_squad, split_by_article
 from g17qa.decode import run_extractor
 from g17qa.model import load_checkpoint
-from g17qa.reranker import build_items, evaluate_items, save_reranker, train_reranker
+from g17qa.reranker import build_items, candidate_ceiling, evaluate_items, save_reranker, train_reranker
 from g17qa.utils import amp_dtype_for, ensure_dir, get_device, set_seed, write_json
 
 
@@ -39,6 +39,9 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--batch_size", type=int, default=64)
     p.add_argument("--proj", type=int, default=128)
+    p.add_argument("--target_mode", choices=["graded", "exact", "f1"], default="graded",
+                   help="graded: EM=1, partial-F1 candidates get partial_weight*F1; exact: EM candidates only; f1: legacy best-F1 fallback")
+    p.add_argument("--partial_weight", type=float, default=0.3, help="graded mode: weight of a partial-F1 candidate relative to an exact match")
     p.add_argument("--extract_batch_size", type=int, default=32)
     p.add_argument("--precision", choices=["fp32", "fp16", "bf16"], default="fp32")
     p.add_argument("--device", default="auto")
@@ -100,18 +103,21 @@ def main() -> None:
 
     reranker, history = train_reranker(
         items_train, items_dev, golds, model.hidden_size, device, epochs=args.epochs, lr=args.lr,
-        batch_size=args.batch_size, proj=args.proj, seed=args.seed,
+        batch_size=args.batch_size, proj=args.proj, seed=args.seed, target_mode=args.target_mode, partial_weight=args.partial_weight,
     )
     before = evaluate_items(None, items_dev, golds, device)
     after = evaluate_items(reranker, items_dev, golds, device)
     summary: Dict[str, Any] = {
         "extractor": args.weights, "reranker": out_path, "top_k": args.top_k, "pair_features": use_pairs,
+        "target_mode": args.target_mode, "partial_weight": args.partial_weight,
+        "ceiling_train": candidate_ceiling(items_train), "ceiling_dev": candidate_ceiling(items_dev),
         "n_train_items": len(items_train), "n_dev_items": len(items_dev),
         "dev_top1": before, "dev_reranked": after, "history": history, "elapsed_sec": round(time.time() - t0, 1),
     }
-    save_reranker(reranker, out_path, {"extractor": args.weights, "top_k": args.top_k, "pair_features": use_pairs, "summary": {k: v for k, v in summary.items() if k != "history"}})
+    save_reranker(reranker, out_path, {"extractor": args.weights, "top_k": args.top_k, "pair_features": use_pairs, "target_mode": args.target_mode, "summary": {k: v for k, v in summary.items() if k != "history"}})
     write_json(summary, os.path.join(run_dir, "reranker_summary.json"))
-    print(f"held-out articles: top-1 EM {before['exact']:.2f} F1 {before['f1']:.2f} -> reranked EM {after['exact']:.2f} F1 {after['f1']:.2f} (oracle EM {before['oracle_exact']:.2f})")
+    print(f"held-out articles: top-1 EM {before['exact']:.2f} F1 {before['f1']:.2f} -> reranked EM {after['exact']:.2f} F1 {after['f1']:.2f} ")
+    print(f"ceiling@{args.top_k} on held-out articles: Recall@{args.top_k} EM {before['recall_em']:.2f} | best-F1@{args.top_k} {before['best_f1']:.2f}  (reranker EM/F1 cannot exceed these)")
     print(f"saved {out_path} | summary {os.path.join(run_dir, 'reranker_summary.json')}")
 
 

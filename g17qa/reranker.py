@@ -8,9 +8,19 @@ passage span. It is a small MLP over the extractor's *own* representations:
                       candidates, and — when a paraphrase is available — the score the paraphrase view gives the
                       same span (a consistency signal), see SCALAR_FEATURES.
 
-Training is listwise: softmax over a question's candidates, cross-entropy against the candidate that matches a
-gold answer (exact match first, else the highest-F1 candidate if F1 > 0). Questions whose candidates contain no
-correct span are skipped for training but still counted at evaluation time.
+Training is listwise: softmax over a question's candidates, cross-entropy against a *target distribution*
+built from per-candidate relevance (`target_mode`):
+
+  graded (default)  exact-match candidates get relevance 1; non-EM candidates with F1 > 0 get `partial_weight` * F1
+                    (< 1), so EM is always the strongest signal and partial overlaps only supervise weakly.
+                    The target distribution is the relevance normalised to sum to 1.
+  exact             only exact-match candidates are positives (uniform over them); questions without an EM
+                    candidate are skipped.
+  f1                legacy: one-hot on the first EM candidate, else on the highest-F1 candidate (F1 > 0).
+
+Questions with no positive candidate are skipped for training but still counted at evaluation time. Because the
+reranker can only choose among the top-k, evaluation reports its ceilings: `recall_em` (Recall@k EM, the best EM
+any reranker could reach) and `best_f1` (best-F1@k).
 """
 
 from __future__ import annotations
@@ -53,18 +63,38 @@ def candidate_scalars(cands: Sequence[Candidate], n_windows: int) -> np.ndarray:
     return np.asarray(rows, dtype=np.float32)
 
 
-def label_candidates(cands: Sequence[Candidate], golds: Sequence[str]) -> int:
-    """Index of the first candidate with EM against a gold answer; else highest-F1 candidate (F1>0); else -1."""
+TARGET_MODES = ("graded", "exact", "f1")
+
+
+def candidate_match(cands: Sequence[Candidate], golds: Sequence[str]) -> Tuple[np.ndarray, np.ndarray]:
+    """Per-candidate (exact-match flag, best F1 over the gold answers)."""
     gold_norm = {normalize_answer(g) for g in golds}
-    for i, c in enumerate(cands):
-        if normalize_answer(c.text) in gold_norm:
-            return i
-    best, best_f1 = -1, 0.0
-    for i, c in enumerate(cands):
-        f = max(compute_f1(g, c.text) for g in golds)
-        if f > best_f1:
-            best, best_f1 = i, f
-    return best
+    em = np.array([normalize_answer(c.text) in gold_norm for c in cands], dtype=bool)
+    f1 = np.array([max((compute_f1(g, c.text) for g in golds), default=0.0) for c in cands], dtype=np.float32)
+    return em, f1
+
+
+def label_candidates(cands: Sequence[Candidate], golds: Sequence[str]) -> int:
+    """Index of the first candidate with exact match against a gold answer, else -1 (no F1 fallback)."""
+    em, _ = candidate_match(cands, golds)
+    return int(np.argmax(em)) if em.any() else -1
+
+
+def target_distribution(em: np.ndarray, f1: np.ndarray, mode: str = "graded", partial_weight: float = 0.3) -> np.ndarray:
+    """Target distribution over a question's candidates (sums to 1, or all zeros when there is no positive)."""
+    if mode not in TARGET_MODES:
+        raise ValueError(f"target_mode must be one of {TARGET_MODES}, got {mode!r}")
+    rel = np.zeros(len(em), dtype=np.float64)
+    if mode == "graded":
+        rel = np.where(em, 1.0, np.where(f1 > 0, partial_weight * f1, 0.0))
+    elif mode == "exact":
+        rel = em.astype(np.float64)
+    elif em.any():  # legacy "f1": first EM candidate
+        rel[int(np.argmax(em))] = 1.0
+    elif (f1 > 0).any():  # legacy "f1": best partial candidate
+        rel[int(np.argmax(f1))] = 1.0
+    tot = rel.sum()
+    return (rel / tot).astype(np.float32) if tot > 0 else rel.astype(np.float32)
 
 
 def build_items(outputs: Dict[str, QuestionOutput], golds: Dict[str, Sequence[str]], use_pair_view: bool = True) -> List[Dict[str, Any]]:
@@ -75,14 +105,29 @@ def build_items(outputs: Dict[str, QuestionOutput], golds: Dict[str, Sequence[st
         for cands in views:
             if not cands or cands[0].vec is None:
                 continue
+            em, f1 = candidate_match(cands, golds[qid])
             items.append({
                 "qid": qid,
                 "vecs": np.stack([c.vec for c in cands]),
                 "scalars": candidate_scalars(cands, o.n_windows),
-                "target": label_candidates(cands, golds[qid]),
+                "em": em,
+                "f1": f1,
+                "target": int(np.argmax(em)) if em.any() else -1,  # first exact-match candidate
                 "texts": [c.text for c in cands],
             })
     return items
+
+
+def candidate_ceiling(items: Sequence[Dict[str, Any]]) -> Dict[str, float]:
+    """Ceilings of any reranker over these items: Recall@k EM and best-F1@k (both in %)."""
+    n = len(items)
+    if not n:
+        return {"n": 0, "recall_em": 0.0, "best_f1": 0.0}
+    return {
+        "n": n,
+        "recall_em": 100.0 * sum(float(it["em"].any()) for it in items) / n,
+        "best_f1": 100.0 * sum(float(it["f1"].max()) for it in items) / n,
+    }
 
 
 class SpanReranker(nn.Module):
@@ -104,20 +149,21 @@ class SpanReranker(nn.Module):
         return self.mlp(torch.cat([v, s], -1)).squeeze(-1)
 
 
-def _pad_items(items: Sequence[Dict[str, Any]], device: torch.device):
+def _pad_items(items: Sequence[Dict[str, Any]], device: torch.device, target_mode: str = "graded", partial_weight: float = 0.3):
     K = max(len(it["texts"]) for it in items)
     d = items[0]["vecs"].shape[1]
     n = items[0]["scalars"].shape[1]
     vecs = np.zeros((len(items), K, d), dtype=np.float32)
     scal = np.zeros((len(items), K, n), dtype=np.float32)
     mask = np.zeros((len(items), K), dtype=bool)
-    tgt = np.full(len(items), -1, dtype=np.int64)
+    tgt = np.zeros((len(items), K), dtype=np.float32)
     for b, it in enumerate(items):
         k = len(it["texts"])
         vecs[b, :k] = it["vecs"].astype(np.float32)
         scal[b, :k] = it["scalars"]
         mask[b, :k] = True
-        tgt[b] = it["target"]
+        if "em" in it:
+            tgt[b, :k] = target_distribution(it["em"], it["f1"], target_mode, partial_weight)
     return (torch.from_numpy(vecs).to(device), torch.from_numpy(scal).to(device), torch.from_numpy(mask).to(device), torch.from_numpy(tgt).to(device))
 
 
@@ -139,17 +185,18 @@ def choose(model: SpanReranker, items: Sequence[Dict[str, Any]], device: torch.d
 
 
 def evaluate_items(model: Optional[SpanReranker], items: Sequence[Dict[str, Any]], golds: Dict[str, Sequence[str]], device: torch.device, margin: Optional[float] = None) -> Dict[str, float]:
+    """Top-1 EM/F1 of the reranker (or of the extractor's own ranking when model is None) plus the ceilings."""
     if not items:
-        return {"n": 0, "exact": 0.0, "f1": 0.0, "oracle_exact": 0.0}
+        return {"n": 0, "exact": 0.0, "f1": 0.0, "recall_em": 0.0, "best_f1": 0.0, "oracle_exact": 0.0}
     idx = choose(model, items, device, margin) if model is not None else [0] * len(items)
-    em = f1 = oracle = 0.0
+    em = f1 = 0.0
     for it, k in zip(items, idx):
         g = golds[it["qid"]]
         em += exact_match_score(it["texts"][k], g)
         f1 += f1_score(it["texts"][k], g)
-        oracle += float(it["target"] >= 0 and exact_match_score(it["texts"][it["target"]], g) > 0)
     n = len(items)
-    return {"n": n, "exact": 100.0 * em / n, "f1": 100.0 * f1 / n, "oracle_exact": 100.0 * oracle / n}
+    ceil = candidate_ceiling(items)
+    return {"n": n, "exact": 100.0 * em / n, "f1": 100.0 * f1 / n, "recall_em": ceil["recall_em"], "best_f1": ceil["best_f1"], "oracle_exact": ceil["recall_em"]}
 
 
 def train_reranker(
@@ -164,31 +211,39 @@ def train_reranker(
     proj: int = 128,
     weight_decay: float = 1e-4,
     seed: int = 42,
+    target_mode: str = "graded",
+    partial_weight: float = 0.3,
     log=print,
 ) -> Tuple[SpanReranker, List[Dict[str, Any]]]:
     if not train_items:
         raise ValueError("no reranker training items (empty training split)")
-    trainable = [it for it in train_items if it["target"] >= 0]
+    if target_mode not in TARGET_MODES:
+        raise ValueError(f"target_mode must be one of {TARGET_MODES}, got {target_mode!r}")
+    trainable = [it for it in train_items if target_distribution(it["em"], it["f1"], target_mode, partial_weight).sum() > 0]
     if not trainable:
-        raise ValueError("none of the training questions has a correct span among the extractor's top-k candidates; the extractor is too weak to train a reranker")
+        raise ValueError(f"none of the training questions has a positive candidate under target_mode={target_mode!r} among the extractor's top-k candidates; the extractor is too weak to train a reranker")
     all_sc = np.concatenate([it["scalars"] for it in trainable], 0)
     mean, std = all_sc.mean(0), all_sc.std(0) + 1e-6
     model = SpanReranker(hidden_size, all_sc.shape[1], mean, std, proj=proj).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     rng = random.Random(seed)
     history: List[Dict[str, Any]] = []
-    best_state, best_f1 = None, -1.0
+    best_state, best_key = None, (-1.0, -1.0)
     base = evaluate_items(None, dev_items, golds, device)
-    log(f"reranker: {len(trainable)} trainable items ({len(train_items) - len(trainable)} without a correct candidate); dev top-1 EM {base['exact']:.2f} F1 {base['f1']:.2f} oracle-EM {base['oracle_exact']:.2f}")
+    tr_ceil = candidate_ceiling(train_items)
+    log(f"reranker: target_mode={target_mode} partial_weight={partial_weight} | {len(trainable)} trainable items ({len(train_items) - len(trainable)} without a positive candidate)")
+    log(f"  train ceiling: Recall@k EM {tr_ceil['recall_em']:.2f} best-F1@k {tr_ceil['best_f1']:.2f}")
+    log(f"  dev top-1 EM {base['exact']:.2f} F1 {base['f1']:.2f} | dev ceiling: Recall@k EM {base['recall_em']:.2f} best-F1@k {base['best_f1']:.2f}")
     for ep in range(1, epochs + 1):
         model.train()
         rng.shuffle(trainable)
         tot = 0.0
         nb = 0
         for i in range(0, len(trainable), batch_size):
-            vecs, scal, mask, tgt = _pad_items(trainable[i : i + batch_size], device)
+            vecs, scal, mask, tgt = _pad_items(trainable[i : i + batch_size], device, target_mode, partial_weight)
             scores = model(vecs, scal).masked_fill(~mask, float("-inf"))
-            loss = F.cross_entropy(scores, tgt)
+            logp = torch.where(mask, F.log_softmax(scores, dim=-1), torch.zeros_like(scores))  # avoid 0 * -inf
+            loss = -(tgt * logp).sum(-1).mean()
             opt.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -198,8 +253,9 @@ def train_reranker(
         dev = evaluate_items(model, dev_items, golds, device)
         history.append({"epoch": ep, "loss": tot / max(1, nb), **{f"dev_{k}": v for k, v in dev.items()}})
         log(f"  epoch {ep:2d} loss {tot / max(1, nb):.4f} | dev EM {dev['exact']:.2f} F1 {dev['f1']:.2f}")
-        if dev["f1"] > best_f1:
-            best_f1 = dev["f1"]
+        key = (dev["exact"], dev["f1"])  # the goal is EM; F1 breaks ties
+        if key > best_key:
+            best_key = key
             best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
     if best_state is not None:
         model.load_state_dict(best_state)
