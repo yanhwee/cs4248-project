@@ -71,6 +71,11 @@ python train_reranker.py --weights weights/bert_kl/best.pt --paraphrase_cache da
 #    --target_mode f1 for the old best-F1 fallback. Training logs and runs/<run>/reranker_summary.json report the
 #    reranker's ceilings: Recall@k EM and best-F1@k (evaluate.py also reports them under extractor.candidate_ceiling).
 
+#    Reranker ablations on an existing extractor (no retraining): --no_pair_score drops the paraphrase-derived
+#    features (pair_score, pair_gap, pair_missing); --tag keeps the variants' files apart. See
+#    scripts/run_reranker_variants.sh (pair vs no-pair, pure vs residual fusion, optional gate) and
+#    `evaluate.py --select_mode {reranker,residual,extractor} --alpha A --override_margin M --tag T`.
+
 # 4. evaluation with the official scorer, with and without the reranker
 #    (for dev/addsent/addonesent the consistency metric needs back-translated questions; evaluate.py generates and
 #     caches them under data/paraphrases/ on first use, ~16 min on CPU for dev; --paraphrase_method none skips it)

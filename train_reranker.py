@@ -23,6 +23,15 @@ from g17qa.data import attach_paraphrases, gold_answers, load_squad, split_by_ar
 from g17qa.decode import run_extractor
 from g17qa.model import load_checkpoint
 from g17qa.reranker import build_items, candidate_ceiling, evaluate_items, save_reranker, train_reranker
+
+# (mode, alpha, override_margin) configurations reported on the held-out articles, so alpha / the gate can be chosen
+# there (never on the SQuAD dev set)
+HELDOUT_GRID = (
+    [("extractor", 0.0, None), ("reranker", 1.0, None)]
+    + [("residual", a, None) for a in (0.25, 0.5, 1.0)]
+    + [("reranker", 1.0, m) for m in (0.0, 0.1, 0.25, 0.5)]
+    + [("residual", 1.0, m) for m in (0.0, 0.1, 0.25, 0.5)]
+)
 from g17qa.utils import amp_dtype_for, ensure_dir, get_device, set_seed, write_json
 
 
@@ -31,7 +40,13 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--weights", required=True, help="extractor checkpoint (weights/<run>/best.pt)")
     p.add_argument("--train_file", default=None, help="defaults to the file recorded in the checkpoint")
     p.add_argument("--paraphrase_cache", default=None, help="train paraphrase cache; enables the pair-score feature")
-    p.add_argument("--out", default=None, help="defaults to weights/<run>/reranker.pt")
+    p.add_argument("--out", default=None, help="defaults to weights/<run>/reranker<tag>.pt")
+    p.add_argument("--tag", default="", help="suffix for the default output names (reranker<tag>.pt, runs/<run>/reranker_summary<tag>.json), "
+                                             "e.g. _pair / _nopair, so variants do not overwrite each other. Empty = original names")
+    p.add_argument("--use_pair_score", action=argparse.BooleanOptionalAction, default=True,
+                   help="feed the paraphrase-derived features (pair_score, pair_gap, pair_missing) to the MLP (default). "
+                        "--no-use_pair_score / --no_pair_score trains the ablation without them")
+    p.add_argument("--no_pair_score", dest="use_pair_score", action="store_false", help=argparse.SUPPRESS)
     p.add_argument("--top_k", type=int, default=20)
     p.add_argument("--holdout_frac", type=float, default=0.2, help="share of validation articles used for early stopping")
     p.add_argument("--max_examples", type=int, default=0, help="cap on validation questions (0 = all)")
@@ -59,7 +74,7 @@ def main() -> None:
 
     model, tokenizer, cfg = load_checkpoint(args.weights, device)
     run_name = cfg.get("run_name") or os.path.basename(os.path.dirname(os.path.abspath(args.weights)))
-    out_path = args.out or os.path.join(os.path.dirname(os.path.abspath(args.weights)), "reranker.pt")
+    out_path = args.out or os.path.join(os.path.dirname(os.path.abspath(args.weights)), f"reranker{args.tag}.pt")
     run_dir = ensure_dir(os.path.join(args.runs_dir, run_name))
     train_file = args.train_file or cfg.get("train_file", "provided/train-v1.1.json")
     val_frac, split_seed = cfg.get("val_frac", 0.05), cfg.get("split_seed", 42)
@@ -104,21 +119,32 @@ def main() -> None:
     reranker, history = train_reranker(
         items_train, items_dev, golds, model.hidden_size, device, epochs=args.epochs, lr=args.lr,
         batch_size=args.batch_size, proj=args.proj, seed=args.seed, target_mode=args.target_mode, partial_weight=args.partial_weight,
+        use_pair_score=args.use_pair_score,
     )
     before = evaluate_items(None, items_dev, golds, device)
     after = evaluate_items(reranker, items_dev, golds, device)
+    grid = []
+    for mode, alpha, om in HELDOUT_GRID:
+        r = evaluate_items(reranker, items_dev, golds, device, mode=mode, alpha=alpha, override_margin=om)
+        grid.append({"mode": mode, "alpha": alpha, "override_margin": om, "exact": r["exact"], "f1": r["f1"], "fix": r["fix"], "break": r["break"]})
     summary: Dict[str, Any] = {
         "extractor": args.weights, "reranker": out_path, "top_k": args.top_k, "pair_features": use_pairs,
         "target_mode": args.target_mode, "partial_weight": args.partial_weight,
+        "use_pair_score": args.use_pair_score, "scalar_features_used": reranker.feature_names, "tag": args.tag,
+        "heldout_selection_grid": grid,
         "ceiling_train": candidate_ceiling(items_train), "ceiling_dev": candidate_ceiling(items_dev),
         "n_train_items": len(items_train), "n_dev_items": len(items_dev),
         "dev_top1": before, "dev_reranked": after, "history": history, "elapsed_sec": round(time.time() - t0, 1),
     }
-    save_reranker(reranker, out_path, {"extractor": args.weights, "top_k": args.top_k, "pair_features": use_pairs, "target_mode": args.target_mode, "summary": {k: v for k, v in summary.items() if k != "history"}})
-    write_json(summary, os.path.join(run_dir, "reranker_summary.json"))
+    save_reranker(reranker, out_path, {"extractor": args.weights, "top_k": args.top_k, "pair_features": use_pairs, "target_mode": args.target_mode, "partial_weight": args.partial_weight, "tag": args.tag, "summary": {k: v for k, v in summary.items() if k != "history"}})
+    summary_path = os.path.join(run_dir, f"reranker_summary{args.tag}.json")
+    write_json(summary, summary_path)
     print(f"held-out articles: top-1 EM {before['exact']:.2f} F1 {before['f1']:.2f} -> reranked EM {after['exact']:.2f} F1 {after['f1']:.2f} ")
+    print("held-out selection grid (mode alpha override_margin -> EM / F1 / FIX / BREAK):")
+    for g in grid:
+        print(f"  {g['mode']:9s} alpha={g['alpha']:<4} gate={g['override_margin']!s:5s} -> EM {g['exact']:.2f} F1 {g['f1']:.2f} fix {g['fix']} break {g['break']}")
     print(f"ceiling@{args.top_k} on held-out articles: Recall@{args.top_k} EM {before['recall_em']:.2f} | best-F1@{args.top_k} {before['best_f1']:.2f}  (reranker EM/F1 cannot exceed these)")
-    print(f"saved {out_path} | summary {os.path.join(run_dir, 'reranker_summary.json')}")
+    print(f"saved {out_path} | summary {summary_path}")
 
 
 if __name__ == "__main__":
