@@ -9,3 +9,5 @@
 | bert_ot | bert-base-uncased | CE + aug. + OT | 81.7 | 88.1 | 80.9 | 88.2 | 86.3 | 78.4 | 86.8 | 91.3 |
 | deb_ce | deberta-v3-base | CE | 87.3 | 90.8 | 88.3 | 93.9 | 88.0 | 87.4 | 93.3 | 89.7 |
 | deb_kl | deberta-v3-base | CE + aug. + KL | 88.2 | 93.6 | 88.3 | 93.7 | 91.8 | 88.0 | 93.7 | 92.6 |
+| deb_large_ce | deberta-v3-large | CE | 88.6 | 90.7 | 90.3 | 95.5 | 89.4 | 90.2 | 95.4 | 93.4 |
+| deb_large_kl | deberta-v3-large | CE + aug. + KL | 88.8 | 95.4 | 90.0 | 95.4 | 92.7 | 90.0 | 95.3 | 95.1 |
