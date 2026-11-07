@@ -25,5 +25,5 @@ nvidia-smi || echo "nvidia-smi not available"
 set +u; source "$CONDA_BASE/etc/profile.d/conda.sh"; conda activate "$CONDA_ENV"; set -u
 export PYTHONUNBUFFERED=1 PYTHON=python DEVICE=cuda
 export PRECISION="${PRECISION:-bf16}"
-bash scripts/run_reranker_variants.sh "$@"
+bash "${PIPELINE:-scripts/run_reranker_variants.sh}" "$@"
 echo "job finished at $(date)"
