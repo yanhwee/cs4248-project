@@ -231,3 +231,19 @@ Branch `reranker-ablations` (from `ck` at 063394d). Only the reranker and its ev
 | `tests/test_reranker.py` | 10 hermetic tests (synthetic candidates, no model download) |
 
 Residual fusion: `final_i = log p_ext(i) + alpha * log p_rr(i)`, where both are per-question log-softmaxes over the candidate list (the reranker is trained with a softmax over exactly these candidates; extractor score differences are log-odds under its start/end softmaxes). `alpha = 0` is exactly the extractor ranking.
+
+## Addendum (7 Nov 2026): consistency baseline — learning-free paraphrase ensemble, both-views-correct, bootstrap CIs
+
+Branch `consistency-baseline` (from `ck` at 2ef5b0f). Eval-only additions; no retraining.
+
+| File | Change |
+| :-- | :-- |
+| `g17qa/consistency.py` (new) | `ensemble_predictions` (argmax of `log p_view + beta * log p_other` over the extractor's own candidate scores and `pair_score`; beta=0 = extractor top-1), `pair_accuracy` (EM of each view and the share of pairs where both answers are exact matches), `bootstrap_delta` (paired percentile bootstrap CI) |
+| `evaluate.py` | `--pair_ensemble`, `--ensemble_beta`, `--n_boot`; `results.json` gains `extractor.pair_accuracy`, `reranker.pair_accuracy`, `reranker.delta_ci` (EM, agreement), and a `pair_ensemble` block (official scores, consistency, delta, delta_ci, pair_accuracy, changes) |
+| `scripts/run_consistency_baseline.sh`, `submit_consistency_baseline.sh` | eval-only job for `deb_large_kl` (default) on dev, gan_dev, addsent, addonesent using the existing `reranker_pair.pt` / `reranker_nopair.pt`; outputs in `runs/<run>/rerank_variants/CB_*/` |
+| `scripts/summarize_reranker_variants.py` | adds CI and both-views-correct columns and ensemble rows; still reads older results.json files (shows `n/a`) |
+| `scripts/job_reranker_variants.sbatch` | `PIPELINE` env var selects the script it runs (default unchanged) |
+| `scripts/smoke_test_cpu.sh` | step 4 also passes `--pair_ensemble --n_boot 200` |
+| `tests/test_consistency.py` (new) | 6 hermetic tests |
+
+Question this answers: does the learned reranker's agreement gain exceed what simply averaging the two views gives, and is the EM change distinguishable from zero? Agreement alone can be gamed, hence the both-views-correct rate.
