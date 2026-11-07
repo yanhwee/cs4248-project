@@ -29,28 +29,42 @@ def main() -> None:
     def f(x, d=2, sign=False):
         return "n/a" if x is None else (f"{x:+.{d}f}" if sign else f"{x:.{d}f}")
 
+    def ci(x):
+        return "n/a" if not x else f"[{x['ci_low']:+.2f}, {x['ci_high']:+.2f}]{'*' if x['excludes_zero'] else ''}"
+
     rows, ext_line = [], None
     for p in files:
         r = json.load(open(p, encoding="utf-8"))
         v, ext, rr = r.get("reranker_variant"), r["extractor"], r.get("reranker")
-        if not rr:
-            continue
         ea = (ext.get("consistency") or {}).get("agreement_em")
-        ra = (rr.get("consistency") or {}).get("agreement_em")
         if ext_line is None:
             rk = ext.get("recall_at_k") or {}
-            ext_line = (f"Extractor only: EM {f(ext['official']['exact'])} / F1 {f(ext['official']['f1'])} / agreement {f(ea)} (n={ext['official']['total']}). "
-                        + "Candidate ceilings: " + ", ".join(f"R@{k.split('@')[1]} EM {f(x)}" for k, x in rk.items() if k.startswith("recall_em"))
+            pa = ext.get("pair_accuracy")
+            ext_line = (f"Extractor only: EM {f(ext['official']['exact'])} / F1 {f(ext['official']['f1'])} / agreement {f(ea)} (n={ext['official']['total']})"
+                        + (f"; both views correct {f(pa['both_correct'])}" if pa else "") + ". Candidate ceilings: "
+                        + ", ".join(f"R@{k.split('@')[1]} EM {f(x)}" for k, x in rk.items() if k.startswith("recall_em"))
                         + (f"; best-F1@{ext['candidate_ceiling']['top_k']} {f(ext['candidate_ceiling']['best_f1'])}" if ext.get("candidate_ceiling") else ""))
-        c, d = rr["changes"], rr["delta"]
-        rows.append("| {tag} | {pair} | {mode} | {alpha} | {gate} | {em} | {f1} | {ag} | {dem} | {df1} | {dag} | {fix} | {brk} | {sc} | {sw} |".format(
-            tag=v["tag"], pair="yes" if v["use_pair_score"] else "no", mode=v["select_mode"], alpha=v["alpha"] if v["select_mode"] == "residual" else "-",
-            gate=v["override_margin"] if v["override_margin"] is not None else "-", em=f(rr["official"]["exact"]), f1=f(rr["official"]["f1"]), ag=f(ra),
-            dem=f(d["d_em"], sign=True), df1=f(d["d_f1"], sign=True), dag=f(d["d_agreement_em"], sign=True),
-            fix=f"{c['FIX']} ({c['FIX_pct']:.2f}%)", brk=f"{c['BREAK']} ({c['BREAK_pct']:.2f}%)", sc=c["SAME_CORRECT"], sw=c["SAME_WRONG"]))
-    head = ["| Variant | pair_score | mode | alpha | gate | EM | F1 | Agreement | dEM | dF1 | dAgreement | FIX | BREAK | SAME_CORRECT | SAME_WRONG |",
-            "| :-- | :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: |"]
-    out = f"### {a.run} | {a.eval_set}\n\n{ext_line}\n\n" + "\n".join(head + rows) + "\n"
+
+        def add(tag, pair, mode, alpha, gate, blk):
+            c, d, pacc, dci = blk["changes"], blk["delta"], blk.get("pair_accuracy"), blk.get("delta_ci") or {}
+            ra = (blk.get("consistency") or {}).get("agreement_em")
+            rows.append("| {tag} | {pair} | {mode} | {alpha} | {gate} | {em} | {f1} | {ag} | {dem} | {demci} | {df1} | {dag} | {dagci} | {both} | {fix} | {brk} |".format(
+                tag=tag, pair=pair, mode=mode, alpha=alpha, gate=gate, em=f(blk["official"]["exact"]), f1=f(blk["official"]["f1"]), ag=f(ra),
+                dem=f(d["d_em"], sign=True), demci=ci(dci.get("em")), df1=f(d["d_f1"], sign=True), dag=f(d["d_agreement_em"], sign=True), dagci=ci(dci.get("agreement_em")),
+                both=f(pacc["both_correct"]) if pacc else "n/a", fix=f"{c['FIX']} ({c['FIX_pct']:.2f}%)", brk=f"{c['BREAK']} ({c['BREAK_pct']:.2f}%)"))
+
+        if rr and v:
+            add(v["tag"], "yes" if v["use_pair_score"] else "no", v["select_mode"], v["alpha"] if v["select_mode"] == "residual" else "-",
+                v["override_margin"] if v["override_margin"] is not None else "-", rr)
+        if r.get("pair_ensemble"):
+            add(f"{(v or {}).get('tag', 'run')} / pair-ensemble", "yes (extractor's)", "ensemble", f"beta={r['pair_ensemble']['beta']}", "-", r["pair_ensemble"])
+    if not rows:
+        raise SystemExit("no reranker or ensemble results found")
+    head = ["| Variant | pair_score | mode | alpha | gate | EM | F1 | Agreement | dEM | dEM 95% CI | dF1 | dAgreement | dAgreement 95% CI | Both views correct | FIX | BREAK |",
+            "| :-- | :-- | :-- | --: | --: | --: | --: | --: | --: | :-- | --: | --: | :-- | --: | --: | --: |"]
+    out = (f"### {a.run} | {a.eval_set}\n\n{ext_line}\n\n" + "\n".join(head + rows)
+           + "\n\n95% paired-bootstrap CIs (resampling questions; agreement: pairs); `*` = interval excludes 0. Both views correct = share of pairs where the "
+             "question's and the paraphrase's answers are both exact matches.\n")
     print(out)
     with open(os.path.join(base, f"summary_{a.eval_set}.md"), "w", encoding="utf-8") as fh:
         fh.write(out)

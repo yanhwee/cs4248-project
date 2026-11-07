@@ -26,7 +26,7 @@ $PY train_reranker.py --weights "weights/$RUN/best.pt" --paraphrase_cache data/p
 
 echo "== 4/6 evaluate: dev (100 questions, rule-based paraphrases for the consistency metric) =="
 $PY evaluate.py --weights "weights/$RUN/best.pt" --eval_set dev --max_examples 100 --paraphrase_method heuristic \
-  --paraphrase_cache data/paraphrases/dev_heuristic.jsonl --reranker "weights/$RUN/reranker.pt" --device "$DEV"
+  --paraphrase_cache data/paraphrases/dev_heuristic.jsonl --reranker "weights/$RUN/reranker.pt" --pair_ensemble --n_boot 200 --device "$DEV"
 
 echo "== 5/6 evaluate: Gan & Ng paraphrased dev (50 questions) =="
 $PY evaluate.py --weights "weights/$RUN/best.pt" --eval_set gan_dev --max_examples 50 --reranker "weights/$RUN/reranker.pt" --device "$DEV"
