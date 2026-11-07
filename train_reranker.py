@@ -22,7 +22,7 @@ from typing import Any, Dict
 from g17qa.data import attach_paraphrases, gold_answers, load_squad, split_by_article
 from g17qa.decode import run_extractor
 from g17qa.model import load_checkpoint
-from g17qa.reranker import build_items, candidate_ceiling, evaluate_items, save_reranker, train_reranker
+from g17qa.reranker import build_items, candidate_ceiling, evaluate_items, pair_agreement, save_reranker, train_reranker
 
 # (mode, alpha, override_margin) configurations reported on the held-out articles, so alpha / the gate can be chosen
 # there (never on the SQuAD dev set)
@@ -46,6 +46,12 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--use_pair_score", action=argparse.BooleanOptionalAction, default=True,
                    help="feed the paraphrase-derived features (pair_score, pair_gap, pair_missing) to the MLP (default). "
                         "--no-use_pair_score / --no_pair_score trains the ablation without them")
+    p.add_argument("--consistency_weight", type=float, default=0.0,
+                   help="weight of the symmetric-KL term between the reranker's distributions for a question and its paraphrase, over the "
+                        "candidates both views share (0 = off, the original training). Needs --paraphrase_cache; pairs well with --no_pair_score")
+    p.add_argument("--select_by", choices=["em", "em+agreement"], default="em",
+                   help="best-epoch rule on the held-out articles: em (default; F1 breaks ties) or em+agreement (held-out EM + held-out "
+                        "question/paraphrase agreement; needs paraphrases)")
     p.add_argument("--no_pair_score", dest="use_pair_score", action="store_false", help=argparse.SUPPRESS)
     p.add_argument("--top_k", type=int, default=20)
     p.add_argument("--holdout_frac", type=float, default=0.2, help="share of validation articles used for early stopping")
@@ -115,34 +121,37 @@ def main() -> None:
     out_dev = run_extractor(model, tokenizer, rr_dev, device, **common)
     items_train = build_items(out_train, golds, use_pair_view=True)
     items_dev = build_items(out_dev, golds, use_pair_view=False)
+    items_dev_pairs = build_items(out_dev, golds, use_pair_view=True) if use_pairs else None  # both views, for the agreement metric
 
     reranker, history = train_reranker(
         items_train, items_dev, golds, model.hidden_size, device, epochs=args.epochs, lr=args.lr,
         batch_size=args.batch_size, proj=args.proj, seed=args.seed, target_mode=args.target_mode, partial_weight=args.partial_weight,
-        use_pair_score=args.use_pair_score,
+        use_pair_score=args.use_pair_score, consistency_weight=args.consistency_weight, dev_pair_items=items_dev_pairs, select_by=args.select_by,
     )
     before = evaluate_items(None, items_dev, golds, device)
     after = evaluate_items(reranker, items_dev, golds, device)
     grid = []
     for mode, alpha, om in HELDOUT_GRID:
         r = evaluate_items(reranker, items_dev, golds, device, mode=mode, alpha=alpha, override_margin=om)
-        grid.append({"mode": mode, "alpha": alpha, "override_margin": om, "exact": r["exact"], "f1": r["f1"], "fix": r["fix"], "break": r["break"]})
+        ag = pair_agreement(reranker, items_dev_pairs, device, mode=mode, alpha=alpha, override_margin=om)["agreement_em"] if items_dev_pairs else None
+        grid.append({"mode": mode, "alpha": alpha, "override_margin": om, "exact": r["exact"], "f1": r["f1"], "fix": r["fix"], "break": r["break"], "agreement_em": ag})
     summary: Dict[str, Any] = {
         "extractor": args.weights, "reranker": out_path, "top_k": args.top_k, "pair_features": use_pairs,
         "target_mode": args.target_mode, "partial_weight": args.partial_weight,
-        "use_pair_score": args.use_pair_score, "scalar_features_used": reranker.feature_names, "tag": args.tag,
+        "use_pair_score": args.use_pair_score, "consistency_weight": args.consistency_weight, "select_by": args.select_by, "scalar_features_used": reranker.feature_names, "tag": args.tag,
         "heldout_selection_grid": grid,
         "ceiling_train": candidate_ceiling(items_train), "ceiling_dev": candidate_ceiling(items_dev),
         "n_train_items": len(items_train), "n_dev_items": len(items_dev),
         "dev_top1": before, "dev_reranked": after, "history": history, "elapsed_sec": round(time.time() - t0, 1),
     }
-    save_reranker(reranker, out_path, {"extractor": args.weights, "top_k": args.top_k, "pair_features": use_pairs, "target_mode": args.target_mode, "partial_weight": args.partial_weight, "tag": args.tag, "summary": {k: v for k, v in summary.items() if k != "history"}})
+    save_reranker(reranker, out_path, {"extractor": args.weights, "top_k": args.top_k, "pair_features": use_pairs, "target_mode": args.target_mode, "partial_weight": args.partial_weight, "consistency_weight": args.consistency_weight, "tag": args.tag, "summary": {k: v for k, v in summary.items() if k != "history"}})
     summary_path = os.path.join(run_dir, f"reranker_summary{args.tag}.json")
     write_json(summary, summary_path)
     print(f"held-out articles: top-1 EM {before['exact']:.2f} F1 {before['f1']:.2f} -> reranked EM {after['exact']:.2f} F1 {after['f1']:.2f} ")
-    print("held-out selection grid (mode alpha override_margin -> EM / F1 / FIX / BREAK):")
+    print("held-out selection grid (mode alpha override_margin -> EM / F1 / FIX / BREAK / agreement):")
     for g in grid:
-        print(f"  {g['mode']:9s} alpha={g['alpha']:<4} gate={g['override_margin']!s:5s} -> EM {g['exact']:.2f} F1 {g['f1']:.2f} fix {g['fix']} break {g['break']}")
+        print(f"  {g['mode']:9s} alpha={g['alpha']:<4} gate={g['override_margin']!s:5s} -> EM {g['exact']:.2f} F1 {g['f1']:.2f} fix {g['fix']} break {g['break']}"
+              + (f" agreement {g['agreement_em']:.2f}" if g["agreement_em"] is not None else ""))
     print(f"ceiling@{args.top_k} on held-out articles: Recall@{args.top_k} EM {before['recall_em']:.2f} | best-F1@{args.top_k} {before['best_f1']:.2f}  (reranker EM/F1 cannot exceed these)")
     print(f"saved {out_path} | summary {summary_path}")
 

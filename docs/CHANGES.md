@@ -231,3 +231,14 @@ Branch `reranker-ablations` (from `ck` at 063394d). Only the reranker and its ev
 | `tests/test_reranker.py` | 10 hermetic tests (synthetic candidates, no model download) |
 
 Residual fusion: `final_i = log p_ext(i) + alpha * log p_rr(i)`, where both are per-question log-softmaxes over the candidate list (the reranker is trained with a softmax over exactly these candidates; extractor score differences are log-odds under its start/end softmaxes). `alpha = 0` is exactly the extractor ranking.
+
+## Addendum (7 Nov 2026): consistency-trained reranker
+
+Branch `consistency-reranker` (from `ck` at 2ef5b0f). Training-side change to the reranker only; extractor untouched; every default reproduces the previous behaviour (a test checks that `consistency_weight=0` gives bit-identical weights).
+
+- `g17qa/reranker.py`: items carry `view` ("q"/"p") and normalised `keys`; `align_views` matches the two views' candidates by normalised text; `symmetric_kl_aligned`; `train_reranker(consistency_weight, dev_pair_items, select_by)`. With `consistency_weight > 0` the batch unit is a question (both views together) and the loss adds `weight * 0.5 * (KL(a||b) + KL(b||a))`, where a, b are the log-softmaxes of the reranker scores of the two views restricted to the candidates both views contain (pairs sharing < 2 candidates are skipped). `pair_agreement` measures question/paraphrase agreement of the reranker's choices on held-out items.
+- `train_reranker.py`: `--consistency_weight`, `--select_by {em, em+agreement}`; the held-out grid in `reranker_summary_<tag>.json` now includes `agreement_em`, and per-epoch history includes `consistency_kl` and `dev_agreement_em`.
+- `scripts/run_consistency_reranker.sh`, `submit_consistency_reranker.sh`: trains no-pair rerankers at weights 0.5 / 1 / 2 on an existing extractor and evaluates argmax and residual alpha=1 (outputs `runs/<run>/rerank_variants/CR_cw<W>_*/`).
+- `tests/test_consistency_reranker.py`: 7 hermetic tests. `scripts/smoke_test_cpu.sh` gains step 3b.
+
+Caveat found while testing: the returned reranker is the best-*EM* epoch, which can discard a more consistent epoch (in a synthetic test the baseline's pair KL differed by orders of magnitude between epochs). `--select_by em+agreement` is an opt-in alternative (equal weights on held-out EM and agreement); the default stays `em` so results are comparable with the earlier variants.
