@@ -306,6 +306,9 @@ def table_robustness(runs, fig_dir, tab_dir) -> bool:
 
 def table_question_types(runs, best: Optional[str], fig_dir, tab_dir) -> bool:
     cand = runs.get(best) if best else None
+    if best and cand is None:
+        print(f"warning: --best {best!r} is not a run under runs/ (have: {', '.join(sorted(runs)) or 'none'}); "
+              "the question-type table falls back to the first run with a dev evaluation")
     if cand is None:
         for r in runs.values():
             if r["evals"].get("dev"):

@@ -8,7 +8,6 @@
 #   sbatch --job-name=g17_deb --export=ALL,MODEL=microsoft/deberta-v3-base,RUN_PREFIX=deb,MODES="ce kl" scripts/job.sbatch
 #   sbatch --job-name=g17_para --time=02:00:00 --export=ALL,STAGES=paraphrases scripts/job.sbatch   # caches only
 #   sbatch --gpus=a100-40:1 scripts/job.sbatch                                 # a different GPU type
-#   sbatch scripts/job.sbatch --help                                           # extra args go to the pipeline script
 #
 # Every pipeline stage is skipped when its output already exists, so a job can be resubmitted after a time-out.
 #SBATCH --job-name=g17_pipeline

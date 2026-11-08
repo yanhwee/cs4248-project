@@ -8,7 +8,7 @@
 Nothing is typed by hand. After the experiments:
 
 ```bash
-python visualize.py --best bert_kl          # reads runs/, writes report/tables/*.tex and report/figures/*.pdf
+python visualize.py --best bert_kl_lam1.0  # reads runs/, writes report/tables/*.tex and report/figures/*.pdf; --best = run for the question-type table
 python tsne_pairs.py --weights weights/bert_ce/best.pt --paraphrase_cache data/paraphrases/dev.jsonl
 python tsne_pairs.py --weights weights/bert_kl/best.pt --paraphrase_cache data/paraphrases/dev.jsonl
 cp figures/tsne_bert_*.pdf report/figures/

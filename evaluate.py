@@ -92,7 +92,11 @@ def resolve_set(args: argparse.Namespace):
             raise SystemExit("--eval_set custom needs --data_file")
         return args.data_file, args.orig_file, args.paraphrase_cache
     spec = EVAL_SETS[args.eval_set]
-    return spec["file"], spec["orig"], (args.paraphrase_cache or spec["cache"])
+    cache = args.paraphrase_cache or spec["cache"]
+    if cache and not args.paraphrase_cache and args.paraphrase_method == "heuristic":
+        # rule-based pairs get their own default cache so they never mix with the MarianMT cache that real runs resume from
+        cache = cache[: -len(".jsonl")] + "_heuristic.jsonl"
+    return spec["file"], spec["orig"], cache
 
 
 def main() -> None:

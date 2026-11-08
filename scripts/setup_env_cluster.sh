@@ -56,7 +56,7 @@ echo "== pre-downloading model weights =="
 python - <<'EOF'
 from transformers import AutoModel, AutoTokenizer, MarianMTModel, MarianTokenizer
 from sentence_transformers import SentenceTransformer
-for m in ["bert-base-uncased", "microsoft/deberta-v3-base", "google/bert_uncased_L-2_H-128_A-2"]:
+for m in ["bert-base-uncased", "microsoft/deberta-v3-base", "microsoft/deberta-v3-large", "google/bert_uncased_L-2_H-128_A-2"]:
     AutoTokenizer.from_pretrained(m); AutoModel.from_pretrained(m)
 for m in ["Helsinki-NLP/opus-mt-en-de", "Helsinki-NLP/opus-mt-de-en"]:
     MarianTokenizer.from_pretrained(m); MarianMTModel.from_pretrained(m)
