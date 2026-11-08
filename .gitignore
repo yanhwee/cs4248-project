@@ -72,3 +72,10 @@ runs/smoke*/
 
 # Scratch
 scratch*/
+
+# Course handouts, the proposal and internal working notes: kept locally, not part of the submission
+docs/*.pdf
+docs/status_review*.md
+docs/math.md
+research_notes/
+reports/

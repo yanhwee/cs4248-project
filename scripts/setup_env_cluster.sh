@@ -1,5 +1,5 @@
 #!/bin/bash
-# One-off environment setup on the SoC compute cluster, following docs/SoC_Cluster_Guide.pdf.
+# One-off environment setup on the SoC compute cluster, following the course's SoC cluster quick-start guide (Canvas).
 #
 # Run this INSIDE an interactive compute-node shell (never on xlogin, which has too little memory for conda):
 #

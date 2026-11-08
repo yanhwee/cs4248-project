@@ -3,7 +3,7 @@
 # parallel where the queue allows). The paraphrase caches are built first; every other job waits for that one.
 #
 #   bash scripts/submit_all_ablations.sh                 # from the repository root on xlogin
-#   GPU=a100-40 bash scripts/submit_all_ablations.sh     # other GPU type (see `gpufree` / docs/SoC_Cluster_Guide.pdf)
+#   GPU=a100-40 bash scripts/submit_all_ablations.sh     # other GPU type (see `gpufree` / the course's SoC cluster guide)
 #   SKIP_OT=1 bash scripts/submit_all_ablations.sh       # leave out the optimal-transport ablations
 set -euo pipefail
 cd "$(dirname "$0")/.."

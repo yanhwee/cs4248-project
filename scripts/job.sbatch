@@ -1,6 +1,6 @@
 #!/bin/bash
 # Slurm job for the SoC compute cluster, following the course's job_template.sbatch
-# (docs/SoC_Cluster_Guide.pdf, https://github.com/isaacNingLee/Unofficial_SoC_Cluster_Guide).
+# (the course's SoC cluster quick-start guide on Canvas, https://github.com/isaacNingLee/Unofficial_SoC_Cluster_Guide).
 #
 # Submit from the repository root on xlogin. Settings are passed as environment variables or sbatch flags:
 #

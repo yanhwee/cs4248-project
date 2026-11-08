@@ -3,7 +3,7 @@
 **CS4248 Introduction to Large Language Models (AY2026/27 S1), National University of Singapore — Group G17**
 Chong Xin Wei, Ng Jian Yi, Soh Jun Ying Gavin, Wang Chengke, Yee Yan Hwee
 
-Topic: Extractive question answering on SQuAD v1.1. Proposal: `docs/CS4248 Project.pdf`. Results: `docs/RESULTS.md`.
+Topic: Extractive question answering on SQuAD v1.1. Results: `docs/RESULTS.md`.
 
 ## Proposed system
 
@@ -217,7 +217,7 @@ memory; for `microsoft/deberta-v3-large`). `train_summary.json` records `peak_gp
 
 ### SoC compute cluster (Slurm)
 
-The scripts follow the course quick-start guide (`docs/SoC_Cluster_Guide.pdf`): Conda on a compute node, the
+The scripts follow the course's SoC cluster quick-start guide (distributed on Canvas): Conda on a compute node, the
 `job_template.sbatch` layout (`gpu-long` partition, `--gpus=h100-47:1`, logs in `logs/slurm/<job>-<id>.out`), and
 `sbatch` from the repository root on `xlogin`. Use a plain terminal SSH client (no VS Code Remote-SSH).
 
@@ -286,8 +286,7 @@ provided/           official scorer evaluate-v2.0.py (in git) + train/dev JSON f
 data/external/      Gan & Ng paraphrased sets, Adversarial SQuAD (download_eval_sets.py; not in git)
 data/paraphrases/   paraphrase caches (prepare_paraphrases.py; not in git)
 report/             ACL-format paper (main.tex), bib, style files; tables/ and figures/ are generated, not committed
-docs/               RESULTS.md (full results analysis, generated) + results_digest.json, proposal (CS4248 Project.pdf), course requirements,
-                    SoC cluster guide, CHANGES.md (what was changed and why), status_review (repo before the rebuild), math.md (earlier notes)
+docs/               RESULTS.md (full results analysis, generated from runs/) + results_digest.json (its data), CHANGES.md (what was changed and why)
 app.py              legacy marimo demo notebook from the first iteration (not used for any reported number)
 ```
 
