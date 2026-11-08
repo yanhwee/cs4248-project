@@ -1,6 +1,6 @@
 # G17 Results Report: Paraphrase-Consistent Extractive QA on SQuAD v1.1
 
-*Generated 2026-11-04 by `scripts/make_results_report.py` from `runs/`. Every number is read from `config.json`, `train_summary.json`, `reranker_summary.json` or `eval_<set>/results.json` (official `evaluate-v2.0.py` output). Metrics are rounded to one decimal first; every difference in the text is a difference of rounded values. Exact values: `docs/results_digest.json`. Independently fact-checked against the raw files on 2026-11-04.*
+*Generated 2026-11-08 by `scripts/make_results_report.py` from `runs/`. Every number is read from `config.json`, `train_summary.json`, `reranker_summary.json` or `eval_<set>/results.json` (official `evaluate-v2.0.py` output). Metrics are rounded to one decimal first; every difference in the text is a difference of rounded values. Exact values: `docs/results_digest.json`. Independently fact-checked against the raw files on 2026-11-08.*
 
 ## 1. Summary
 
@@ -10,6 +10,7 @@
 - **Robustness gains are small and come mostly from the paraphrase data.** AddSent F1 64.9 → 66.1 (+1.2, of which +1.0 from augmentation alone); AddSent agreement +6.2.
 - **The reranker trades accuracy for agreement.** Selected run, dev: -0.9 F1 for +5.0 agreement; its largest gain is on the 56-question adversarial-paraphrase set (63.6 → 75.6 F1), which is too small for firm conclusions. On DeBERTa-v3-large the cost falls to -0.1 F1 and F1 rises on all four robustness sets, but with newer reranker targets (Section 8).
 - **Reranker ablation.** The paraphrase features carry the agreement and adversarial-paraphrase gains; blending reranker and extractor scores instead of letting the reranker overrule removes the dev accuracy loss and adds a few tenths of EM on all three extractors tested, at the cost of most of the agreement. Neither is adopted (Section 9).
+- **Learning-free check.** Simply averaging the extractor's scores over the question and its paraphrase beats the learned reranker on agreement and on the both-views-correct rate, at a small EM cost on dev; a reranker trained with a consistency term but no paraphrase features matches the plain reranker and hurts at a high weight (Section 9b).
 - **λ = 1**, chosen on held-out training articles as the largest λ with F1 within 0.5 points of the best (same choice on the full held-out set).
 
 ## 2. What was run
@@ -170,6 +171,40 @@ Robustness sets for the three main variants (Δ = variant − extractor):
 **Targets and noise.** Variant A is the committed reranker's configuration retrained with graded targets. Against the one-hot rerankers of Section 8 the target alone moves the dev trade: BERT kl λ=1 -0.9 F1 / +5.0 agreement → -0.2 / +4.9; DeBERTa kl λ=1 +0.0 F1 / +0.8 agreement → -0.8 / +1.6. For DeBERTa-large kl λ=1 both are graded, so the shift (-0.1 → +0.0 F1, +2.4 → +1.5 agreement) is the run-to-run noise of reranker training; differences of that size in this section mean nothing.
 
 **Selection.** The held-out rule would pick A, B, B for the three runs (table above), 2 of which lose dev F1; 758 questions cannot separate configurations a few tenths apart. No variant is adopted: the pair-feature argmax reranker stays the agreement version and the extractor alone the accuracy version.
+### 9b. Learning-free baseline, confidence intervals and consistency-trained rerankers (DeBERTa-large kl λ=1)
+
+On `deb_large_kl` only. The *paraphrase ensemble* needs no training: a candidate's extractor log-probability under the question is added to its log-probability under the paraphrase (weight β = 1) and the best is taken, so like the pair-feature reranker it uses the paraphrase at test time. *Both correct* = share of (question, paraphrase) pairs where both answers are exact matches, a consistency measure that cannot be gamed by always giving the same answer. Intervals are 95 % paired bootstraps over questions (or pairs) of the change against the extractor, printed to two decimals. The *consistency-trained* rerankers add a symmetric-KL term between the reranker's distributions for a question and its paraphrase during training (weight w) and use no pair features, so they need no paraphrase at test time. Rows A, B and E re-evaluate the Section 9 checkpoints on another cluster node; on the columns shown there their deltas differ by at most 0.1 (bf16 non-determinism).
+
+| Variant (dev) | Δ EM [95 % CI] | Δ F1 | Δ agreement [95 % CI] | Both correct (%) |
+| :-- | :-- | --: | :-- | --: |
+| extractor alone | – | – | – | 86.6 |
+| A · pair · argmax | +0.2 [-0.13, +0.35] | +0.0 | +1.4 [+1.07, +1.84] | 87.4 |
+| B · no pair · argmax | +0.3 [-0.02, +0.49] | +0.1 | +0.4 [+0.03, +0.80] | 87.0 |
+| E · no pair · blend α=1 | +0.2 [-0.02, +0.27] | +0.0 | +0.3 [+0.07, +0.64] | 86.8 |
+| paraphrase ensemble, β = 1 (no learning) | -0.4 [-0.63, -0.20] | -0.3 | +6.6 [+6.10, +7.16] | 89.3 |
+| consistency-trained w = 0.5 · no pair · argmax | +0.4 [+0.08, +0.61] | +0.1 | +0.4 [+0.02, +0.82] | 87.0 |
+| consistency-trained w = 0.5 · no pair · blend α=1 | +0.3 [+0.05, +0.36] | +0.0 | +0.5 [+0.27, +0.84] | 86.9 |
+| consistency-trained w = 1 · no pair · argmax | +0.2 [-0.05, +0.43] | +0.0 | +0.3 [-0.05, +0.73] | 86.9 |
+| consistency-trained w = 1 · no pair · blend α=1 | +0.2 [+0.06, +0.35] | +0.0 | +0.4 [+0.09, +0.70] | 86.9 |
+| consistency-trained w = 2 · no pair · argmax | +0.0 [-0.34, +0.19] | -0.2 | +0.2 [-0.16, +0.59] | 86.6 |
+| consistency-trained w = 2 · no pair · blend α=1 | +0.1 [-0.04, +0.23] | +0.0 | +0.3 [+0.10, +0.65] | 86.8 |
+
+Robustness sets, Δ EM [95 % CI] / Δ agreement:
+
+| Variant | AddSent | AddOneSent | G&N paraphrases | G&N adversarial Δ EM (56 questions) |
+| :-- | :-- | :-- | :-- | --: |
+| paraphrase ensemble | +0.0 [-0.48, +0.48] / +8.9 | +0.0 [-0.62, +0.62] / +7.9 | +0.7 [-0.19, +1.41] / +4.4 | +5.4 |
+| B · no pair · argmax | +0.9 [+0.42, +1.49] / +0.5 | +1.0 [+0.45, +1.73] / +0.1 | +0.5 [-0.38, +1.32] / +0.8 | +0.0 |
+| consistency-trained w = 0.5 · argmax | +0.6 [+0.08, +1.15] / +0.6 | +0.7 [+0.11, +1.51] / +0.1 | +0.7 [-0.09, +1.41] / +0.2 | +1.8 |
+| consistency-trained w = 1 · argmax | +0.7 [+0.22, +1.26] / +0.6 | +0.9 [+0.28, +1.51] / +0.1 | +0.1 [-0.66, +0.94] / +0.8 | +0.0 |
+| consistency-trained w = 2 · argmax | -0.8 [-1.40, -0.11] / -0.2 | -0.1 [-0.84, +0.78] / -0.2 | -0.7 [-1.69, +0.19] / +0.9 | -5.3 |
+
+**Ensemble versus learned reranker.** Averaging the two views gives +6.6 agreement and raises both-correct from 86.6 to 89.3 %, at -0.4 EM on the original questions (interval excludes zero). The learned pair-feature reranker gives +1.4 agreement and both-correct 87.4 % at +0.2 EM. So on consistency the learned reranker does not beat simple averaging; what it buys is avoiding the EM cost. An agreement of 99.3 % also shows that agreement alone is close to trivially attainable once both views share a candidate list; both-correct is the number to read.
+
+**Consistency-trained rerankers.** At w = 0.5 and 1 the argmax reranker is indistinguishable from the plain no-pair reranker B (w = 0.5: +0.4 EM / +0.4 agreement; w = 1: +0.2 EM / +0.3 agreement against +0.3 / +0.4 for B); at w = 2 it hurts on AddSent (-0.8 EM, interval excludes zero; -1.5 F1) and is neutral elsewhere. On the 758-question early-stopping slice the term barely moves agreement: extractor 94.3 %, reranker 94.0 % at w = 0.5, 94.0 % at w = 1, 94.8 % at w = 2. Under the held-out rule of Section 9 the w = 1 reranker would now be chosen (79.8 / 89.8 held-out EM / F1 against 79.8 / 89.7); that table deliberately compares only the two Section 9 rerankers. Consistency without a paraphrase at test time does not emerge from a reranker training set of this size (80 % of the held-out articles, Section 8).
+
+**What the intervals add.** The no-pair reranker's dev EM change +0.3 has interval [-0.02, +0.49], so it is not established; its gains on AddSent (+0.9 EM, [+0.42, +1.49]) and AddOneSent (+1.0 EM, [+0.45, +1.73]) exclude zero and are real on this extractor. Agreement changes on AddSent, AddOneSent and the Gan & Ng paraphrases exclude zero for 3 of 3 ensemble results but only 3 of 21 no-pair reranker results. Section 9's conclusion stands: no variant replaces the two system versions, but the ensemble is the stronger consistency device of the two and costs nothing to train, which the group should weigh.
+
 
 ## 10. Optimal-transport and span-matching ablation
 
@@ -199,7 +234,7 @@ Hardest: *other* (74.4), *how* (77.9), *why* (78.3); easiest: *when* (95.3), *wh
 - Agreement is measured only on questions with an accepted paraphrase (8,622 of 10,570 on dev); the 0.85 filter admits some meaning-changing paraphrases, which caps attainable agreement.
 - The λ rule's tolerance (0.5) was fixed before the runs but not formally pre-registered, and it is load-bearing (Section 5).
 - OT / Hungarian weights were not tuned (Section 10).
-- The reranker ablation selects on 758 held-out questions, too few to separate configurations a few tenths of a point apart; its dev differences below about half a point are unconfirmed (Section 9).
+- The reranker ablation selects on 758 held-out questions, too few to separate configurations a few tenths of a point apart; its dev differences below about half a point are unconfirmed (Section 9). The ensemble baseline and the consistency-trained rerankers were run on one extractor only (Section 9b).
 - The DeBERTa-v3-large runs use a smaller per-step batch and lower learning rate (Section 2) and graded reranker targets (Section 8), so large-versus-base is not a pure backbone comparison.
 - Held-out training articles were used for every decision (checkpoint, λ, reranker); dev and the external sets never were.
 
@@ -209,4 +244,4 @@ Hardest: *other* (74.4), *how* (77.9), *why* (78.3); easiest: *when* (95.3), *wh
 python visualize.py --best bert_kl_lam1.0        # regenerates figures/ and report/tables/ from runs/
 python scripts/make_results_report.py              # regenerates this file and docs/results_digest.json
 ```
-Sources per run: `config.json`, `train_summary.json`, `reranker_summary.json`, `eval_<set>/results.json` and `official_eval*.json`. NUS SoC cluster, H100 NVL; base-model training jobs 1068703–1068711 and re-evaluation jobs 1069429–1069438 (3 Nov 2026, after the Gan & Ng original-question scoring fix in commit 3d62dc6); DeBERTa-v3-large jobs 1072440 (`ce`) and 1072441 (`kl`) on 4 Nov 2026; reranker-ablation jobs 1073460–1073462 on 4 Nov 2026 (`scripts/submit_reranker_variants.sh`, outputs under `runs/<run>/rerank_variants/`). Cluster logs are not part of the repository.
+Sources per run: `config.json`, `train_summary.json`, `reranker_summary.json`, `eval_<set>/results.json` and `official_eval*.json`. NUS SoC cluster, H100 NVL; base-model training jobs 1068703–1068711 and re-evaluation jobs 1069429–1069438 (3 Nov 2026, after the Gan & Ng original-question scoring fix in commit 3d62dc6); DeBERTa-v3-large jobs 1072440 (`ce`) and 1072441 (`kl`) on 4 Nov 2026; reranker-ablation jobs 1073460–1073462 on 4 Nov 2026 (`scripts/submit_reranker_variants.sh`, outputs under `runs/<run>/rerank_variants/`); ensemble-baseline and consistency-reranker jobs 1096581–1096582 on 8 Nov 2026 (`scripts/submit_consistency_baseline.sh`, `scripts/submit_consistency_reranker.sh`). Cluster logs are not part of the repository.

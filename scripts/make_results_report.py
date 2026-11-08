@@ -17,6 +17,7 @@ import glob
 import json
 import math
 import os
+import re
 import sys
 from typing import Any, Dict, List, Optional
 
@@ -31,6 +32,12 @@ def load(path: str) -> Optional[Any]:
         return None
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def _ci(block: Dict[str, Any], key: str):
+    """(low, high) of the 95 % paired-bootstrap interval stored by evaluate.py --n_boot, rounded to one decimal; None if absent."""
+    c = (block.get("delta_ci") or {}).get(key)
+    return (round(c["ci_low"], 2), round(c["ci_high"], 2)) if c else None
 
 
 def r1(x):
@@ -74,7 +81,7 @@ def collect(runs_dir: str) -> Dict[str, Dict[str, Any]]:
                     variants[os.path.basename(vd_)] = ev
         out[name] = {"config": cfg, "summary": summ, "reranker": load(f"{d}/reranker_summary.json"),
                      "evals": {s: load(f"{d}/eval_{s}/results.json") for s in SETS}, "dir": d, "variants": variants,
-                     "rr_summaries": {t: load(f"{d}/reranker_summary_{t}.json") for t in ("pair", "nopair") if os.path.exists(f"{d}/reranker_summary_{t}.json")}}
+                     "rr_summaries": {os.path.basename(f)[len("reranker_summary_"):-len(".json")]: load(f) for f in sorted(glob.glob(f"{d}/reranker_summary_*.json"))}}
     return out
 
 
@@ -132,17 +139,34 @@ def digest_run(name: str, r: Dict[str, Any]) -> Dict[str, Any]:
     for vn, evs in (r.get("variants") or {}).items():
         vsets: Dict[str, Any] = {}
         meta: Dict[str, Any] = {}
+        ens_sets: Dict[str, Any] = {}
+        ens_meta: Dict[str, Any] = {}
         for st, e in evs.items():
             if not e or not e.get("reranker"):
                 continue
             x, y = e["extractor"], e["reranker"]
             meta = e.get("reranker_variant") or meta
+            m_cw = re.search(r"_cw([0-9.]+)", vn)
+            if m_cw:
+                meta = dict(meta, cw=float(m_cw.group(1)))
+            if e.get("pair_ensemble"):
+                z = e["pair_ensemble"]
+                ens_meta = {"kind": "ensemble", "beta": z.get("beta", 1.0), "use_pair_score": True, "select_mode": "ensemble"}
+                ens_sets[st] = {"n": e["n_questions"], "pairs": e["n_pairs"], "em": r1(x["official"]["exact"]), "f1": r1(x["official"]["f1"]),
+                                "agr": r1((x.get("consistency") or {}).get("agreement_em")), "both": r1((x.get("pair_accuracy") or {}).get("both_correct")),
+                                "rr_em": r1(z["official"]["exact"]), "rr_f1": r1(z["official"]["f1"]), "rr_agr": r1((z.get("consistency") or {}).get("agreement_em")),
+                                "rr_both": r1((z.get("pair_accuracy") or {}).get("both_correct")),
+                                "ci_em": _ci(z, "em"), "ci_agr": _ci(z, "agreement_em"), "source": f"{r['dir']}/rerank_variants/{vn}/eval_{st}/results.json"}
             vsets[st] = {"n": e["n_questions"], "pairs": e["n_pairs"], "em": r1(x["official"]["exact"]), "f1": r1(x["official"]["f1"]),
                          "agr": r1((x.get("consistency") or {}).get("agreement_em")), "rr_em": r1(y["official"]["exact"]), "rr_f1": r1(y["official"]["f1"]),
                          "rr_agr": r1((y.get("consistency") or {}).get("agreement_em")),
-                         "fix": (y.get("changes") or {}).get("FIX"), "brk": (y.get("changes") or {}).get("BREAK"), "source": f"{r['dir']}/rerank_variants/{vn}/eval_{st}/results.json"}
+                         "fix": (y.get("changes") or {}).get("FIX"), "brk": (y.get("changes") or {}).get("BREAK"),
+                         "both": r1((x.get("pair_accuracy") or {}).get("both_correct")), "rr_both": r1((y.get("pair_accuracy") or {}).get("both_correct")),
+                         "ci_em": _ci(y, "em"), "ci_agr": _ci(y, "agreement_em"), "source": f"{r['dir']}/rerank_variants/{vn}/eval_{st}/results.json"}
         if vsets:
             d["variants"][vn] = {"meta": meta, "sets": vsets}
+        if ens_sets:
+            d["variants"]["ENSEMBLE"] = {"meta": ens_meta, "sets": ens_sets}
     d["rr_summaries"] = {t: {"n_dev_items": sm["n_dev_items"], "dev_top1": sm["dev_top1"], "dev_reranked": sm["dev_reranked"], "heldout_selection_grid": sm.get("heldout_selection_grid"),
                             "n_features": len(sm.get("scalar_features_used") or []), "elapsed_sec": sm.get("elapsed_sec")} for t, sm in (r.get("rr_summaries") or {}).items() if sm}
     return d
@@ -263,6 +287,8 @@ def main() -> int:
     w(rr_line)
     if any(D[n].get("variants") for n in order):
         w("- **Reranker ablation.** The paraphrase features carry the agreement and adversarial-paraphrase gains; blending reranker and extractor scores instead of letting the reranker overrule removes the dev accuracy loss and adds a few tenths of EM on all three extractors tested, at the cost of most of the agreement. Neither is adopted (Section 9).")
+    if any("ENSEMBLE" in D[n].get("variants", {}) for n in order):
+        w("- **Learning-free check.** Simply averaging the extractor's scores over the question and its paraphrase beats the learned reranker on agreement and on the both-views-correct rate, at a small EM cost on dev; a reranker trained with a consistency term but no paraphrase features matches the plain reranker and hurts at a high weight (Section 9b).")
     w(f"- **λ = {D[pick_s]['lambda_kl']:g}**, chosen on held-out training articles as the largest λ with F1 within {args.tolerance:g} points of the best" + (" (same choice on the full held-out set)." if pick_s == pick_f else f" (the full held-out set would give λ = {D[pick_f]['lambda_kl']:g})."))
     w("")
 
@@ -437,7 +463,8 @@ def main() -> int:
         def tri(v, st):
             return f"{sgn(vd(v, st, 'rr_em', 'em'))} / {sgn(vd(v, st, 'rr_f1', 'f1'))} / {sgn(vd(v, st, 'rr_agr', 'agr'))}"
 
-        vnames = sorted(vr0["variants"].items(), key=vkey)
+        core = lambda vn: not vn.startswith(("CB_", "CR_", "ENSEMBLE"))  # noqa: E731  (9b variants are handled separately)
+        vnames = sorted(((vn, v) for vn, v in vr0["variants"].items() if core(vn)), key=vkey)
         vnames = [n for n, _ in vnames]
         w("| Variant | " + " | ".join(f"{label[n]}: Δ EM / Δ F1 / Δ agreement" for n in var_runs) + " |")
         w("| :-- |" + " :-- |" * len(var_runs))
@@ -456,6 +483,8 @@ def main() -> int:
         def grid_pick(d):
             cands = []
             for tag, summ in (d.get("rr_summaries") or {}).items():
+                if tag not in ("pair", "nopair"):
+                    continue
                 for g in summ.get("heldout_selection_grid") or []:
                     cands.append((tag, g["mode"], float(g["alpha"]), norm_gate(g["override_margin"]), g["exact"], g["f1"]))
             if not cands:
@@ -466,6 +495,8 @@ def main() -> int:
         def match_variant(d, pick):
             tag, mode, alpha, gate = pick[0], pick[1], pick[2], pick[3]
             for vn, v in d["variants"].items():
+                if not core(vn):
+                    continue
                 p, m, a, g = vmeta(v)
                 if p == (tag == "pair") and m == mode and norm_gate(g) == gate and (m != "residual" or abs(a - alpha) < 1e-9):
                     return vn
@@ -493,6 +524,8 @@ def main() -> int:
         # --- robustness for A, B and E ---------------------------------------------------------------------------
         def find_variant(d, pair, mode, alpha=1.0, gate=None):
             for vn, v in d["variants"].items():
+                if not core(vn):
+                    continue
                 p, m, a, g = vmeta(v)
                 if p == pair and m == mode and norm_gate(g) == gate and (m != "residual" or abs(a - alpha) < 1e-9):
                     return vn
@@ -537,7 +570,7 @@ def main() -> int:
             for n in var_runs:
                 for vn, v in D[n]["variants"].items():
                     pp, mm, aa, gg = vmeta(v)
-                    if norm_gate(gg) is None or "dev" not in v["sets"]:
+                    if not core(vn) or norm_gate(gg) is None or "dev" not in v["sets"]:
                         continue
                     base_vn = find_variant(D[n], pp, mm, aa, None)
                     if base_vn and "dev" in D[n]["variants"][base_vn]["sets"]:
@@ -561,6 +594,118 @@ def main() -> int:
             w("")
             n_lose = sum(1 for n in var_runs if picks.get(n) and vd(D[n]["variants"][picks[n]], "dev", "rr_f1", "f1") < 0)
             w(f"**Selection.** The held-out rule would pick {', '.join(picks[n].split('_')[0] for n in var_runs if picks.get(n))} for the three runs (table above), {n_lose} of which {'loses' if n_lose == 1 else 'lose'} dev F1; {vr0['rr_summaries']['pair']['n_dev_items']:,} questions cannot separate configurations a few tenths apart. No variant is adopted: the pair-feature argmax reranker stays the agreement version and the extractor alone the accuracy version.")
+        # --- 9b: learning-free ensemble baseline, bootstrap CIs, consistency-trained rerankers (one extractor) -------------
+        ext_runs = [n for n in var_runs if any(vn.startswith(("CB_", "CR_", "ENSEMBLE")) for vn in D[n]["variants"])]
+        for n in ext_runs:
+            d = D[n]
+            V = d["variants"]
+            ens = V.get("ENSEMBLE")
+            cb_A, cb_B, cb_E = V.get("CB_pair_argmax_ensemble"), V.get("CB_nopair_argmax"), V.get("CB_nopair_res1.0")
+            crs = sorted([(vn, v) for vn, v in V.items() if vn.startswith("CR_")], key=lambda kv: (kv[1]["meta"].get("cw", 0.0), kv[1]["meta"].get("select_mode") != "reranker"))
+            if not (ens and cb_A and cb_B):
+                continue
+            ext_dev = cb_A["sets"]["dev"]
+
+            def ci(v, st, k):  # "[lo, hi]" of the paired-bootstrap 95 % interval of a delta, two decimals
+                c = (v["sets"].get(st) or {}).get(k)
+                return f"[{sgn(c[0], 2)}, {sgn(c[1], 2)}]" if c else "--"
+
+            def excl(v, st, k="ci_em"):
+                c = (v["sets"].get(st) or {}).get(k)
+                return "interval excludes zero" if c and (c[0] > 0 or c[1] < 0) else "interval includes zero"
+
+            def row(name, v, st="dev"):
+                e = v["sets"].get(st)
+                if not e:
+                    return f"| {name} | -- | -- | -- | -- |"
+                return (f"| {name} | {sgn(e['rr_em'] - e['em'])} {ci(v, st, 'ci_em')} | {sgn(e['rr_f1'] - e['f1'])} | {sgn(e['rr_agr'] - e['agr'])} {ci(v, st, 'ci_agr')} | {f1(e.get('rr_both'))} |")
+
+            w(f"### 9b. Learning-free baseline, confidence intervals and consistency-trained rerankers ({label[n]})")
+            w("")
+            pairs_re = [(V.get("A_pair_reranker"), cb_A), (V.get("B_nopair_reranker"), cb_B), (V.get("E_nopair_res1.0"), cb_E)]
+            re_diff = 0.0
+            for orig, re_ in pairs_re:
+                if orig and re_ and "dev" in orig["sets"] and "dev" in re_["sets"]:
+                    for a_, b_ in (("rr_em", "em"), ("rr_f1", "f1"), ("rr_agr", "agr")):
+                        re_diff = max(re_diff, abs((orig["sets"]["dev"][a_] - orig["sets"]["dev"][b_]) - (re_["sets"]["dev"][a_] - re_["sets"]["dev"][b_])))
+            a_main = (V.get("A_pair_reranker") or {}).get("sets", {}).get("dev") or {}
+            reeval_note = (f" Rows A, B and E re-evaluate the Section 9 checkpoints on another cluster node; on the columns shown there their deltas differ by at most {re_diff:.1f} (bf16 non-determinism)."
+                           if a_main and any(a_main.get(k) != ext_dev.get(k) for k in ("em", "f1", "agr")) else "")
+            w(f"On `{n}` only. The *paraphrase ensemble* needs no training: a candidate's extractor log-probability under the question is added to its log-probability under the paraphrase (weight β = {ens['meta'].get('beta', 1.0):g}) and the best is taken, so like the pair-feature reranker it uses the paraphrase at test time. "
+              "*Both correct* = share of (question, paraphrase) pairs where both answers are exact matches, a consistency measure that cannot be gamed by always giving the same answer. "
+              "Intervals are 95 % paired bootstraps over questions (or pairs) of the change against the extractor, printed to two decimals. "
+              "The *consistency-trained* rerankers add a symmetric-KL term between the reranker's distributions for a question and its paraphrase during training (weight w) and use no pair features, so they need no paraphrase at test time." + reeval_note)
+            w("")
+            w("| Variant (dev) | Δ EM [95 % CI] | Δ F1 | Δ agreement [95 % CI] | Both correct (%) |")
+            w("| :-- | :-- | --: | :-- | --: |")
+            w(f"| extractor alone | – | – | – | {f1(ext_dev.get('both'))} |")
+            w(row("A · pair · argmax", cb_A))
+            w(row("B · no pair · argmax", cb_B))
+            if cb_E:
+                w(row("E · no pair · blend α=1", cb_E))
+            w(row(f"paraphrase ensemble, β = {ens['meta'].get('beta', 1.0):g} (no learning)", ens))
+            for vn, v in crs:
+                w(row(f"consistency-trained w = {v['meta']['cw']:g} · no pair · {'argmax' if v['meta'].get('select_mode') == 'reranker' else 'blend α=1'}", v))
+            w("")
+            w("Robustness sets, Δ EM [95 % CI] / Δ agreement:")
+            w("")
+            n_adv = (ens["sets"].get("gan_adv") or {}).get("n")
+            w(f"| Variant | AddSent | AddOneSent | G&N paraphrases | G&N adversarial Δ EM ({n_adv} questions) |")
+            w("| :-- | :-- | :-- | :-- | --: |")
+
+            def rob(v, st):
+                e = v["sets"].get(st)
+                return "--" if not e else f"{sgn(e['rr_em'] - e['em'])} {ci(v, st, 'ci_em')} / {sgn(e['rr_agr'] - e['agr'])}"
+
+            for name, v in [("paraphrase ensemble", ens), ("B · no pair · argmax", cb_B)] + [(f"consistency-trained w = {v['meta']['cw']:g} · argmax", v) for vn, v in crs if v["meta"].get("select_mode") == "reranker"]:
+                ga = v["sets"].get("gan_adv")
+                w(f"| {name} | {rob(v, 'addsent')} | {rob(v, 'addonesent')} | {rob(v, 'gan_dev')} | {sgn(ga['rr_em'] - ga['em']) if ga else '--'} |")
+            w("")
+            # readings
+            e_ens, e_A, e_B = ens["sets"]["dev"], cb_A["sets"]["dev"], cb_B["sets"]["dev"]
+            w(f"**Ensemble versus learned reranker.** Averaging the two views gives {sgn(e_ens['rr_agr'] - e_ens['agr'])} agreement and raises both-correct from {f1(ext_dev.get('both'))} to {f1(e_ens.get('rr_both'))} %, at {sgn(e_ens['rr_em'] - e_ens['em'])} EM on the original questions ({excl(ens, 'dev')}). "
+              f"The learned pair-feature reranker gives {sgn(e_A['rr_agr'] - e_A['agr'])} agreement and both-correct {f1(e_A.get('rr_both'))} % at {sgn(e_A['rr_em'] - e_A['em'])} EM. So on consistency the learned reranker does not beat simple averaging; what it buys is avoiding the EM cost. "
+              f"An agreement of {f1(e_ens['rr_agr'])} % also shows that agreement alone is close to trivially attainable once both views share a candidate list; both-correct is the number to read.")
+            w("")
+            if crs:
+                arg = [(v["meta"]["cw"], v) for vn, v in crs if v["meta"].get("select_mode") == "reranker"]
+                hs = d.get("rr_summaries") or {}
+                ho = []
+                for cw_, v in arg:
+                    sm = next((sm_ for tag_, sm_ in hs.items() if tag_.startswith("nopair_cw") and abs(float(tag_[len("nopair_cw"):]) - cw_) < 1e-9), None)
+                    if sm:
+                        g_ex = [g for g in sm["heldout_selection_grid"] if g["mode"] == "extractor"]
+                        g_rr = [g for g in sm["heldout_selection_grid"] if g["mode"] == "reranker" and g["override_margin"] is None]
+                        if g_ex and g_rr and g_rr[0].get("agreement_em") is not None:
+                            ho.append((cw_, g_ex[0]["agreement_em"], g_rr[0]["agreement_em"]))
+                ho_txt = (" On the 758-question early-stopping slice the term barely moves agreement: extractor " + f1(r1(ho[0][1])) + " %, reranker " + ", ".join(f"{f1(r1(a))} % at w = {cw_:g}" for cw_, _, a in ho) + ".") if ho else ""
+                worst = max(arg, key=lambda t: t[0])
+                def best_grid(tags):
+                    c = [(g["exact"], g["f1"], t) for t, sm in hs.items() if t in tags for g in (sm.get("heldout_selection_grid") or []) if g["mode"] != "extractor"]
+                    return max(c) if c else None
+                b_old = best_grid({"pair", "nopair"})
+                b_cw = best_grid({t for t in hs if t.startswith("nopair_cw")})
+                if b_old and b_cw and (b_cw[0], b_cw[1]) >= (b_old[0], b_old[1]):
+                    ho_txt += f" Under the held-out rule of Section 9 the w = {float(b_cw[2][len('nopair_cw'):]):g} reranker would now be chosen ({f1(r1(b_cw[0]))} / {f1(r1(b_cw[1]))} held-out EM / F1 against {f1(r1(b_old[0]))} / {f1(r1(b_old[1]))}); that table deliberately compares only the two Section 9 rerankers."
+                wa = worst[1]["sets"].get("addsent")
+                low = arg[:-1]
+                cmp_txt = "; ".join(f"w = {cw_:g}: {sgn(v['sets']['dev']['rr_em'] - v['sets']['dev']['em'])} EM / {sgn(v['sets']['dev']['rr_agr'] - v['sets']['dev']['agr'])} agreement" for cw_, v in low)
+                w_list = " and ".join(f"{cw_:g}" for cw_, _ in low)
+                w(f"**Consistency-trained rerankers.** At w = {w_list} the argmax reranker is indistinguishable from the plain no-pair reranker B ({cmp_txt} against {sgn(e_B['rr_em'] - e_B['em'])} / {sgn(e_B['rr_agr'] - e_B['agr'])} for B); at w = {worst[0]:g} it hurts on AddSent ({sgn(wa['rr_em'] - wa['em'])} EM, {excl(worst[1], 'addsent')}; {sgn(wa['rr_f1'] - wa['f1'])} F1) and is neutral elsewhere."
+                  + ho_txt + " Consistency without a paraphrase at test time does not emerge from a reranker training set of this size (80 % of the held-out articles, Section 8).")
+                w("")
+            sig = [(st, cb_B["sets"][st]) for st in ("addsent", "addonesent") if cb_B["sets"].get(st) and cb_B["sets"][st].get("ci_em") and cb_B["sets"][st]["ci_em"][0] > 0]
+            rob3 = ("addsent", "addonesent", "gan_dev")
+            xz = lambda v, st: bool((v["sets"].get(st) or {}).get("ci_agr")) and (v["sets"][st]["ci_agr"][0] > 0 or v["sets"][st]["ci_agr"][1] < 0)  # noqa: E731
+            np_rows = [cb_B] + [v for _, v in crs]
+            n_agr_ex, n_agr_tot = sum(1 for v in np_rows for st in rob3 if xz(v, st)), sum(1 for v in np_rows for st in rob3 if (v["sets"].get(st) or {}).get("ci_agr"))
+            n_ens_ex = sum(1 for st in rob3 if xz(ens, st))
+            w(f"**What the intervals add.** The no-pair reranker's dev EM change {sgn(e_B['rr_em'] - e_B['em'])} has interval {ci(cb_B, 'dev', 'ci_em')}, so it is not established; its gains on "
+              + " and ".join(f"{'AddSent' if st == 'addsent' else 'AddOneSent'} ({sgn(e['rr_em'] - e['em'])} EM, {ci(cb_B, st, 'ci_em')})" for st, e in sig)
+              + (" exclude zero and are real on this extractor." if sig else " do not exclude zero.")
+              + f" Agreement changes on AddSent, AddOneSent and the Gan & Ng paraphrases exclude zero for {n_ens_ex} of 3 ensemble results but only {n_agr_ex} of {n_agr_tot} no-pair reranker results."
+              + " Section 9's conclusion stands: no variant replaces the two system versions, but the ensemble is the stronger consistency device of the two and costs nothing to train, which the group should weigh.")
+            w("")
         w("")
 
     # 10 --------------------------------------------------------------------------------------------------------
@@ -599,7 +744,7 @@ def main() -> int:
     w(f"- The λ rule's tolerance ({args.tolerance:g}) was fixed before the runs but not formally pre-registered, and it is load-bearing (Section 5).")
     w("- OT / Hungarian weights were not tuned (Section 10).")
     if var_runs:
-        w(f"- The reranker ablation selects on {vr0['rr_summaries']['pair']['n_dev_items']:,} held-out questions, too few to separate configurations a few tenths of a point apart; its dev differences below about half a point are unconfirmed (Section 9).")
+        w(f"- The reranker ablation selects on {vr0['rr_summaries']['pair']['n_dev_items']:,} held-out questions, too few to separate configurations a few tenths of a point apart; its dev differences below about half a point are unconfirmed (Section 9). The ensemble baseline and the consistency-trained rerankers were run on one extractor only (Section 9b).")
     if dl_ce:
         w("- The DeBERTa-v3-large runs use a smaller per-step batch and lower learning rate (Section 2) and graded reranker targets (Section 8), so large-versus-base is not a pure backbone comparison.")
     w("- Held-out training articles were used for every decision (checkpoint, λ, reranker); dev and the external sets never were.")
@@ -615,7 +760,8 @@ def main() -> int:
     w("Sources per run: `config.json`, `train_summary.json`, `reranker_summary.json`, `eval_<set>/results.json` and `official_eval*.json`. "
       "NUS SoC cluster, H100 NVL; base-model training jobs 1068703–1068711 and re-evaluation jobs 1069429–1069438 (3 Nov 2026, after the Gan & Ng original-question scoring fix in commit 3d62dc6)"
       + ("; DeBERTa-v3-large jobs 1072440 (`ce`) and 1072441 (`kl`) on 4 Nov 2026" if dl_ce else "")
-      + ("; reranker-ablation jobs 1073460–1073462 on 4 Nov 2026 (`scripts/submit_reranker_variants.sh`, outputs under `runs/<run>/rerank_variants/`)" if any(D[n].get("variants") for n in order) else "") + ". Cluster logs are not part of the repository.")
+      + ("; reranker-ablation jobs 1073460–1073462 on 4 Nov 2026 (`scripts/submit_reranker_variants.sh`, outputs under `runs/<run>/rerank_variants/`)" if any(D[n].get("variants") for n in order) else "")
+      + ("; ensemble-baseline and consistency-reranker jobs 1096581–1096582 on 8 Nov 2026 (`scripts/submit_consistency_baseline.sh`, `scripts/submit_consistency_reranker.sh`)" if any("ENSEMBLE" in D[n].get("variants", {}) for n in order) else "") + ". Cluster logs are not part of the repository.")
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as f:
         f.write("\n".join(L) + "\n")
