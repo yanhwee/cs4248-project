@@ -1,7 +1,8 @@
-% CS4248 G17 final report — ACL short-paper format (4 pages + 1 page references).
-% Numbers are pulled in from report/tables/*.tex and report/figures/*.pdf, which visualize.py generates from
-% runs/. Every \TBD{...} must be resolved (and the macro deleted) before submission.
+% CS4248 G17 final report, ACL short-paper format (4 pages of content + up to 1 page of references).
+% Both tables are generated: scripts/make_results_report.py (runs/ -> docs/results_digest.json) and
+% scripts/make_report_tables.py (digest -> report/tables/rep_*.tex).
 \documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
 \usepackage{acl}
 \usepackage{times}
 \renewcommand{\ttdefault}{cmtt}
@@ -10,21 +11,17 @@
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{microtype}
-\usepackage{xcolor}
-
-\newcommand{\TBD}[1]{\textcolor{red}{[TBD: #1]}}
-\newcommand{\inputifexists}[2]{\IfFileExists{#1}{\input{#1}}{#2}}
 
 \setlength{\abovedisplayskip}{4pt plus 1pt minus 1pt}
 \setlength{\belowdisplayskip}{4pt plus 1pt minus 1pt}
-\setlength{\textfloatsep}{6pt plus 2pt minus 2pt}
-\setlength{\abovecaptionskip}{4pt plus 1pt minus 1pt}
+\setlength{\textfloatsep}{4pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{2pt plus 1pt minus 1pt}
 
-\title{Paraphrase-Consistent Extractive Question Answering\\with a Learned Span Reranker}
+\title{Paraphrase-Consistent Extractive Question Answering on SQuAD v1.1}
 
 \author{Chong Xin Wei \quad Ng Jian Yi \quad Soh Jun Ying Gavin \quad Wang Chengke \quad Yee Yan Hwee \\
-  Group G17, CS4248, National University of Singapore \\
-  \texttt{\TBD{e-mail addresses}}}
+  Group G17, CS4248 Introduction to Large Language Models \\
+  National University of Singapore}
 
 \date{}
 
@@ -32,97 +29,85 @@
 \maketitle
 
 \begin{abstract}
-Extractive question answering (QA) models fine-tuned on SQuAD answer many questions correctly yet change their answer when the question is rephrased, and are easily distracted by sentences that merely overlap lexically with the question. We study whether training the extractor to be \emph{consistent} across paraphrases, and deferring the final choice among its candidate spans to a \emph{learned span reranker}, yields answers that are both more accurate and more robust. Each training question is back-translated (EN$\rightarrow$DE$\rightarrow$EN) with open MarianMT models and filtered by sentence-embedding similarity; the extractor is trained on both versions with a symmetric KL penalty between their start/end distributions over passage tokens. A lightweight reranker then selects among the extractor's top-$k$ distinct spans using the extractor's own representations, so every answer remains an exact passage span. On SQuAD~v1.1 with BERT-base, DeBERTa-v3-base and DeBERTa-v3-large backbones we report exact match, F1 and paraphrase agreement on the official dev set, on the paraphrased test sets of \citet{gan2019improving} and on Adversarial SQuAD \citep{jia2017adversarial}. \TBD{one sentence with the main numbers once runs are complete}.
+Extractive question answering (QA) models fine-tuned on SQuAD answer most questions correctly yet often change their answer when the question is merely rephrased. We train the extractor to be \emph{consistent} across paraphrases: each training question is back-translated (EN$\rightarrow$DE$\rightarrow$EN) with open MarianMT models, filtered by sentence-embedding similarity, and both versions are trained on the same passage with a symmetric KL penalty between their start/end distributions. On BERT-base, DeBERTa-v3-base and DeBERTa-v3-large the penalty raises the share of paraphrase pairs that receive the same answer by 4.6, 3.8 and 3.3 points while leaving exact match and F1 within 0.3 points, and on the largest backbone it also lifts F1 on Adversarial SQuAD AddSent from 86.0 to 87.0. The proposed system, a consistency-trained DeBERTa-v3-large extractor, reaches 90.0 EM / 95.4 F1 on the SQuAD v1.1 dev set with 92.7\% paraphrase agreement. A learned span reranker over its top-20 candidates, proposed as a second stage, does not improve accuracy beyond sampling noise, and a learning-free paraphrase ensemble is more consistent.
 \end{abstract}
 
 \section{Introduction}
-Given a passage $c$ and a question $q$, extractive QA predicts a span $(s,e)$ of $c$ \citep{rajpurkar2016squad}. Fine-tuned transformers such as BERT \citep{devlin2019bert} and DeBERTa \citep{he2021deberta,he2023debertav3} score highly on the SQuAD dev set, but two failure modes are well documented. First, models are \emph{over-sensitive} to the surface form of the question: \citet{gan2019improving} show sizeable drops on human-verified paraphrases of SQuAD questions, and behavioural tests confirm the pattern \citep{ribeiro2020beyond}. Second, models are \emph{over-reliant on lexical matching}: appending a single distractor sentence that overlaps with the question but does not answer it drops F1 from 75 to 36 across the systems studied by \citet{jia2017adversarial}.
+Extractive QA predicts an answer span of a given passage \citep{rajpurkar2016squad}. Fine-tuned encoders such as BERT \citep{devlin2019bert} and DeBERTa \citep{he2021deberta,he2023debertav3} score highly on SQuAD, but they are \emph{over-sensitive} to the surface form of the question, with sizeable drops on human paraphrases \citep{gan2019improving}, and \emph{over-reliant on lexical matching}: one distractor sentence overlapping with the question drops F1 from 75 to 36 \citep{jia2017adversarial}. \citet{gan2019improving} add paraphrases as training data. We go further and apply consistency regularisation \citep{xie2020unsupervised}, which enforces invariance under label-preserving transformations such as back-translation \citep{sennrich2016improving}, to span distributions rather than class labels, asking whether it fixes over-sensitivity without hurting accuracy and whether it helps against distractors.
 
-This work asks whether two changes to a standard extractor address both problems at once:
-\begin{itemize}\itemsep0pt\parskip0pt
-  \item \textbf{Consistency training, not only augmentation.} \citet{gan2019improving} add automatically generated paraphrases as extra training data. We also penalise \emph{disagreement} within each (question, paraphrase) pair with a symmetric KL term between the two start/end distributions, in the spirit of consistency training for classification \citep{xie2020unsupervised}, and ablate augmentation with and without the penalty.
-  \item \textbf{Span selection, not generation.} The extractor proposes its top-$k$ distinct spans; a learned reranker picks one using the extractor's own representations and, when a paraphrase is available, the score the paraphrase assigns the same span. Because the reranker only selects among passage spans, it cannot produce rephrased answers that exact match would penalise.
-\end{itemize}
-We evaluate with the official SQuAD scorer on the dev set, on the paraphrased and adversarially paraphrased test sets of \citet{gan2019improving}, and on the AddSent and AddOneSent sets of \citet{jia2017adversarial}, reporting EM, F1 and the share of paraphrase pairs that receive the same answer.
-
-\section{Related Work}
-\textbf{Extractive QA.} Pretrained encoders with a linear start/end head and sliding windows are the standard recipe \citep{devlin2019bert}; DeBERTa's disentangled attention and ELECTRA-style pre-training improve it further \citep{he2021deberta,he2023debertav3}.
-\textbf{Robustness.} \citet{jia2017adversarial} introduced distractor sentences (AddSent, AddOneSent); \citet{gan2019improving} built paraphrased SQuAD test sets and showed that paraphrase augmentation helps; \citet{mudrakarta2018did} attribute brittleness to models attending to few question words.
-\textbf{Consistency regularisation} enforces invariance under label-preserving transformations such as back-translation \citep{sennrich2016improving,xie2020unsupervised}, cross-view training \citep{clark2018semi} or adversarial perturbations \citep{miyato2018virtual}; we apply it to span distributions rather than class labels.
-\textbf{Answer reranking} over candidate spans or passages has been used in open-domain QA \citep{wang2018evidence}; RankQA \citep{kratzwald2019rankqa} in particular re-ranks a reader's candidates with a small network over reader scores and span features. Our reranker follows that design and represents each span by its boundary and pooled hidden states, the standard span representation of \citet{lee2017end} that \citet{toshniwal2020cross} found robust across tasks.
-\textbf{Optimal transport} offers distance-aware alternatives to KL \citep{peyre2019computational,villani2008optimal}; we include a 1-D Wasserstein variant and a Hungarian span-matching variant \citep{kuhn1955hungarian,carion2020end} as ablations of the consistency term.
+We contribute (i) a paraphrase-consistency recipe for span extraction, with optimal-transport alternatives \citep{peyre2019computational,kuhn1955hungarian} as ablations (\S\ref{sec:method}); (ii) a controlled comparison of plain training, paraphrase augmentation and augmentation plus the penalty on three backbones, with every decision taken on held-out training articles (\S\ref{sec:exp}); (iii) an evaluation of second-stage span selection, including a learned span reranker in the style of RankQA \citep{kratzwald2019rankqa} and a learning-free paraphrase ensemble (\S\ref{sec:second}); (iv) an analysis of question types, disagreements and representations (\S\ref{sec:analysis}). EM and F1 come from the official SQuAD scorer; code, configurations and per-question outputs accompany this report.
 
 \section{Method}
-\subsection{Extractor and candidate spans}
-Each (question, passage) pair is encoded as \texttt{[CLS]}\,$q$\,\texttt{[SEP]}\,$c^{(w)}$\,\texttt{[SEP]} for sliding windows $c^{(w)}$ of at most $L$ tokens with step $S$. A linear head on the final hidden states gives start and end logits $\mathbf{z}_s,\mathbf{z}_e\in\mathbb{R}^L$. Windows that do not contain the answer are labelled with the \texttt{[CLS]} position, and the supervised loss is $\mathcal{L}_{\mathrm{CE}}=\tfrac12[\mathrm{CE}(\mathbf{z}_s,s^*)+\mathrm{CE}(\mathbf{z}_e,e^*)]$.
-At inference every span $(i,j)$ with $i\le j<i+30$ inside the passage is scored by $z_s[i]+z_e[j]$ minus the window's null score $z_s[0]+z_e[0]$, which makes scores comparable across windows. Spans are de-duplicated by normalised answer text and the $k=20$ best distinct spans are kept as candidates; the top-1 candidate is the extractor's answer.
+\label{sec:method}
+\textbf{Extractor and candidates.} Each (question, passage) pair is encoded as \texttt{[CLS]}\,$q$\,\texttt{[SEP]}\,$c^{(w)}$\,\texttt{[SEP]} for sliding windows $c^{(w)}$ of at most $L$ tokens with step $S$; a linear head gives start and end logits, windows without the answer are labelled with the \texttt{[CLS]} position, and $\mathcal{L}_{\mathrm{CE}}$ is the mean of the start and end cross-entropies \citep{devlin2019bert}. At inference every span $(i,j)$ with $i\le j<i+30$ inside the passage is scored by $z_s[i]+z_e[j]$ minus the window's null score $z_s[0]+z_e[0]$; the $k=20$ best spans with distinct normalised text are kept, and the top one is the extractor's answer.
 
-\subsection{Paraphrases}
-Every training question is back-translated through German with the open MarianMT models \texttt{opus-mt-en-de} and \texttt{opus-mt-de-en} \citep{tiedemann2020opus}; when beam search returns the original sentence, one sampled translation is tried. A pair is kept when the paraphrase differs from the question after normalisation and the cosine similarity of their \texttt{all-MiniLM-L6-v2} sentence embeddings \citep{reimers2019sentence} is at least $0.85$. \TBD{share of training questions with an accepted paraphrase (from the cache statistics printed by train.py)}.
+\textbf{Paraphrases.} Every training question is back-translated through German with \texttt{opus-mt-en-de} and \texttt{opus-mt-de-en} \citep{tiedemann2020opus}. A pair is kept when the paraphrase differs from the question after normalisation and the cosine similarity of their \texttt{all-MiniLM-L6-v2} embeddings \citep{reimers2019sentence} is at least $0.85$. This accepts a paraphrase for 68,439 of the 83,484 training questions (82.0\%) and 8,622 of the 10,570 dev questions (81.6\%); dev paraphrases are used only to measure agreement.
 
-\subsection{Consistency objective}
-For a question $q$, its paraphrase $q'$ and a shared passage window, let $P_s,P'_s\in\Delta^{m-1}$ be the start distributions restricted to the $m$ passage tokens (and $P_e,P'_e$ the end distributions). The training objective is
+\textbf{Consistency objective.} For a question $q$, its paraphrase $q'$ and a shared window, let $P_t,P'_t$ ($t\in\{s,e\}$) be the start and end distributions restricted to the $m$ passage tokens. We minimise
 \begin{equation}
-\mathcal{L}=\mathcal{L}_{\mathrm{CE}}(q)+\mathcal{L}_{\mathrm{CE}}(q')+\lambda\,\mathcal{D}_{\mathrm{KL}}^{\mathrm{sym}},\quad
-\mathcal{D}_{\mathrm{KL}}^{\mathrm{sym}}=\tfrac12\!\sum_{t\in\{s,e\}}\!\tfrac12\big[\mathrm{KL}(P_t\|P'_t)+\mathrm{KL}(P'_t\|P_t)\big].
+\begin{split}
+\mathcal{L}&=\mathcal{L}_{\mathrm{CE}}(q)+\mathcal{L}_{\mathrm{CE}}(q')+\lambda\,\mathcal{D}_{\mathrm{KL}}^{\mathrm{sym}},\\
+\mathcal{D}_{\mathrm{KL}}^{\mathrm{sym}}&=\tfrac14\!\sum_{t\in\{s,e\}}\!\big[\mathrm{KL}(P_t\|P'_t)+\mathrm{KL}(P'_t\|P_t)\big].
+\end{split}
 \end{equation}
-Setting $\lambda=0$ gives the augmentation-only baseline of \citet{gan2019improving}; dropping $\mathcal{L}_{\mathrm{CE}}(q')$ as well gives the plain extractor. Questions without an accepted paraphrase contribute $\mathcal{L}_{\mathrm{CE}}(q)$ only.
-\textbf{Ablation: distance-aware penalties.} KL is invariant to permutations of the token axis, so it does not distinguish a one-token boundary shift from a jump to another sentence. We therefore also test the 1-D Wasserstein distance $W_1(P,P')=\frac1m\sum_i|\mathrm{CDF}_P(i)-\mathrm{CDF}_{P'}(i)|$ and a span-level penalty that matches the top-$k$ joint spans of the two views with the Hungarian algorithm under a position/IoU cost (details in the released code).
+$\lambda=0$ is the augmentation-only baseline of \citet{gan2019improving}; dropping $\mathcal{L}_{\mathrm{CE}}(q')$ as well gives the plain extractor (CE). KL ignores token order, so it does not distinguish a one-token boundary shift from a jump to another sentence; as ablations we replace it by the 1-D Wasserstein distance between $P_t$ and $P'_t$ (\emph{OT}) and by that distance plus a Hungarian matching of the two views' top-$k$ spans under a position/overlap cost (\emph{dual}).
 
-\subsection{Learned span reranker}
-For each candidate span the reranker receives the extractor's final hidden states $[\mathbf{h}_i;\mathbf{h}_j;\overline{\mathbf{h}}_{i:j};\mathbf{h}_{\texttt{[CLS]}}]$ and scalar features (span score, gap to the best score, softmax probability among the candidates, rank, length, number of windows and, when a paraphrase is available, the score the paraphrase view assigns the same span). A two-layer MLP produces one score per candidate and the answer is the arg-max, optionally restricted to candidates within a margin of the extractor's best score. The reranker is trained with the listwise softmax cross-entropy of \citet{cao2007learning} against graded targets (relevance 1 for candidates that exactly match a gold answer, $0.3\times$F1 for partially overlapping ones), using only the held-out training articles described next, so neither the extractor nor the reranker ever sees the dev set. The span representation and the score features follow \citet{lee2017end} and \citet{kratzwald2019rankqa}; the paraphrase-view features are, to our knowledge, new. We report two versions of the system throughout: the \emph{extractor} alone (its top-ranked span) and the \emph{extractor $+$ reranker}. The reranker is a lightweight learned model rather than a prompted language model, so that it uses the extractor's own representations as item~3 of the proposal describes, adds negligible inference cost and can be trained on a CPU.
+\textbf{Second-stage span selection.}
+The top-20 list contains an exactly correct span for 98.9\% of the held-out early-stopping questions, so we proposed a \emph{learned span reranker} to pick among them. For each candidate it receives the extractor's hidden states $[\mathbf{h}_i;\mathbf{h}_j;\overline{\mathbf{h}}_{i:j};\mathbf{h}_{\texttt{[CLS]}}]$ \citep{lee2017end} and 14 scalar features (span and null scores, gap to the best score, softmax probability, rank, length, number of windows and, when a paraphrase is available, three \emph{pair features} derived from the paraphrase view's score for the same span). A small MLP (projections of both feature groups, two hidden layers) scores each candidate and is trained with listwise softmax cross-entropy \citep{cao2007learning} against graded targets (1 for exact-match candidates, $0.3\times$F1 for partial overlaps) on the held-out training articles only, with early stopping on 20\% of them (758 questions). We test it with and without the pair features, with its arg-max replacing the extractor's answer or added to the extractor's log-probability (\emph{blend}, weight $\alpha$), and trained with a symmetric-KL term between its distributions for $q$ and $q'$ (\emph{consistency-trained}, weight $w$). As a learning-free reference, the \emph{paraphrase ensemble} takes the candidate maximising $\log p(\cdot\mid q)+\beta\log p(\cdot\mid q')$ over the extractor's own scores.
 
-\subsection{Protocol}
-\label{sec:protocol}
-We hold out 5\% of the training \emph{articles} (23 of 442; 4{,}115 questions) for model selection, for choosing $\lambda$ and for training the reranker; the official dev set is used only for the final numbers. All scores come from the official \texttt{evaluate-v2.0.py}. Paraphrase agreement is the percentage of (question, paraphrase) pairs that receive the same normalised answer. Because $\lambda$ trades accuracy for consistency, validation reports both F1 and agreement on the held-out questions (every run, including the plain baseline), and $\lambda$ is chosen as the largest value whose held-out F1 is within 0.5 points of the best (Table~\ref{tab:lambda}); within a run the checkpoint with the best held-out F1 is kept.
+\textbf{Protocol.}
+We hold out 5\% of the training \emph{articles} (23 of 442; 4,115 questions) for every decision: the best checkpoint of a run is chosen on a fixed 2,000-question sample of them, $\lambda$ on their F1 and agreement, and the reranker is trained on them. The dev and external sets are used only for final numbers, with the official \texttt{evaluate-v2.0.py}. \emph{Agreement} is the percentage of (question, paraphrase) pairs whose normalised answers are identical; since always returning the same wrong span would also agree, we also report \emph{both correct}, the share of pairs where both answers are exact matches. The $\lambda$ rule was fixed before training: the largest $\lambda\in\{0.5,1,2\}$ whose held-out F1 is within 0.5 points of the best. Second-stage differences carry 95\% paired percentile-bootstrap intervals over questions (pairs for agreement).
 
 \section{Experiments}
-\textbf{Setup.} Backbones: \texttt{bert-base-uncased} (110M), \texttt{microsoft/deberta-v3-base} (184M) and \texttt{microsoft/deberta-v3-large} (435M). Unless stated otherwise: $L=384$, $S=128$, AdamW, learning rate $3\times10^{-5}$ ($10^{-5}$ for the large model) with 10\% linear warm-up, effective batch size 16 (8 with two-step gradient accumulation for the large model), 2 epochs, best validation-F1 checkpoint kept. $\lambda\in\{0.5, 1, 2\}$ is swept on BERT-base and selected on the held-out articles by the rule in \S\ref{sec:protocol}; the selected value is reused for the DeBERTa models.
+\label{sec:exp}
+\textbf{Setup.} Backbones: \texttt{bert-base-uncased}, DeBERTa-v3-base and DeBERTa-v3-large, all with $L=384$, $S=128$, AdamW, 10\% linear warm-up, 2 epochs and the best held-out-F1 checkpoint; the base models use learning rate $3\times10^{-5}$ and batch 16, the large model $10^{-5}$ and batch 8 with two-step gradient accumulation, in bf16. Each run used one NVIDIA H100, from 15 minutes (BERT-base, CE) to 108 minutes (DeBERTa-v3-large, KL, on a GPU shared with another job). \textbf{Test sets}: SQuAD v1.1 dev (10,570 questions) with back-translated paraphrases for agreement; the paraphrased dev questions of \citet{gan2019improving} (1,062 non-adversarial and 56 adversarial, each paired with its original question); and AddSent (3,560) and AddOneSent (1,787) of \citet{jia2017adversarial}, again with back-translated paraphrases.
 
-\inputifexists{tables/table_lambda.tex}{\TBD{run visualize.py to generate tables/table\_lambda.tex}} Reranker: $k=20$, 128-dimensional projection, 20 epochs, early stopping on 20\% of the held-out articles. \TBD{hardware and training time per run}.
+\input{tables/rep_main.tex}
 
-\textbf{Test sets.} SQuAD v1.1 dev (10{,}570 questions) with back-translated paraphrases for the agreement metric; the paraphrased dev questions of \citet{gan2019improving} (1{,}062 non-adversarial and 56 adversarial, each with the original question for comparison); and Adversarial SQuAD AddSent (3{,}560) and AddOneSent (1{,}787) \citep{jia2017adversarial}.
+\textbf{Main results.} Table~\ref{tab:main} gives the extractor-alone results. \emph{Accuracy is unchanged by the objective}: all seven BERT-base runs lie within 80.9--81.4 EM and 88.2--88.6 F1, and one standard error of a dev EM value is about 0.4 points; DeBERTa-v3-base moves by $-$0.2 F1 and DeBERTa-v3-large by $-$0.3 EM / $-$0.1 F1 under consistency training. \emph{Agreement is where the objectives separate}: for BERT-base, 83.3\% plain, 86.5\% with augmentation and 87.9\% with the penalty; the +4.6 over the plain extractor is about eight standard errors of a difference, the +1.4 over augmentation alone about 2.5. The penalty adds +3.8 agreement on DeBERTa-v3-base and +3.3 on DeBERTa-v3-large, so the effect is not specific to the weak encoder. \emph{The backbone sets accuracy}: 88.5, 93.9 and 95.5 F1 for the three plain extractors, and no objective change moves accuracy by more than half a point. Our plain BERT-base (81.1 / 88.5) matches the 80.8 / 88.5 of \citet{devlin2019bert}, and the proposed system (90.0 / 95.4) is within 0.1 F1 of the 90.1 / 95.5 that \citet{he2021deberta} report for DeBERTa-large.
 
-\inputifexists{tables/table_ablation.tex}{\TBD{run visualize.py to generate tables/table\_ablation.tex}}
+\textbf{Augmentation versus the penalty; $\lambda$.} Of the +4.6 agreement gain on BERT-base, the paraphrased examples alone account for +3.2 and the penalty for +1.4 at $\lambda=1$ (+2.3 at $\lambda=2$). On the 2,000 held-out selection questions, $\lambda=0.5$, 1 and 2 give F1 82.5, 82.1 and 81.7 with agreement 89.5\%, 90.6\% and 91.0\%: agreement rises monotonically while F1 falls by a few tenths, so the rule picks $\lambda=1$, which we reuse for DeBERTa. The choice rests on the tolerance (under about 0.44 it would select $\lambda=0.5$, at 0.82 or more $\lambda=2$). At their default, untuned weights the OT and dual penalties reach 86.3\% and 86.7\% agreement, within 0.2 points of augmentation alone, where KL adds 1.4; we keep KL.
 
-\textbf{Main results.} Table~\ref{tab:ablation} compares the plain extractor (CE), paraphrase augmentation (CE$+$aug.) and consistency training (CE$+$aug.$+$KL), each in both system versions: extractor alone, and extractor $+$ reranker (the $rr$ columns). \TBD{discuss EM/F1 and agreement differences; state whether KL helps beyond augmentation and whether the reranker helps}. As external reference points, \citet{devlin2019bert} report 80.8 EM / 88.5 F1 for BERT-base on this dev set; \citet{he2023debertav3} report DeBERTa-v3-base only on SQuAD~2.0 (88.4 F1 / 85.4 EM), so our plain-CE DeBERTa-v3 run serves as the v1.1 reference. \TBD{confirm these published figures against the papers}.
+\textbf{Robustness.} The plain BERT-base extractor falls from 88.5 F1 on dev to 64.9 on AddSent and 73.9 on AddOneSent. All six paraphrase-trained BERT-base runs lie within 65.7--66.1 F1 on AddSent, so the +1.2 of the proposed objective is mostly the paraphrase data (augmentation alone gives +1.0); what changes is stability, with AddSent agreement rising from 77.9\% to 84.1\%. DeBERTa-v3-base (85.1 F1) loses 0.9 under consistency training, whereas DeBERTa-v3-large gains 1.0 (86.0 $\rightarrow$ 87.0) with agreement 84.1\% $\rightarrow$ 90.4\%, and 0.9 on AddOneSent (89.3 $\rightarrow$ 90.2). On human paraphrases, rephrasing costs the plain BERT-base extractor 2.8 F1 (88.4 $\rightarrow$ 85.6) and the consistency-trained one 1.4 (87.5 $\rightarrow$ 86.1), with agreement 89.1\% $\rightarrow$ 91.0\%; DeBERTa-v3-large scores 94.9 and 93.8 with or without the penalty, but its agreement rises from 92.3\% to 95.0\%.
 
-\inputifexists{tables/table_robustness.tex}{\TBD{run visualize.py to generate tables/table\_robustness.tex}}
+\input{tables/rep_second.tex}
 
-\textbf{Robustness.} Table~\ref{tab:robustness} reports F1 on the external sets. \TBD{discuss the drop from original to paraphrased questions, agreement on the Gan \& Ng pairs, and the AddSent/AddOneSent drops; relate to the proposal's hypothesis}.
-
-\textbf{Distance-aware ablation.} \TBD{if the ot/dual runs were completed: one or two sentences comparing W1 and Hungarian variants with KL; otherwise delete this paragraph}.
-
-\begin{figure}[t]
-\centering
-\IfFileExists{figures/loss_curves.pdf}{\includegraphics[width=\columnwidth]{figures/loss_curves.pdf}}{\TBD{figures/loss\_curves.pdf from visualize.py}}
-\caption{Training loss and consistency penalty (exponential moving average) for the runs in Table~\ref{tab:ablation}.}
-\label{fig:loss}
-\end{figure}
+\subsection{Second-stage span selection}
+\label{sec:second}
+Table~\ref{tab:second} evaluates the second stage on the proposed extractor, whose top-20 list contains an exact match for 99.5\% of dev questions. The learned rerankers recover almost none of that headroom: their dev EM changes of +0.2 to +0.3 all have intervals including zero and F1 moves by at most 0.1. Their gains are on the distractor sets, where the no-pair reranker adds +0.9 EM on AddSent and +1.0 on AddOneSent with intervals excluding zero. The pair features carry the agreement gain (+1.4, $[+1.07,+1.84]$, against +0.4 without them); on BERT-base they cost 0.2 dev F1 for +4.9 agreement. An earlier training run of this reranker gave +2.4 agreement, so one-point differences between rows are training noise. The learning-free ensemble is the stronger consistency device: +6.6 agreement ($[+6.10,+7.16]$) and both-correct 86.6\% $\rightarrow$ 89.3\%, against 87.4\% for the pair-feature reranker, at $-$0.4 EM on the original questions ($[-0.63,-0.20]$). A reranker trained with its own consistency term does not become consistent without a paraphrase at test time: at $w=1$ it matches the plain no-pair reranker, and at $w=2$ it hurts AddSent ($-$0.8 EM, interval excluding zero). We therefore include no second stage in the proposed system; the reranker and the ensemble are optional add-ons that need a paraphrase at test time.
 
 \section{Analysis}
-\inputifexists{tables/table_question_types.tex}{\TBD{run visualize.py to generate tables/table\_question\_types.tex}}
+\label{sec:analysis}
+\textbf{Question types.} Split by the question's wh-word, consistency training moves the proposed system's per-type dev F1 by at most 0.5 points on the eight types with more than 150 questions, apart from \emph{which} (94.8 $\rightarrow$ 96.1), and by +3.3 on the 94 \emph{other} questions (85.1 $\rightarrow$ 88.4). The objective does not redistribute accuracy across question types.
 
-\textbf{Question types.} Table~\ref{tab:qtypes} breaks the dev results down by question type. \TBD{which types benefit most from consistency training / reranking}.
+% Rows taken from runs/deb_large_ce/eval_dev/disagreements.jsonl (CE answers, question and paraphrase text) and
+% runs/deb_large_kl/eval_dev/{candidates.jsonl,disagreements.jsonl} (KL answers); question ids
+% 56bf3fd53aeaaa14008c9594 (row 1) and 56bf1ae93aeaaa14008c951e (row 2).
+\begin{table}[t]
+\centering\footnotesize
+\begin{tabular}{@{}p{\columnwidth}@{}}
+\toprule
+\textbf{Q:} Who has the record of being the oldest quarter back in \emph{any} Super Bowl game? \; \textbf{Q$'$:} \ldots in \emph{a} Super Bowl game? \\
+CE: John Elway / Peyton Manning \quad KL: Peyton Manning / Peyton Manning \quad gold: Peyton Manning \\
+\midrule
+\textbf{Q:} Who was the \emph{male} singer who performed as a special guest during Super Bowl 50? \; \textbf{Q$'$:} Who was the singer who was a very special guest during Super Bowl 50? \\
+KL: Bruno Mars / Beyoncé \quad gold: Bruno Mars \\
+\bottomrule
+\end{tabular}
+\caption{Dev questions, their back-translated paraphrases and the DeBERTa-v3-large answers to question / paraphrase, plain (CE) and consistency-trained (KL). The second row is a remaining KL disagreement: back-translation dropped ``male'', so the two views ask different questions.}
+\label{tab:qual}
+\end{table}
 
-\textbf{Qualitative.} \TBD{two or three (question, paraphrase, baseline answer, our answer) examples taken from runs/<run>/eval\_dev/disagreements.jsonl}.
+\textbf{Qualitative.} In the first row of Table~\ref{tab:qual} a one-word rephrasing flips the plain extractor to a plausible but wrong entity while the consistency-trained model answers both views correctly. The second row shows the main remaining failure mode: of the 200 saved dev disagreements of the proposed system, 119 have exactly one view correct, many of them pairs whose meaning back-translation changed. The 0.85 filter admits such pairs, which caps attainable agreement.
 
-\textbf{Representation geometry.} Figure~\ref{fig:tsne} shows a t-SNE projection of \texttt{[CLS]} representations of question/paraphrase pairs before and after consistency training; the mean cosine distance between pair representations is \TBD{x} for the plain extractor and \TBD{y} after consistency training (\texttt{tsne\_pairs.py}).
-
-\begin{figure}[t]
-\centering
-\IfFileExists{figures/tsne_bert_ce.pdf}{\includegraphics[width=0.48\columnwidth]{figures/tsne_bert_ce.pdf}}{\TBD{tsne\_bert\_ce.pdf}}
-\IfFileExists{figures/tsne_bert_kl.pdf}{\includegraphics[width=0.48\columnwidth]{figures/tsne_bert_kl.pdf}}{\TBD{tsne\_bert\_kl.pdf}}
-\caption{t-SNE of question (circles) and paraphrase (triangles) representations; lines join pairs, green when both views give the same answer. Left: plain extractor; right: consistency-trained.}
-\label{fig:tsne}
-\end{figure}
+\textbf{Representations.} Over 300 dev pairs, the mean cosine distance between the \texttt{[CLS]} representations of a question and its paraphrase falls from 0.0088 for the plain BERT-base extractor to 0.0063 for the consistency-trained one (t-SNE plots in the repository): the penalty pulls the two views together in representation space, not only at the output.
 
 \section{Conclusion and Limitations}
-\TBD{two or three sentences summarising what the experiments showed about consistency training and span reranking}.
-\textbf{Limitations.} Back-translation produces paraphrases of uneven quality and the similarity filter is a heuristic; the reranker is trained on only $\sim$3{,}300 held-out questions; the consistency term doubles the forward passes per step; results are for English SQuAD v1.1 only.
+Consistency training makes an extractive QA model answer paraphrases the same way: on three backbones it adds 3--5 points of agreement at no accuracy cost, and on DeBERTa-v3-large it also improves both distractor sets. It is not an accuracy method: accuracy is set by the backbone, on BERT-base about 70\% of the agreement gain comes from the paraphrase data itself, and the learned span reranker we proposed neither improves accuracy beyond noise nor beats a learning-free ensemble on consistency. The proposed system is therefore the consistency-trained DeBERTa-v3-large extractor alone.
+\textbf{Limitations.} Every configuration was trained once, so dev differences under half a point, the +1.4 agreement gain of the penalty over augmentation alone and everything on the 56-question adversarial set are unconfirmed. Agreement is measured only on questions with an accepted paraphrase, and the filter admits meaning-changing paraphrases. The $\lambda$ tolerance was fixed before the runs but not pre-registered, and it is load-bearing. The large model uses a different batch and learning rate, so large-versus-base is not a pure backbone comparison. The penalty doubles the forward passes per step, and results are for English SQuAD v1.1 only.
 
 \section*{Contributions and external code}
-\textbf{Written by the group}: the paraphrase generation and filtering pipeline, sliding-window feature construction, the consistency objective and its optimal-transport/Hungarian variants, top-$k$ candidate decoding, the learned span reranker, all evaluation and analysis scripts and the figures (\texttt{g17qa/}, \texttt{*.py}). \textbf{External}: PyTorch, Hugging Face Transformers (pre-trained BERT, DeBERTa-v3 and MarianMT weights), sentence-transformers (MiniLM), scikit-learn (t-SNE), SciPy (Hungarian assignment), the official SQuAD scorer \texttt{evaluate-v2.0.py}, and the released test sets of \citet{gan2019improving} and \citet{jia2017adversarial}. Member responsibilities followed the proposal: \TBD{optional one line per member}.
+\textbf{Written by the group}: paraphrase generation and filtering, sliding-window features, the consistency objective and its OT/Hungarian variants, candidate decoding, the span reranker and paraphrase ensemble, the hold-out protocol, and all evaluation, bootstrap, analysis and plotting code (\texttt{g17qa/}, \texttt{*.py}, \texttt{scripts/}). \textbf{External}: PyTorch, NumPy, Hugging Face Transformers with the pre-trained BERT, DeBERTa-v3 and MarianMT weights, sentence-transformers (MiniLM), scikit-learn (t-SNE), SciPy (Hungarian assignment), matplotlib, the official scorer \texttt{evaluate-v2.0.py} (its EM/F1 functions are ported in \texttt{g17qa/metrics.py} for the agreement and bootstrap statistics), and the test sets of \citet{gan2019improving} and \citet{jia2017adversarial}. No closed-source model or API was used.
 
 \clearpage
 \bibliography{custom}
