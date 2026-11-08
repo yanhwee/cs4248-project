@@ -257,34 +257,6 @@ Every stage is skipped when its output already exists, so a job can simply be re
 caches live in `~/.cache/huggingface`; if home space runs short, move `weights/` and `data/` to the 500 GB scratch
 area (`/mnt/scratch/${USER:0:1}/$USER`) and symlink them.
 
-## Can this run locally on a CPU?
-
-Measured with `python scripts/benchmark_cpu.py` on an Apple M2 Pro (12 cores, 16 GB), `bert-base-uncased`,
-L = 384, stride 128 (88,641 training windows, 10,833 dev windows):
-
-| Task | CPU only | Apple-silicon GPU (`--device mps`) |
-| :-- | :-- | :-- |
-| Extractor training, `ce` (1 forward/step), one epoch | 8.0 s/step (batch 16) → ≈ 12 h | 0.44 s/step (batch 8) → ≈ 1.4 h |
-| Extractor training, `kl` (2 forwards/step), one epoch | 26 s/step → ≈ 40 h | 1.07 s/step → ≈ 3.3 h |
-| Dev-set inference (×2 when paraphrases are evaluated) | ≈ 6.5 min | ≈ 2 min |
-| MarianMT back-translation of all 87.6k training questions (one-off, cached, resumable); ≈ 88 % of a 128-question dev sample passed the 0.85 filter | 11 q/s → ≈ 2.2 h | 23 q/s → ≈ 1.1 h |
-| Similarity filter | 370 q/s | 660 q/s |
-| Reranker (feature extraction on ≈ 4.1k held-out questions + MLP) | minutes | minutes |
-| Tiny-model smoke test of the whole pipeline | ≈ 5 min | — |
-
-What this means:
-
-- **CPU only** is fine for the smoke test, building the paraphrase caches, evaluating trained checkpoints on every
-  test set, training the reranker and producing figures. Full fine-tuning is not practical: one 2-epoch `ce` run
-  needs about a day and one `kl` run several days.
-- **Apple-silicon GPU** (`--device mps --batch_size 8 --grad_accum 2`): a 2-epoch BERT-base `ce` run is ≈ 3 h and a
-  `kl` run ≈ 7 h, so single BERT-base runs are feasible overnight on a 16 GB Mac. Batch 16 runs out of GPU memory in
-  paired modes, and DeBERTa-v3-base is roughly twice as slow and may not fit. DeBERTa-v3-large needs a CUDA GPU with
-  about 26 GB free, on any machine (see "Reproducing the proposed system"; `scripts/submit_deberta_large.sh` is only the
-  Slurm wrapper): it is ~3.5× the compute of the base model and its optimiser state alone exceeds a 16 GB Mac.
-- The **full grid** (BERT `ce`/`aug`/`kl`, DeBERTa-v3 `ce`/`kl`, optional OT ablations, λ sweep) belongs on the SoC
-  cluster; a T4 or A100 with fp16/bf16 is several times faster than MPS and runs the jobs in parallel.
-
 ## Outputs
 
 ```
