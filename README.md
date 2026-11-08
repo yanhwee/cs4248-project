@@ -286,7 +286,7 @@ provided/           official scorer evaluate-v2.0.py (in git) + train/dev JSON f
 data/external/      Gan & Ng paraphrased sets, Adversarial SQuAD (download_eval_sets.py; not in git)
 data/paraphrases/   paraphrase caches (prepare_paraphrases.py; not in git)
 report/             ACL-format paper (main.tex), bib, style files; tables/ and figures/ are generated, not committed
-docs/               RESULTS.md (full results analysis, generated from runs/) + results_digest.json (its data), CHANGES.md (what was changed and why)
+docs/               RESULTS.md (full results analysis, generated from runs/) + results_digest.json (its data)
 app.py              legacy marimo demo notebook from the first iteration (not used for any reported number)
 ```
 

@@ -77,5 +77,6 @@ scratch*/
 docs/*.pdf
 docs/status_review*.md
 docs/math.md
+docs/CHANGES.md
 research_notes/
 reports/
