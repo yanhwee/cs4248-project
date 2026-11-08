@@ -10,6 +10,7 @@ All files are SQuAD v1.1 JSON and are scored with the official evaluate-v2.0.py.
 
 from __future__ import annotations
 
+import argparse
 import os
 import sys
 import urllib.request
@@ -25,6 +26,7 @@ FILES = {
 
 
 def main() -> int:
+    argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter).parse_args()
     root = os.path.dirname(os.path.abspath(__file__))
     failed = 0
     for rel, url in FILES.items():

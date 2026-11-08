@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-08T19:34:08",
+  "generated": "2026-11-08T22:56:39",
   "selected": "bert_kl_lam1.0",
   "tolerance": 0.5,
   "rule_pick_sample": "bert_kl_lam1.0",
@@ -331,7 +331,7 @@
               "f1": 74.6
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_aug/eval_dev/results.json"
+          "source": "runs/bert_aug/eval_dev/results.json"
         },
         "gan_dev": {
           "n": 1062,
@@ -438,7 +438,7 @@
               "f1": 81.7
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_aug/eval_gan_dev/results.json",
+          "source": "runs/bert_aug/eval_gan_dev/results.json",
           "orig_em": 80.3,
           "orig_f1": 87.4,
           "rr_orig_f1": 87.7
@@ -528,7 +528,7 @@
               "f1": 87.9
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_aug/eval_gan_adv/results.json",
+          "source": "runs/bert_aug/eval_gan_adv/results.json",
           "orig_em": 80.4,
           "orig_f1": 85.9,
           "rr_orig_f1": 84.3
@@ -638,7 +638,7 @@
               "f1": 69.7
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_aug/eval_addsent/results.json"
+          "source": "runs/bert_aug/eval_addsent/results.json"
         },
         "addonesent": {
           "n": 1787,
@@ -745,7 +745,7 @@
               "f1": 71.3
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_aug/eval_addonesent/results.json"
+          "source": "runs/bert_aug/eval_addonesent/results.json"
         }
       },
       "variants": {},
@@ -911,7 +911,7 @@
               "f1": 76.2
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ce/eval_dev/results.json"
+          "source": "runs/bert_ce/eval_dev/results.json"
         },
         "gan_dev": {
           "n": 1062,
@@ -1018,7 +1018,7 @@
               "f1": 81.3
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ce/eval_gan_dev/results.json",
+          "source": "runs/bert_ce/eval_gan_dev/results.json",
           "orig_em": 80.7,
           "orig_f1": 88.4,
           "rr_orig_f1": 87.6
@@ -1108,7 +1108,7 @@
               "f1": 62.9
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ce/eval_gan_adv/results.json",
+          "source": "runs/bert_ce/eval_gan_adv/results.json",
           "orig_em": 78.6,
           "orig_f1": 85.1,
           "rr_orig_f1": 84.7
@@ -1218,7 +1218,7 @@
               "f1": 66.1
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ce/eval_addsent/results.json"
+          "source": "runs/bert_ce/eval_addsent/results.json"
         },
         "addonesent": {
           "n": 1787,
@@ -1325,7 +1325,7 @@
               "f1": 66.9
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ce/eval_addonesent/results.json"
+          "source": "runs/bert_ce/eval_addonesent/results.json"
         }
       },
       "variants": {},
@@ -1496,7 +1496,7 @@
               "f1": 75.5
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_dual/eval_dev/results.json"
+          "source": "runs/bert_dual/eval_dev/results.json"
         },
         "gan_dev": {
           "n": 1062,
@@ -1603,7 +1603,7 @@
               "f1": 85.2
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_dual/eval_gan_dev/results.json",
+          "source": "runs/bert_dual/eval_gan_dev/results.json",
           "orig_em": 80.3,
           "orig_f1": 87.5,
           "rr_orig_f1": 87.8
@@ -1693,7 +1693,7 @@
               "f1": 59.3
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_dual/eval_gan_adv/results.json",
+          "source": "runs/bert_dual/eval_gan_adv/results.json",
           "orig_em": 80.4,
           "orig_f1": 85.8,
           "rr_orig_f1": 87.2
@@ -1803,7 +1803,7 @@
               "f1": 72.2
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_dual/eval_addsent/results.json"
+          "source": "runs/bert_dual/eval_addsent/results.json"
         },
         "addonesent": {
           "n": 1787,
@@ -1910,7 +1910,7 @@
               "f1": 74.1
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_dual/eval_addonesent/results.json"
+          "source": "runs/bert_dual/eval_addonesent/results.json"
         }
       },
       "variants": {},
@@ -2081,7 +2081,7 @@
               "f1": 76.1
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam0.5/eval_dev/results.json"
+          "source": "runs/bert_kl_lam0.5/eval_dev/results.json"
         },
         "gan_dev": {
           "n": 1062,
@@ -2188,7 +2188,7 @@
               "f1": 80.3
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam0.5/eval_gan_dev/results.json",
+          "source": "runs/bert_kl_lam0.5/eval_gan_dev/results.json",
           "orig_em": 81.0,
           "orig_f1": 88.5,
           "rr_orig_f1": 88.8
@@ -2278,7 +2278,7 @@
               "f1": 73.6
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam0.5/eval_gan_adv/results.json",
+          "source": "runs/bert_kl_lam0.5/eval_gan_adv/results.json",
           "orig_em": 75.0,
           "orig_f1": 81.8,
           "rr_orig_f1": 83.4
@@ -2388,7 +2388,7 @@
               "f1": 73.9
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam0.5/eval_addsent/results.json"
+          "source": "runs/bert_kl_lam0.5/eval_addsent/results.json"
         },
         "addonesent": {
           "n": 1787,
@@ -2495,7 +2495,7 @@
               "f1": 73.9
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam0.5/eval_addonesent/results.json"
+          "source": "runs/bert_kl_lam0.5/eval_addonesent/results.json"
         }
       },
       "variants": {},
@@ -2666,7 +2666,7 @@
               "f1": 76.9
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/eval_dev/results.json"
+          "source": "runs/bert_kl_lam1.0/eval_dev/results.json"
         },
         "gan_dev": {
           "n": 1062,
@@ -2773,7 +2773,7 @@
               "f1": 82.4
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/eval_gan_dev/results.json",
+          "source": "runs/bert_kl_lam1.0/eval_gan_dev/results.json",
           "orig_em": 79.8,
           "orig_f1": 87.5,
           "rr_orig_f1": 86.6
@@ -2863,7 +2863,7 @@
               "f1": 73.6
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/eval_gan_adv/results.json",
+          "source": "runs/bert_kl_lam1.0/eval_gan_adv/results.json",
           "orig_em": 78.6,
           "orig_f1": 85.0,
           "rr_orig_f1": 87.3
@@ -2973,7 +2973,7 @@
               "f1": 65.5
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/eval_addsent/results.json"
+          "source": "runs/bert_kl_lam1.0/eval_addsent/results.json"
         },
         "addonesent": {
           "n": 1787,
@@ -3080,7 +3080,7 @@
               "f1": 69.8
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/eval_addonesent/results.json"
+          "source": "runs/bert_kl_lam1.0/eval_addonesent/results.json"
         }
       },
       "variants": {
@@ -3134,7 +3134,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/A_pair_reranker/eval_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/A_pair_reranker/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -3151,7 +3151,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/A_pair_reranker/eval_gan_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/A_pair_reranker/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -3168,7 +3168,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/A_pair_reranker/eval_gan_adv/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/A_pair_reranker/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -3185,7 +3185,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/A_pair_reranker/eval_addsent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/A_pair_reranker/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -3202,7 +3202,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/A_pair_reranker/eval_addonesent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/A_pair_reranker/eval_addonesent/results.json"
             }
           }
         },
@@ -3253,7 +3253,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker/eval_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -3270,7 +3270,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker/eval_gan_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -3287,7 +3287,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker/eval_gan_adv/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -3304,7 +3304,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker/eval_addsent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -3321,7 +3321,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker/eval_addonesent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker/eval_addonesent/results.json"
             }
           }
         },
@@ -3372,7 +3372,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.1/eval_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.1/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -3389,7 +3389,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -3406,7 +3406,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_adv/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -3423,7 +3423,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.1/eval_addsent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.1/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -3440,7 +3440,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.1/eval_addonesent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.1/eval_addonesent/results.json"
             }
           }
         },
@@ -3491,7 +3491,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.25/eval_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.25/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -3508,7 +3508,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -3525,7 +3525,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_adv/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -3542,7 +3542,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.25/eval_addsent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.25/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -3559,7 +3559,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.25/eval_addonesent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/B_nopair_reranker_gate0.25/eval_addonesent/results.json"
             }
           }
         },
@@ -3610,7 +3610,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/C_nopair_res0.25/eval_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/C_nopair_res0.25/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -3627,7 +3627,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/C_nopair_res0.25/eval_gan_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/C_nopair_res0.25/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -3644,7 +3644,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/C_nopair_res0.25/eval_gan_adv/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/C_nopair_res0.25/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -3661,7 +3661,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/C_nopair_res0.25/eval_addsent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/C_nopair_res0.25/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -3678,7 +3678,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/C_nopair_res0.25/eval_addonesent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/C_nopair_res0.25/eval_addonesent/results.json"
             }
           }
         },
@@ -3729,7 +3729,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/D_nopair_res0.5/eval_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/D_nopair_res0.5/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -3746,7 +3746,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/D_nopair_res0.5/eval_gan_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/D_nopair_res0.5/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -3763,7 +3763,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/D_nopair_res0.5/eval_gan_adv/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/D_nopair_res0.5/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -3780,7 +3780,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/D_nopair_res0.5/eval_addsent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/D_nopair_res0.5/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -3797,7 +3797,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/D_nopair_res0.5/eval_addonesent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/D_nopair_res0.5/eval_addonesent/results.json"
             }
           }
         },
@@ -3848,7 +3848,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0/eval_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -3865,7 +3865,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0/eval_gan_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -3882,7 +3882,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0/eval_gan_adv/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -3899,7 +3899,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0/eval_addsent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -3916,7 +3916,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0/eval_addonesent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0/eval_addonesent/results.json"
             }
           }
         },
@@ -3967,7 +3967,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.1/eval_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.1/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -3984,7 +3984,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -4001,7 +4001,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_adv/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -4018,7 +4018,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.1/eval_addsent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.1/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -4035,7 +4035,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.1/eval_addonesent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.1/eval_addonesent/results.json"
             }
           }
         },
@@ -4086,7 +4086,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.25/eval_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.25/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -4103,7 +4103,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_dev/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -4120,7 +4120,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_adv/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -4137,7 +4137,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.25/eval_addsent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.25/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -4154,7 +4154,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.25/eval_addonesent/results.json"
+              "source": "runs/bert_kl_lam1.0/rerank_variants/E_nopair_res1.0_gate0.25/eval_addonesent/results.json"
             }
           }
         }
@@ -4615,7 +4615,7 @@
               "f1": 76.1
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam2.0/eval_dev/results.json"
+          "source": "runs/bert_kl_lam2.0/eval_dev/results.json"
         },
         "gan_dev": {
           "n": 1062,
@@ -4722,7 +4722,7 @@
               "f1": 85.3
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam2.0/eval_gan_dev/results.json",
+          "source": "runs/bert_kl_lam2.0/eval_gan_dev/results.json",
           "orig_em": 81.8,
           "orig_f1": 88.5,
           "rr_orig_f1": 88.4
@@ -4812,7 +4812,7 @@
               "f1": 73.6
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam2.0/eval_gan_adv/results.json",
+          "source": "runs/bert_kl_lam2.0/eval_gan_adv/results.json",
           "orig_em": 78.6,
           "orig_f1": 84.4,
           "rr_orig_f1": 82.8
@@ -4922,7 +4922,7 @@
               "f1": 68.6
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam2.0/eval_addsent/results.json"
+          "source": "runs/bert_kl_lam2.0/eval_addsent/results.json"
         },
         "addonesent": {
           "n": 1787,
@@ -5029,7 +5029,7 @@
               "f1": 68.6
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_kl_lam2.0/eval_addonesent/results.json"
+          "source": "runs/bert_kl_lam2.0/eval_addonesent/results.json"
         }
       },
       "variants": {},
@@ -5200,7 +5200,7 @@
               "f1": 73.9
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ot/eval_dev/results.json"
+          "source": "runs/bert_ot/eval_dev/results.json"
         },
         "gan_dev": {
           "n": 1062,
@@ -5307,7 +5307,7 @@
               "f1": 78.9
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ot/eval_gan_dev/results.json",
+          "source": "runs/bert_ot/eval_gan_dev/results.json",
           "orig_em": 79.7,
           "orig_f1": 87.2,
           "rr_orig_f1": 85.7
@@ -5397,7 +5397,7 @@
               "f1": 87.9
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ot/eval_gan_adv/results.json",
+          "source": "runs/bert_ot/eval_gan_adv/results.json",
           "orig_em": 78.6,
           "orig_f1": 85.0,
           "rr_orig_f1": 88.2
@@ -5507,7 +5507,7 @@
               "f1": 61.4
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ot/eval_addsent/results.json"
+          "source": "runs/bert_ot/eval_addsent/results.json"
         },
         "addonesent": {
           "n": 1787,
@@ -5614,7 +5614,7 @@
               "f1": 65.1
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/bert_ot/eval_addonesent/results.json"
+          "source": "runs/bert_ot/eval_addonesent/results.json"
         }
       },
       "variants": {},
@@ -5780,7 +5780,7 @@
               "f1": 85.7
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_ce/eval_dev/results.json"
+          "source": "runs/deb_ce/eval_dev/results.json"
         },
         "gan_dev": {
           "n": 1062,
@@ -5887,7 +5887,7 @@
               "f1": 76.9
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_ce/eval_gan_dev/results.json",
+          "source": "runs/deb_ce/eval_gan_dev/results.json",
           "orig_em": 88.9,
           "orig_f1": 93.5,
           "rr_orig_f1": 93.0
@@ -5977,7 +5977,7 @@
               "f1": 73.6
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_ce/eval_gan_adv/results.json",
+          "source": "runs/deb_ce/eval_gan_adv/results.json",
           "orig_em": 89.3,
           "orig_f1": 93.9,
           "rr_orig_f1": 91.8
@@ -6087,7 +6087,7 @@
               "f1": 81.8
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_ce/eval_addsent/results.json"
+          "source": "runs/deb_ce/eval_addsent/results.json"
         },
         "addonesent": {
           "n": 1787,
@@ -6194,7 +6194,7 @@
               "f1": 81.3
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_ce/eval_addonesent/results.json"
+          "source": "runs/deb_ce/eval_addonesent/results.json"
         }
       },
       "variants": {},
@@ -6365,7 +6365,7 @@
               "f1": 85.6
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/eval_dev/results.json"
+          "source": "runs/deb_kl/eval_dev/results.json"
         },
         "gan_dev": {
           "n": 1062,
@@ -6472,7 +6472,7 @@
               "f1": 77.3
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/eval_gan_dev/results.json",
+          "source": "runs/deb_kl/eval_gan_dev/results.json",
           "orig_em": 87.8,
           "orig_f1": 92.4,
           "rr_orig_f1": 92.7
@@ -6562,7 +6562,7 @@
               "f1": 76.5
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/eval_gan_adv/results.json",
+          "source": "runs/deb_kl/eval_gan_adv/results.json",
           "orig_em": 91.1,
           "orig_f1": 95.4,
           "rr_orig_f1": 94.8
@@ -6672,7 +6672,7 @@
               "f1": 76.3
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/eval_addsent/results.json"
+          "source": "runs/deb_kl/eval_addsent/results.json"
         },
         "addonesent": {
           "n": 1787,
@@ -6779,7 +6779,7 @@
               "f1": 80.1
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/eval_addonesent/results.json"
+          "source": "runs/deb_kl/eval_addonesent/results.json"
         }
       },
       "variants": {
@@ -6833,7 +6833,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/A_pair_reranker/eval_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/A_pair_reranker/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -6850,7 +6850,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/A_pair_reranker/eval_gan_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/A_pair_reranker/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -6867,7 +6867,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/A_pair_reranker/eval_gan_adv/results.json"
+              "source": "runs/deb_kl/rerank_variants/A_pair_reranker/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -6884,7 +6884,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/A_pair_reranker/eval_addsent/results.json"
+              "source": "runs/deb_kl/rerank_variants/A_pair_reranker/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -6901,7 +6901,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/A_pair_reranker/eval_addonesent/results.json"
+              "source": "runs/deb_kl/rerank_variants/A_pair_reranker/eval_addonesent/results.json"
             }
           }
         },
@@ -6952,7 +6952,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker/eval_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/B_nopair_reranker/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -6969,7 +6969,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker/eval_gan_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/B_nopair_reranker/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -6986,7 +6986,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker/eval_gan_adv/results.json"
+              "source": "runs/deb_kl/rerank_variants/B_nopair_reranker/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -7003,7 +7003,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker/eval_addsent/results.json"
+              "source": "runs/deb_kl/rerank_variants/B_nopair_reranker/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -7020,7 +7020,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker/eval_addonesent/results.json"
+              "source": "runs/deb_kl/rerank_variants/B_nopair_reranker/eval_addonesent/results.json"
             }
           }
         },
@@ -7071,7 +7071,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -7088,7 +7088,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -7105,7 +7105,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_adv/results.json"
+              "source": "runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -7122,7 +7122,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_addsent/results.json"
+              "source": "runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -7139,7 +7139,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_addonesent/results.json"
+              "source": "runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_addonesent/results.json"
             }
           }
         },
@@ -7190,7 +7190,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -7207,7 +7207,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -7224,7 +7224,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_adv/results.json"
+              "source": "runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -7241,7 +7241,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_addsent/results.json"
+              "source": "runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -7258,7 +7258,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_addonesent/results.json"
+              "source": "runs/deb_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_addonesent/results.json"
             }
           }
         },
@@ -7309,7 +7309,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/C_nopair_res0.25/eval_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/C_nopair_res0.25/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -7326,7 +7326,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/C_nopair_res0.25/eval_gan_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/C_nopair_res0.25/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -7343,7 +7343,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/C_nopair_res0.25/eval_gan_adv/results.json"
+              "source": "runs/deb_kl/rerank_variants/C_nopair_res0.25/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -7360,7 +7360,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/C_nopair_res0.25/eval_addsent/results.json"
+              "source": "runs/deb_kl/rerank_variants/C_nopair_res0.25/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -7377,7 +7377,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/C_nopair_res0.25/eval_addonesent/results.json"
+              "source": "runs/deb_kl/rerank_variants/C_nopair_res0.25/eval_addonesent/results.json"
             }
           }
         },
@@ -7428,7 +7428,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/D_nopair_res0.5/eval_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/D_nopair_res0.5/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -7445,7 +7445,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/D_nopair_res0.5/eval_gan_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/D_nopair_res0.5/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -7462,7 +7462,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/D_nopair_res0.5/eval_gan_adv/results.json"
+              "source": "runs/deb_kl/rerank_variants/D_nopair_res0.5/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -7479,7 +7479,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/D_nopair_res0.5/eval_addsent/results.json"
+              "source": "runs/deb_kl/rerank_variants/D_nopair_res0.5/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -7496,7 +7496,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/D_nopair_res0.5/eval_addonesent/results.json"
+              "source": "runs/deb_kl/rerank_variants/D_nopair_res0.5/eval_addonesent/results.json"
             }
           }
         },
@@ -7547,7 +7547,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0/eval_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/E_nopair_res1.0/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -7564,7 +7564,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0/eval_gan_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/E_nopair_res1.0/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -7581,7 +7581,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0/eval_gan_adv/results.json"
+              "source": "runs/deb_kl/rerank_variants/E_nopair_res1.0/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -7598,7 +7598,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0/eval_addsent/results.json"
+              "source": "runs/deb_kl/rerank_variants/E_nopair_res1.0/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -7615,7 +7615,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0/eval_addonesent/results.json"
+              "source": "runs/deb_kl/rerank_variants/E_nopair_res1.0/eval_addonesent/results.json"
             }
           }
         },
@@ -7666,7 +7666,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -7683,7 +7683,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -7700,7 +7700,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_adv/results.json"
+              "source": "runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -7717,7 +7717,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_addsent/results.json"
+              "source": "runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -7734,7 +7734,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_addonesent/results.json"
+              "source": "runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_addonesent/results.json"
             }
           }
         },
@@ -7785,7 +7785,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -7802,7 +7802,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_dev/results.json"
+              "source": "runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -7819,7 +7819,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_adv/results.json"
+              "source": "runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -7836,7 +7836,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_addsent/results.json"
+              "source": "runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -7853,7 +7853,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_addonesent/results.json"
+              "source": "runs/deb_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_addonesent/results.json"
             }
           }
         }
@@ -8313,7 +8313,7 @@
               "f1": 87.0
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_ce/eval_dev/results.json"
+          "source": "runs/deb_large_ce/eval_dev/results.json"
         },
         "gan_dev": {
           "n": 1062,
@@ -8420,7 +8420,7 @@
               "f1": 91.2
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_ce/eval_gan_dev/results.json",
+          "source": "runs/deb_large_ce/eval_gan_dev/results.json",
           "orig_em": 89.9,
           "orig_f1": 94.9,
           "rr_orig_f1": 94.7
@@ -8510,7 +8510,7 @@
               "f1": 100.0
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_ce/eval_gan_adv/results.json",
+          "source": "runs/deb_large_ce/eval_gan_adv/results.json",
           "orig_em": 91.1,
           "orig_f1": 97.4,
           "rr_orig_f1": 98.0
@@ -8620,7 +8620,7 @@
               "f1": 79.7
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_ce/eval_addsent/results.json"
+          "source": "runs/deb_large_ce/eval_addsent/results.json"
         },
         "addonesent": {
           "n": 1787,
@@ -8727,7 +8727,7 @@
               "f1": 81.0
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_ce/eval_addonesent/results.json"
+          "source": "runs/deb_large_ce/eval_addonesent/results.json"
         }
       },
       "variants": {},
@@ -8902,7 +8902,7 @@
               "f1": 87.6
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/eval_dev/results.json"
+          "source": "runs/deb_large_kl/eval_dev/results.json"
         },
         "gan_dev": {
           "n": 1062,
@@ -9009,7 +9009,7 @@
               "f1": 89.2
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/eval_gan_dev/results.json",
+          "source": "runs/deb_large_kl/eval_gan_dev/results.json",
           "orig_em": 89.8,
           "orig_f1": 94.9,
           "rr_orig_f1": 94.8
@@ -9099,7 +9099,7 @@
               "f1": 100.0
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/eval_gan_adv/results.json",
+          "source": "runs/deb_large_kl/eval_gan_adv/results.json",
           "orig_em": 92.9,
           "orig_f1": 97.4,
           "rr_orig_f1": 97.4
@@ -9209,7 +9209,7 @@
               "f1": 74.7
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/eval_addsent/results.json"
+          "source": "runs/deb_large_kl/eval_addsent/results.json"
         },
         "addonesent": {
           "n": 1787,
@@ -9316,7 +9316,7 @@
               "f1": 76.9
             }
           },
-          "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/eval_addonesent/results.json"
+          "source": "runs/deb_large_kl/eval_addonesent/results.json"
         }
       },
       "variants": {
@@ -9370,7 +9370,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/A_pair_reranker/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/A_pair_reranker/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -9387,7 +9387,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/A_pair_reranker/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/A_pair_reranker/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -9404,7 +9404,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/A_pair_reranker/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/A_pair_reranker/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -9421,7 +9421,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/A_pair_reranker/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/A_pair_reranker/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -9438,7 +9438,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/A_pair_reranker/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/A_pair_reranker/eval_addonesent/results.json"
             }
           }
         },
@@ -9489,7 +9489,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/B_nopair_reranker/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -9506,7 +9506,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/B_nopair_reranker/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -9523,7 +9523,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/B_nopair_reranker/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -9540,7 +9540,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/B_nopair_reranker/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -9557,7 +9557,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/B_nopair_reranker/eval_addonesent/results.json"
             }
           }
         },
@@ -9608,7 +9608,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -9625,7 +9625,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -9642,7 +9642,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -9659,7 +9659,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -9676,7 +9676,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.1/eval_addonesent/results.json"
             }
           }
         },
@@ -9727,7 +9727,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -9744,7 +9744,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -9761,7 +9761,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -9778,7 +9778,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -9795,7 +9795,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/B_nopair_reranker_gate0.25/eval_addonesent/results.json"
             }
           }
         },
@@ -9852,7 +9852,7 @@
                 0.03,
                 0.8
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_nopair_argmax/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_nopair_argmax/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -9875,7 +9875,7 @@
                 -0.29,
                 1.98
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_nopair_argmax/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_nopair_argmax/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -9898,7 +9898,7 @@
                 0.0,
                 0.0
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_nopair_argmax/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_nopair_argmax/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -9921,7 +9921,7 @@
                 -0.2,
                 1.3
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_nopair_argmax/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_nopair_argmax/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -9944,7 +9944,7 @@
                 -0.8,
                 1.07
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_nopair_argmax/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_nopair_argmax/eval_addonesent/results.json"
             }
           }
         },
@@ -10001,7 +10001,7 @@
                 0.07,
                 0.64
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_nopair_res1.0/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_nopair_res1.0/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -10024,7 +10024,7 @@
                 0.09,
                 1.7
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_nopair_res1.0/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_nopair_res1.0/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -10047,7 +10047,7 @@
                 0.0,
                 0.0
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_nopair_res1.0/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_nopair_res1.0/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -10070,7 +10070,7 @@
                 0.2,
                 1.33
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_nopair_res1.0/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_nopair_res1.0/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -10093,7 +10093,7 @@
                 -0.2,
                 1.14
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_nopair_res1.0/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_nopair_res1.0/eval_addonesent/results.json"
             }
           }
         },
@@ -10153,7 +10153,7 @@
                 1.07,
                 1.84
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -10176,7 +10176,7 @@
                 0.85,
                 3.11
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -10199,7 +10199,7 @@
                 0.0,
                 5.36
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -10222,7 +10222,7 @@
                 1.33,
                 2.89
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -10245,7 +10245,7 @@
                 1.14,
                 3.09
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_addonesent/results.json"
             }
           }
         },
@@ -10276,7 +10276,7 @@
                 6.1,
                 7.16
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -10297,7 +10297,7 @@
                 3.2,
                 5.75
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -10318,7 +10318,7 @@
                 0.0,
                 12.5
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -10339,7 +10339,7 @@
                 7.95,
                 10.08
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -10360,7 +10360,7 @@
                 6.51,
                 9.32
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CB_pair_argmax_ensemble/eval_addonesent/results.json"
             }
           }
         },
@@ -10418,7 +10418,7 @@
                 0.02,
                 0.82
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw0.5_argmax/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw0.5_argmax/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -10441,7 +10441,7 @@
                 -0.94,
                 1.41
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw0.5_argmax/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw0.5_argmax/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -10464,7 +10464,7 @@
                 -5.36,
                 0.0
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw0.5_argmax/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw0.5_argmax/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -10487,7 +10487,7 @@
                 -0.2,
                 1.36
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw0.5_argmax/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw0.5_argmax/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -10510,7 +10510,7 @@
                 -1.01,
                 1.07
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw0.5_argmax/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw0.5_argmax/eval_addonesent/results.json"
             }
           }
         },
@@ -10568,7 +10568,7 @@
                 0.27,
                 0.84
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw0.5_res1.0/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw0.5_res1.0/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -10591,7 +10591,7 @@
                 -0.09,
                 1.41
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw0.5_res1.0/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw0.5_res1.0/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -10614,7 +10614,7 @@
                 0.0,
                 0.0
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw0.5_res1.0/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw0.5_res1.0/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -10637,7 +10637,7 @@
                 0.17,
                 1.3
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw0.5_res1.0/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw0.5_res1.0/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -10660,7 +10660,7 @@
                 -0.4,
                 0.87
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw0.5_res1.0/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw0.5_res1.0/eval_addonesent/results.json"
             }
           }
         },
@@ -10718,7 +10718,7 @@
                 -0.05,
                 0.73
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw1.0_argmax/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw1.0_argmax/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -10741,7 +10741,7 @@
                 -0.38,
                 1.79
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw1.0_argmax/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw1.0_argmax/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -10764,7 +10764,7 @@
                 0.0,
                 0.0
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw1.0_argmax/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw1.0_argmax/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -10787,7 +10787,7 @@
                 -0.1,
                 1.43
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw1.0_argmax/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw1.0_argmax/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -10810,7 +10810,7 @@
                 -0.87,
                 1.07
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw1.0_argmax/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw1.0_argmax/eval_addonesent/results.json"
             }
           }
         },
@@ -10868,7 +10868,7 @@
                 0.09,
                 0.7
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw1.0_res1.0/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw1.0_res1.0/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -10891,7 +10891,7 @@
                 -0.19,
                 1.32
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw1.0_res1.0/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw1.0_res1.0/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -10914,7 +10914,7 @@
                 0.0,
                 0.0
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw1.0_res1.0/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw1.0_res1.0/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -10937,7 +10937,7 @@
                 0.13,
                 1.3
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw1.0_res1.0/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw1.0_res1.0/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -10960,7 +10960,7 @@
                 -0.34,
                 1.01
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw1.0_res1.0/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw1.0_res1.0/eval_addonesent/results.json"
             }
           }
         },
@@ -11018,7 +11018,7 @@
                 -0.16,
                 0.59
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw2.0_argmax/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw2.0_argmax/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -11041,7 +11041,7 @@
                 -0.09,
                 1.79
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw2.0_argmax/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw2.0_argmax/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -11064,7 +11064,7 @@
                 -12.5,
                 0.0
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw2.0_argmax/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw2.0_argmax/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -11087,7 +11087,7 @@
                 -1.03,
                 0.7
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw2.0_argmax/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw2.0_argmax/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -11110,7 +11110,7 @@
                 -1.34,
                 0.87
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw2.0_argmax/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw2.0_argmax/eval_addonesent/results.json"
             }
           }
         },
@@ -11168,7 +11168,7 @@
                 0.1,
                 0.65
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw2.0_res1.0/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw2.0_res1.0/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -11191,7 +11191,7 @@
                 0.0,
                 1.32
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw2.0_res1.0/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw2.0_res1.0/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -11214,7 +11214,7 @@
                 0.0,
                 0.0
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw2.0_res1.0/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw2.0_res1.0/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -11237,7 +11237,7 @@
                 0.17,
                 1.23
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw2.0_res1.0/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw2.0_res1.0/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -11260,7 +11260,7 @@
                 -0.2,
                 1.01
               ],
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/CR_cw2.0_res1.0/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/CR_cw2.0_res1.0/eval_addonesent/results.json"
             }
           }
         },
@@ -11311,7 +11311,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/C_nopair_res0.25/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/C_nopair_res0.25/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -11328,7 +11328,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/C_nopair_res0.25/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/C_nopair_res0.25/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -11345,7 +11345,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/C_nopair_res0.25/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/C_nopair_res0.25/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -11362,7 +11362,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/C_nopair_res0.25/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/C_nopair_res0.25/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -11379,7 +11379,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/C_nopair_res0.25/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/C_nopair_res0.25/eval_addonesent/results.json"
             }
           }
         },
@@ -11430,7 +11430,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/D_nopair_res0.5/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/D_nopair_res0.5/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -11447,7 +11447,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/D_nopair_res0.5/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/D_nopair_res0.5/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -11464,7 +11464,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/D_nopair_res0.5/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/D_nopair_res0.5/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -11481,7 +11481,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/D_nopair_res0.5/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/D_nopair_res0.5/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -11498,7 +11498,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/D_nopair_res0.5/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/D_nopair_res0.5/eval_addonesent/results.json"
             }
           }
         },
@@ -11549,7 +11549,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/E_nopair_res1.0/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -11566,7 +11566,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/E_nopair_res1.0/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -11583,7 +11583,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/E_nopair_res1.0/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -11600,7 +11600,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/E_nopair_res1.0/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -11617,7 +11617,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/E_nopair_res1.0/eval_addonesent/results.json"
             }
           }
         },
@@ -11668,7 +11668,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -11685,7 +11685,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -11702,7 +11702,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -11719,7 +11719,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -11736,7 +11736,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.1/eval_addonesent/results.json"
             }
           }
         },
@@ -11787,7 +11787,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_dev/results.json"
             },
             "gan_dev": {
               "n": 1062,
@@ -11804,7 +11804,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_dev/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_dev/results.json"
             },
             "gan_adv": {
               "n": 56,
@@ -11821,7 +11821,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_adv/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_gan_adv/results.json"
             },
             "addsent": {
               "n": 3560,
@@ -11838,7 +11838,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_addsent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_addsent/results.json"
             },
             "addonesent": {
               "n": 1787,
@@ -11855,7 +11855,7 @@
               "rr_both": null,
               "ci_em": null,
               "ci_agr": null,
-              "source": "/Users/ckwang/Documents/CS4248/cs4248-project/runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_addonesent/results.json"
+              "source": "runs/deb_large_kl/rerank_variants/E_nopair_res1.0_gate0.25/eval_addonesent/results.json"
             }
           }
         }

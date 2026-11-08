@@ -83,13 +83,13 @@ def test_symmetric_kl_properties():
     b = torch.tensor([0.1, 1.5, 0.0], requires_grad=True)
     assert abs(float(symmetric_kl_aligned(a, a.detach() + 5.0).detach())) < 1e-6  # identical up to a shift -> 0
     k = symmetric_kl_aligned(a, b)
-    assert float(k) > 0 and abs(float(k) - float(symmetric_kl_aligned(b, a))) < 1e-6
+    assert float(k.detach()) > 0 and abs(float(k.detach()) - float(symmetric_kl_aligned(b, a).detach())) < 1e-6
     k.backward()
     assert a.grad is not None and b.grad is not None and float(a.grad.abs().sum()) > 0
     # matches the closed form
     pa, pb = torch.softmax(a.detach(), 0), torch.softmax(b.detach(), 0)
     ref = 0.5 * ((pa * (pa / pb).log()).sum() + (pb * (pb / pa).log()).sum())
-    assert abs(float(k) - float(ref)) < 1e-5
+    assert abs(float(k.detach()) - float(ref)) < 1e-5
 
 
 def test_pair_agreement_extractor():

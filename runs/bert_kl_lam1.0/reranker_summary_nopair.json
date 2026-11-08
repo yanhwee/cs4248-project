@@ -1,6 +1,6 @@
 {
   "extractor": "weights/bert_kl_lam1.0/best.pt",
-  "reranker": "/home/c/chengke/cs4248-project/weights/bert_kl_lam1.0/reranker_nopair.pt",
+  "reranker": "weights/bert_kl_lam1.0/reranker_nopair.pt",
   "top_k": 20,
   "pair_features": true,
   "target_mode": "graded",

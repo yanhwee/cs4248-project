@@ -1,6 +1,6 @@
 {
   "extractor": "weights/bert_dual/best.pt",
-  "reranker": "/home/c/chengke/cs4248-project/weights/bert_dual/reranker.pt",
+  "reranker": "weights/bert_dual/reranker.pt",
   "top_k": 20,
   "pair_features": true,
   "n_train_items": 6156,

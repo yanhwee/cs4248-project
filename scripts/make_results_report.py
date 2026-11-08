@@ -128,7 +128,7 @@ def digest_run(name: str, r: Dict[str, Any]) -> Dict[str, Any]:
             "rr_agr": r1((y.get("consistency") or {}).get("agreement_em")),
             "by_type": {t: {"n": m["n"], "exact": r1(m["exact"]), "f1": r1(m["f1"])} for t, m in (x.get("by_question_type") or {}).items()},
             "rr_by_type": {t: {"n": m["n"], "exact": r1(m["exact"]), "f1": r1(m["f1"])} for t, m in (y.get("by_question_type") or {}).items()},
-            "source": f"{r['dir']}/eval_{st}/results.json",
+            "source": f"{os.path.relpath(r['dir'], ROOT)}/eval_{st}/results.json",
         }
         if x.get("paired_view_official_on_orig_file"):
             entry["orig_em"] = r1(x["paired_view_official_on_orig_file"]["exact"])
@@ -156,13 +156,13 @@ def digest_run(name: str, r: Dict[str, Any]) -> Dict[str, Any]:
                                 "agr": r1((x.get("consistency") or {}).get("agreement_em")), "both": r1((x.get("pair_accuracy") or {}).get("both_correct")),
                                 "rr_em": r1(z["official"]["exact"]), "rr_f1": r1(z["official"]["f1"]), "rr_agr": r1((z.get("consistency") or {}).get("agreement_em")),
                                 "rr_both": r1((z.get("pair_accuracy") or {}).get("both_correct")),
-                                "ci_em": _ci(z, "em"), "ci_agr": _ci(z, "agreement_em"), "source": f"{r['dir']}/rerank_variants/{vn}/eval_{st}/results.json"}
+                                "ci_em": _ci(z, "em"), "ci_agr": _ci(z, "agreement_em"), "source": f"{os.path.relpath(r['dir'], ROOT)}/rerank_variants/{vn}/eval_{st}/results.json"}
             vsets[st] = {"n": e["n_questions"], "pairs": e["n_pairs"], "em": r1(x["official"]["exact"]), "f1": r1(x["official"]["f1"]),
                          "agr": r1((x.get("consistency") or {}).get("agreement_em")), "rr_em": r1(y["official"]["exact"]), "rr_f1": r1(y["official"]["f1"]),
                          "rr_agr": r1((y.get("consistency") or {}).get("agreement_em")),
                          "fix": (y.get("changes") or {}).get("FIX"), "brk": (y.get("changes") or {}).get("BREAK"),
                          "both": r1((x.get("pair_accuracy") or {}).get("both_correct")), "rr_both": r1((y.get("pair_accuracy") or {}).get("both_correct")),
-                         "ci_em": _ci(y, "em"), "ci_agr": _ci(y, "agreement_em"), "source": f"{r['dir']}/rerank_variants/{vn}/eval_{st}/results.json"}
+                         "ci_em": _ci(y, "em"), "ci_agr": _ci(y, "agreement_em"), "source": f"{os.path.relpath(r['dir'], ROOT)}/rerank_variants/{vn}/eval_{st}/results.json"}
         if vsets:
             d["variants"][vn] = {"meta": meta, "sets": vsets}
         if ens_sets:

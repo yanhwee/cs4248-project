@@ -44,7 +44,7 @@
   "n_questions": 3560,
   "paired_view": "back-translated paraphrase",
   "n_pairs": 3007,
-  "official_scorer": "/home/c/chengke/cs4248-project/provided/evaluate-v2.0.py",
+  "official_scorer": "provided/evaluate-v2.0.py",
   "extractor": {
     "official": {
       "exact": 81.17977528089888,

@@ -1,6 +1,6 @@
 {
   "extractor": "weights/bert_kl_lam0.5/best.pt",
-  "reranker": "/home/c/chengke/cs4248-project/weights/bert_kl_lam0.5/reranker.pt",
+  "reranker": "weights/bert_kl_lam0.5/reranker.pt",
   "top_k": 20,
   "pair_features": true,
   "n_train_items": 6156,

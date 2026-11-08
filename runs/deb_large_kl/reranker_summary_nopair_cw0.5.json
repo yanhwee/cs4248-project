@@ -1,6 +1,6 @@
 {
   "extractor": "weights/deb_large_kl/best.pt",
-  "reranker": "/home/c/chengke/cs4248-project/weights/deb_large_kl/reranker_nopair_cw0.5.pt",
+  "reranker": "weights/deb_large_kl/reranker_nopair_cw0.5.pt",
   "top_k": 20,
   "pair_features": true,
   "target_mode": "graded",

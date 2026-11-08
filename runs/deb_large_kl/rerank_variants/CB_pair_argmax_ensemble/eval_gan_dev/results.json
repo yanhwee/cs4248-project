@@ -44,7 +44,7 @@
   "n_questions": 1062,
   "paired_view": "original question",
   "n_pairs": 1061,
-  "official_scorer": "/home/c/chengke/cs4248-project/provided/evaluate-v2.0.py",
+  "official_scorer": "provided/evaluate-v2.0.py",
   "extractor": {
     "official": {
       "exact": 88.4180790960452,

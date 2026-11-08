@@ -14,8 +14,8 @@ python tsne_pairs.py --weights weights/bert_kl/best.pt --paraphrase_cache data/p
 cp figures/tsne_bert_*.pdf report/figures/
 ```
 
-`main.tex` includes `tables/table_ablation.tex`, `tables/table_robustness.tex`, `tables/table_question_types.tex`
-and `figures/*.pdf` when they exist, and prints a red `[TBD: ...]` marker otherwise. Every remaining `\TBD{...}`
+`main.tex` includes `tables/table_lambda.tex`, `tables/table_ablation.tex`, `tables/table_robustness.tex`,
+`tables/table_question_types.tex` and `figures/*.pdf` when they exist, and prints a red `[TBD: ...]` marker otherwise. Every remaining `\TBD{...}`
 in `main.tex` (discussion sentences, e-mail addresses, hardware) must be replaced by hand before submission, and the
 `\TBD` macro definition removed.
 
