@@ -24,6 +24,9 @@ $PY train.py --run_name "$RUN" --model "$MODEL" --loss_mode kl --paraphrase_cach
 echo "== 3/6 reranker =="
 $PY train_reranker.py --weights "weights/$RUN/best.pt" --paraphrase_cache data/paraphrases/train_heuristic.jsonl --max_examples 300 --epochs 3 --device "$DEV"
 
+echo "== 3b/6 consistency-trained reranker (no pair features, symmetric-KL term) =="
+$PY train_reranker.py --weights "weights/$RUN/best.pt" --paraphrase_cache data/paraphrases/train_heuristic.jsonl --max_examples 300 --epochs 2 --no_pair_score --consistency_weight 1.0 --select_by em+agreement --tag _cw1 --device "$DEV"
+
 echo "== 4/6 evaluate: dev (100 questions, rule-based paraphrases for the consistency metric) =="
 $PY evaluate.py --weights "weights/$RUN/best.pt" --eval_set dev --max_examples 100 --paraphrase_method heuristic \
   --paraphrase_cache data/paraphrases/dev_heuristic.jsonl --reranker "weights/$RUN/reranker.pt" --pair_ensemble --n_boot 200 --device "$DEV"

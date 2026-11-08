@@ -22,6 +22,14 @@ Questions with no positive candidate are skipped for training but still counted 
 reranker can only choose among the top-k, evaluation reports its ceilings: `recall_em` (Recall@k EM, the best EM
 any reranker could reach) and `best_f1` (best-F1@k).
 
+Consistency training (`consistency_weight` > 0, default 0 = off): the question view and its paraphrase view of the
+same question are both training items. Their candidate lists are aligned by normalised answer text; on the
+candidates present in BOTH lists each view's reranker scores are log-softmaxed and a symmetric KL between the two
+distributions is added to the loss, weighted by `consistency_weight`. This asks the reranker to rank the same spans
+the same way for a question and its paraphrase, which targets paraphrase agreement without needing the paraphrase at
+test time (it combines naturally with `use_pair_score=False`). Candidates that appear in only one list are ignored by
+this term; pairs sharing fewer than two candidates are skipped.
+
 Ablation / selection options (all default to the original behaviour):
 
   use_pair_score=False   drops the three paraphrase-derived scalar features (PAIR_FEATURES: pair_score, pair_gap,
@@ -122,8 +130,8 @@ def build_items(outputs: Dict[str, QuestionOutput], golds: Dict[str, Sequence[st
     """One training item per (question, view). Items without any hidden vectors are skipped."""
     items = []
     for qid, o in outputs.items():
-        views = [o.candidates] + ([o.candidates_p] if use_pair_view and o.paired and o.candidates_p else [])
-        for cands in views:
+        views = [("q", o.candidates)] + ([("p", o.candidates_p)] if use_pair_view and o.paired and o.candidates_p else [])
+        for view, cands in views:
             if not cands or cands[0].vec is None:
                 continue
             em, f1 = candidate_match(cands, golds[qid])
@@ -135,8 +143,27 @@ def build_items(outputs: Dict[str, QuestionOutput], golds: Dict[str, Sequence[st
                 "f1": f1,
                 "target": int(np.argmax(em)) if em.any() else -1,  # first exact-match candidate
                 "texts": [c.text for c in cands],
+                "view": view,                                          # "q" question view, "p" paraphrase view
+                "keys": [normalize_answer(c.text) for c in cands],     # for aligning the two views' candidates
             })
     return items
+
+
+def align_views(item_q: Dict[str, Any], item_p: Dict[str, Any]) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+    """Indices (into each item's candidate list) of the candidates present in both views, matched by normalised text.
+    None when fewer than two candidates are shared."""
+    pos_p = {k: i for i, k in enumerate(item_p["keys"])}
+    pairs = [(i, pos_p[k]) for i, k in enumerate(item_q["keys"]) if k in pos_p]
+    if len(pairs) < 2:
+        return None
+    iq, ip = zip(*pairs)
+    return np.array(iq, dtype=np.int64), np.array(ip, dtype=np.int64)
+
+
+def symmetric_kl_aligned(scores_q: torch.Tensor, scores_p: torch.Tensor) -> torch.Tensor:
+    """0.5 * (KL(a||b) + KL(b||a)) where a, b are the log-softmaxes of two aligned 1-D score vectors (same candidates)."""
+    la, lb = F.log_softmax(scores_q, dim=-1), F.log_softmax(scores_p, dim=-1)
+    return 0.5 * ((la.exp() * (la - lb)).sum() + (lb.exp() * (lb - la)).sum())
 
 
 def candidate_ceiling(items: Sequence[Dict[str, Any]]) -> Dict[str, float]:
@@ -374,6 +401,18 @@ def evaluate_items(model: Optional[SpanReranker], items: Sequence[Dict[str, Any]
             "fix": cc["FIX"], "break": cc["BREAK"]}
 
 
+def pair_agreement(model: Optional[SpanReranker], items: Sequence[Dict[str, Any]], device: torch.device, margin: Optional[float] = None,
+                   mode: str = "reranker", alpha: float = 1.0, override_margin: Optional[float] = None) -> Dict[str, float]:
+    """Share of questions whose chosen answer is the same (normalised) in the question and paraphrase views, over the
+    questions with both views among `items` (build_items(..., use_pair_view=True)). model=None = extractor top-1."""
+    idx = choose(model, items, device, margin, mode=mode, alpha=alpha, override_margin=override_margin) if model is not None else [0] * len(items)
+    chosen: Dict[str, Dict[str, str]] = {}
+    for it, k in zip(items, idx):
+        chosen.setdefault(it["qid"], {})[it["view"]] = it["keys"][k]
+    pairs = [v for v in chosen.values() if "q" in v and "p" in v]
+    return {"pairs": len(pairs), "agreement_em": 100.0 * sum(v["q"] == v["p"] for v in pairs) / len(pairs) if pairs else 0.0}
+
+
 def train_reranker(
     train_items: List[Dict[str, Any]],
     dev_items: List[Dict[str, Any]],
@@ -389,10 +428,17 @@ def train_reranker(
     target_mode: str = "graded",
     partial_weight: float = 0.3,
     use_pair_score: bool = True,
+    consistency_weight: float = 0.0,
+    dev_pair_items: Optional[List[Dict[str, Any]]] = None,
+    select_by: str = "em",
     log=print,
 ) -> Tuple[SpanReranker, List[Dict[str, Any]]]:
     if not train_items:
         raise ValueError("no reranker training items (empty training split)")
+    if select_by not in ("em", "em+agreement"):
+        raise ValueError(f"select_by must be 'em' or 'em+agreement', got {select_by!r}")
+    if select_by == "em+agreement" and not dev_pair_items:
+        raise ValueError("select_by='em+agreement' needs dev_pair_items (held-out questions with both views)")
     if target_mode not in TARGET_MODES:
         raise ValueError(f"target_mode must be one of {TARGET_MODES}, got {target_mode!r}")
     trainable = [it for it in train_items if target_distribution(it["em"], it["f1"], target_mode, partial_weight).sum() > 0]
@@ -413,26 +459,83 @@ def train_reranker(
     log(f"reranker: use_pair_score={use_pair_score} ({model.n_scalars} scalar features) target_mode={target_mode} partial_weight={partial_weight} | {len(trainable)} trainable items ({len(train_items) - len(trainable)} without a positive candidate)")
     log(f"  train ceiling: Recall@k EM {tr_ceil['recall_em']:.2f} best-F1@k {tr_ceil['best_f1']:.2f}")
     log(f"  dev top-1 EM {base['exact']:.2f} F1 {base['f1']:.2f} | dev ceiling: Recall@k EM {base['recall_em']:.2f} best-F1@k {base['best_f1']:.2f}")
+    # With consistency training the batch unit is a question (1 or 2 views); otherwise the original per-item batching is kept
+    units: List[Tuple[List[Dict[str, Any]], Optional[Tuple[np.ndarray, np.ndarray]]]] = []
+    if consistency_weight > 0:
+        by_q: Dict[str, Dict[str, Dict[str, Any]]] = {}
+        for it in trainable:
+            by_q.setdefault(it["qid"], {})[it.get("view", "q")] = it
+        for views in by_q.values():
+            its = [views[v] for v in ("q", "p") if v in views]
+            units.append((its, align_views(views["q"], views["p"]) if len(its) == 2 else None))
+        n_pairs = sum(1 for _, al in units if al is not None)
+        log(f"  consistency_weight={consistency_weight}: {n_pairs} aligned question/paraphrase pairs of {len(units)} questions")
+        if n_pairs == 0:
+            raise ValueError("consistency_weight > 0 but no training question has both views with >= 2 shared candidates (is a paraphrase cache attached?)")
+    if dev_pair_items:
+        base_ag = pair_agreement(None, dev_pair_items, device)
+        log(f"  dev extractor agreement {base_ag['agreement_em']:.2f} over {base_ag['pairs']} pairs")
     for ep in range(1, epochs + 1):
         model.train()
-        rng.shuffle(trainable)
         tot = 0.0
+        tot_c = 0.0
         nb = 0
-        for i in range(0, len(trainable), batch_size):
-            vecs, scal, mask, tgt = _pad_items(trainable[i : i + batch_size], device, target_mode, partial_weight)
+        if consistency_weight > 0:
+            rng.shuffle(units)
+            batches, cur, n_cur = [], [], 0
+            for u in units:
+                cur.append(u)
+                n_cur += len(u[0])
+                if n_cur >= batch_size:
+                    batches.append(cur)
+                    cur, n_cur = [], 0
+            if cur:
+                batches.append(cur)
+        else:
+            rng.shuffle(trainable)
+            batches = [None] * ((len(trainable) + batch_size - 1) // batch_size)
+        for bi, bunits in enumerate(batches):
+            if bunits is None:
+                batch_items = trainable[bi * batch_size : (bi + 1) * batch_size]
+            else:
+                batch_items = [it for its, _ in bunits for it in its]
+            vecs, scal, mask, tgt = _pad_items(batch_items, device, target_mode, partial_weight)
             scores = model(vecs, scal).masked_fill(~mask, float("-inf"))
             logp = torch.where(mask, F.log_softmax(scores, dim=-1), torch.zeros_like(scores))  # avoid 0 * -inf
             loss = -(tgt * logp).sum(-1).mean()
+            cons = scores.new_zeros(())
+            if bunits is not None:
+                kls, off = [], 0
+                for its, al in bunits:
+                    if al is not None:
+                        iq, ip = (torch.as_tensor(x, device=scores.device) for x in al)
+                        kls.append(symmetric_kl_aligned(scores[off, iq], scores[off + 1, ip]))
+                    off += len(its)
+                if kls:
+                    cons = torch.stack(kls).mean()
+                    loss = loss + consistency_weight * cons
             opt.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             opt.step()
             tot += float(loss.item())
+            tot_c += float(cons.item())
             nb += 1
         dev = evaluate_items(model, dev_items, golds, device)
-        history.append({"epoch": ep, "loss": tot / max(1, nb), **{f"dev_{k}": v for k, v in dev.items()}})
-        log(f"  epoch {ep:2d} loss {tot / max(1, nb):.4f} | dev EM {dev['exact']:.2f} F1 {dev['f1']:.2f}")
-        key = (dev["exact"], dev["f1"])  # the goal is EM; F1 breaks ties
+        rec = {"epoch": ep, "loss": tot / max(1, nb), **{f"dev_{k}": v for k, v in dev.items()}}
+        msg = f"  epoch {ep:2d} loss {tot / max(1, nb):.4f} | dev EM {dev['exact']:.2f} F1 {dev['f1']:.2f}"
+        if consistency_weight > 0:
+            rec["consistency_kl"] = tot_c / max(1, nb)
+            msg += f" | consistency KL {tot_c / max(1, nb):.4f}"
+        if dev_pair_items:
+            ag = pair_agreement(model, dev_pair_items, device)
+            rec["dev_agreement_em"] = ag["agreement_em"]
+            msg += f" | dev agreement {ag['agreement_em']:.2f}"
+        history.append(rec)
+        log(msg)
+        # default: the goal is EM, F1 breaks ties. 'em+agreement': held-out EM + held-out paraphrase agreement (equal weights, an
+        # explicit choice), EM breaks ties, so an epoch that is clearly more consistent is not discarded for a noisy EM difference
+        key = (dev["exact"], dev["f1"]) if select_by == "em" else (dev["exact"] + rec["dev_agreement_em"], dev["exact"])
         if key > best_key:
             best_key = key
             best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
