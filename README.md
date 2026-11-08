@@ -79,26 +79,41 @@ questions; the learned reranker sits in between. Neither is part of the proposed
 
 ### Reproducing the proposed system
 
+Everything below runs on **one machine with a single CUDA GPU**; no cluster account or Slurm is needed (the Slurm wrappers
+in "SoC compute cluster" only batch the same scripts). Measured on one H100 in bf16: paraphrase caches 12 min (training
+set) + 2 min (dev), extractor training 108 min with a 25.3 GB peak, optional reranker 2 min, all five evaluations 5 min.
+
 ```bash
-# paraphrase caches (one-off, resumable; MarianMT + similarity filter, ~1–2 h on CPU or 15 min on a GPU)
+# 0. environment and data: "Setup" below (pip install -r requirements.txt; provided/*.json from Canvas; download_eval_sets.py)
+
+# 1. paraphrase caches (one-off, resumable): MarianMT EN->DE->EN + sentence-similarity filter >= 0.85.
+#    ~1 h on Apple MPS, ~2.3 h on a laptop CPU, ~15 min on a CUDA GPU; evaluate.py builds the AddSent/AddOneSent caches itself.
 python prepare_paraphrases.py --input provided/train-v1.1.json --output data/paraphrases/train.jsonl
 python prepare_paraphrases.py --input provided/dev-v1.1.json   --output data/paraphrases/dev.jsonl
 
-# extractor: DeBERTa-v3-large, consistency loss, λ = 1 (needs a GPU with ≥ 32 GB; ~2 h)
+# 2. extractor: DeBERTa-v3-large, consistency loss, lambda = 1, effective batch 16 (8 x 2), lr 1e-5, 2 epochs
 python train.py --run_name deb_large_kl --model microsoft/deberta-v3-large --loss_mode kl --lambda_kl 1.0 \
-  --paraphrase_cache data/paraphrases/train.jsonl --batch_size 8 --grad_accum 2 --lr 1e-5 --precision bf16 --device cuda
+  --paraphrase_cache data/paraphrases/train.jsonl --batch_size 8 --grad_accum 2 --lr 1e-5 --precision bf16
+#    needs ~26 GB of GPU memory as written. On a 24 GB card add --grad_checkpointing (~30 % slower, several-fold less
+#    activation memory) or use --batch_size 4 --grad_accum 4 (same effective batch); neither variant was timed by us.
+#    GPUs without bf16 (T4, V100) need --precision fp16, which we have not tested with this encoder.
 
-# official-scorer evaluation on dev, Gan & Ng (dev + adversarial) and Adversarial SQuAD
-# (add --reranker weights/deb_large_kl/reranker.pt for the second system version)
+# 3. official-scorer evaluation on dev, Gan & Ng (dev + adversarial) and Adversarial SQuAD (also runs on CPU/MPS, slower)
 for S in dev gan_dev gan_adv addsent addonesent; do
-  python evaluate.py --weights weights/deb_large_kl/best.pt --eval_set $S --precision bf16 --device cuda
+  python evaluate.py --weights weights/deb_large_kl/best.pt --eval_set $S --precision bf16
 done
-# on the SoC cluster, training + reranker + evaluation is one job (the paraphrase caches must already exist):
-#   MODES=kl bash scripts/submit_deberta_large.sh
+
+# optional second version: learned span reranker (needs a paraphrase of each test question)
+python train_reranker.py --weights weights/deb_large_kl/best.pt --paraphrase_cache data/paraphrases/train.jsonl --precision bf16
+python evaluate.py --weights weights/deb_large_kl/best.pt --eval_set dev --reranker weights/deb_large_kl/reranker.pt --precision bf16
+
+# steps 1-3 plus the reranker and figures as one resumable command on the same machine:
+MODEL=microsoft/deberta-v3-large RUN_PREFIX=deb_large MODES=kl BATCH=8 GRAD_ACCUM=2 LR=1e-5 PRECISION=bf16 bash scripts/run_pipeline.sh
 ```
 
 The trained checkpoint (`weights/deb_large_kl/best.pt`, about 1.7 GB) is not in git; the run's configuration, training history and
-all evaluation outputs are, under `runs/deb_large_kl/`.
+all evaluation outputs are, under `runs/deb_large_kl/`. To evaluate without retraining, obtain the checkpoint from the group,
+place it at that path and run step 3.
 
 ## What the system does
 
@@ -264,8 +279,9 @@ What this means:
   needs about a day and one `kl` run several days.
 - **Apple-silicon GPU** (`--device mps --batch_size 8 --grad_accum 2`): a 2-epoch BERT-base `ce` run is ≈ 3 h and a
   `kl` run ≈ 7 h, so single BERT-base runs are feasible overnight on a 16 GB Mac. Batch 16 runs out of GPU memory in
-  paired modes, and DeBERTa-v3-base is roughly twice as slow and may not fit. DeBERTa-v3-large (`scripts/submit_deberta_large.sh`)
-  is cluster-only: it is ~3.5× the compute of the base model and its optimiser state alone exceeds a 16 GB Mac.
+  paired modes, and DeBERTa-v3-base is roughly twice as slow and may not fit. DeBERTa-v3-large needs a CUDA GPU with
+  about 26 GB free, on any machine (see "Reproducing the proposed system"; `scripts/submit_deberta_large.sh` is only the
+  Slurm wrapper): it is ~3.5× the compute of the base model and its optimiser state alone exceeds a 16 GB Mac.
 - The **full grid** (BERT `ce`/`aug`/`kl`, DeBERTa-v3 `ce`/`kl`, optional OT ablations, λ sweep) belongs on the SoC
   cluster; a T4 or A100 with fp16/bf16 is several times faster than MPS and runs the jobs in parallel.
 
