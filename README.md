@@ -267,10 +267,11 @@ runs/<run>/reranker_summary.json                                             rer
 runs/<run>/reranker_summary_<tag>.json, rerank_variants/<variant>/eval_<set>/  reranker ablations (RESULTS.md §9, §9b)
 runs/<run>/eval_<set>/results.json          EM/F1 (official scorer), consistency, per-question-type, config
 runs/<run>/eval_<set>/official_eval*.json   raw output of evaluate-v2.0.py (top-1 / reranked / paired view)
-runs/<run>/eval_<set>/predictions*.json     {id: answer} files that were scored
-runs/<run>/eval_<set>/candidates.jsonl      top-k distinct spans with scores
-runs/<run>/eval_<set>/disagreements.jsonl   question/paraphrase pairs with different answers (qualitative table)
-weights/<run>/best.pt, last.pt, reranker.pt
+runs/<run>/eval_<set>/predictions*.json     {id: answer} files that were scored (in git for deb_large_ce / deb_large_kl:
+                                            re-score with python provided/evaluate-v2.0.py provided/dev-v1.1.json <file>)
+runs/<run>/eval_<set>/candidates.jsonl      top-k distinct spans with scores (not in git)
+runs/<run>/eval_<set>/disagreements.jsonl   question/paraphrase pairs with different answers (qualitative table; in git where produced)
+weights/<run>/best.pt, last.pt, reranker.pt (not in git)
 figures/*.pdf|png|md, report/tables/*.tex, report/figures/*.pdf
 ```
 

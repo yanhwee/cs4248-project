@@ -45,6 +45,10 @@ runs/*/*
 runs/*/eval_*/*
 !runs/*/eval_*/results.json
 !runs/*/eval_*/official_eval*.json
+# proposed system and its CE twin: the scored {id: answer} files (re-scorable with provided/evaluate-v2.0.py) and the
+# question/paraphrase disagreements the report's qualitative table draws on
+!runs/deb_large_*/eval_*/predictions*.json
+!runs/*/eval_*/disagreements.jsonl
 # reranker-ablation outputs (scripts/run_reranker_variants.sh): summaries and official-scorer results only
 !runs/*/reranker_summary_*.json
 !runs/*/rerank_variants/
