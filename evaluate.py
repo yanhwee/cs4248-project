@@ -30,9 +30,10 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 
+from g17qa.consistency import bootstrap_delta, ensemble_predictions, pair_accuracy
 from g17qa.data import attach_paraphrases, gold_answers, load_paired_files, load_squad, write_squad_subset
 from g17qa.decode import QuestionOutput, run_extractor
-from g17qa.metrics import consistency_metrics, per_bucket_metrics, question_type, run_official_scorer
+from g17qa.metrics import compute_exact, consistency_metrics, exact_match_score, per_bucket_metrics, question_type, run_official_scorer
 from g17qa.model import load_checkpoint
 from g17qa.paraphrase import generate_paraphrase_cache
 from g17qa.reranker import SELECT_MODES, analyze_changes, apply_reranker, candidate_match, load_reranker, recall_at_ks
@@ -68,6 +69,11 @@ def parse_args() -> argparse.Namespace:
                    help="confidence gate: only replace the extractor top-1 if the reranker prefers the replacement by more than this many nats")
     p.add_argument("--tag", default="", help="name of this reranker variant; outputs then go to runs/<run>/rerank_variants/<tag>/eval_<set>/ "
                                              "so the default eval_<set> artefacts are never overwritten")
+    p.add_argument("--pair_ensemble", action="store_true",
+                   help="also score the learning-free paraphrase-ensemble baseline (argmax of log p_q + beta * log p_paraphrase over the "
+                        "extractor's own candidate scores; needs the paired view, no reranker needed)")
+    p.add_argument("--ensemble_beta", type=float, default=1.0, help="weight of the other view in --pair_ensemble")
+    p.add_argument("--n_boot", type=int, default=2000, help="bootstrap resamples for the delta confidence intervals")
     p.add_argument("--n_change_examples", type=int, default=100, help="max FIX and max BREAK examples saved to rerank_changes.jsonl")
     p.add_argument("--top_k", type=int, default=20)
     p.add_argument("--max_examples", type=int, default=0)
@@ -189,6 +195,19 @@ def main() -> None:
             [{"em": em, "f1": f1} for em, f1 in all_matches],
             [k for k in (1, 3, 5, 10, 20) if k <= args.top_k])
         print(f"ceiling    | Recall@{args.top_k} EM {ext['candidate_ceiling']['recall_em']:.2f} | best-F1@{args.top_k} {ext['candidate_ceiling']['best_f1']:.2f}")
+    def paired_extras(vp: Dict[str, str], vpp: Dict[str, str]) -> Dict[str, Any]:
+        """Both-views-correct statistics and 95% paired-bootstrap CIs of EM and agreement relative to the extractor."""
+        out: Dict[str, Any] = {"delta_ci": {"em": bootstrap_delta([exact_match_score(preds[q], golds[q]) > 0 for q in preds],
+                                                                  [exact_match_score(vp[q], golds[q]) > 0 for q in preds], args.n_boot)}}
+        if paired:
+            ids = [q for q in preds if q in preds_p and q in vpp]
+            out["pair_accuracy"] = pair_accuracy(vp, vpp, golds)
+            out["delta_ci"]["agreement_em"] = bootstrap_delta([compute_exact(preds[q], preds_p[q]) for q in ids], [compute_exact(vp[q], vpp[q]) for q in ids], args.n_boot)
+        return out
+
+    if paired:
+        ext["pair_accuracy"] = pair_accuracy(preds, preds_p, golds)
+        print(f"pair acc   | extractor: EM(q) {ext['pair_accuracy']['em_q']:.2f} EM(para) {ext['pair_accuracy']['em_paraphrase']:.2f} both correct {ext['pair_accuracy']['both_correct']:.2f}")
     results["extractor"] = ext
     print(f"extractor  | official EM {ext['official']['exact']:.2f} F1 {ext['official']['f1']:.2f} (n={ext['official']['total']})"
           + (f" | consistency EM-agreement {ext['consistency']['agreement_em']:.2f} over {ext['consistency']['pairs']} pairs" if paired else ""))
@@ -207,6 +226,7 @@ def main() -> None:
             "d_em": rr["official"]["exact"] - ext["official"]["exact"], "d_f1": rr["official"]["f1"] - ext["official"]["f1"],
             "d_agreement_em": (rr["consistency"]["agreement_em"] - ext["consistency"]["agreement_em"]) if paired else None,
         }
+        rr.update(paired_extras(rp, rpp))
         rr["changes"], change_rows = analyze_changes(outputs, preds, rp, golds, {e.qid: e.question for e in examples}, det, args.n_change_examples)
         with open(os.path.join(out_dir, "rerank_changes.jsonl"), "w", encoding="utf-8") as f:
             for r in change_rows:
@@ -219,6 +239,23 @@ def main() -> None:
               + (f" dAgreement {rr['delta']['d_agreement_em']:+.2f}" if paired else "")
               + f" | FIX {c['FIX']} ({c['FIX_pct']:.2f}%) BREAK {c['BREAK']} ({c['BREAK_pct']:.2f}%) SAME_CORRECT {c['SAME_CORRECT']} SAME_WRONG {c['SAME_WRONG']}"
               + f" | mode {args.select_mode} alpha {args.alpha} gate {args.override_margin} pair_score {reranker.use_pair_score}")
+
+    if args.pair_ensemble:
+        if not paired:
+            print("--pair_ensemble needs the paired view (paraphrases); skipped")
+        else:
+            ep, epp = ensemble_predictions(outputs, args.ensemble_beta)
+            en: Dict[str, Any] = {"beta": args.ensemble_beta, "official": score(ep, "_pair_ensemble", scored_main)}
+            en["consistency"] = consistency_metrics(ep, epp)
+            en["delta"] = {"d_em": en["official"]["exact"] - ext["official"]["exact"], "d_f1": en["official"]["f1"] - ext["official"]["f1"],
+                           "d_agreement_em": en["consistency"]["agreement_em"] - ext["consistency"]["agreement_em"]}
+            en.update(paired_extras(ep, epp))
+            en["changes"], _ = analyze_changes(outputs, preds, ep, golds, {}, {}, 0)
+            if orig_file:
+                en["paired_view_official_on_orig_file"] = score(full_paired_view(epp, ep), "_pair_ensemble_orig", scored_orig, id_map)
+            results["pair_ensemble"] = en
+            print(f"ensemble   | official EM {en['official']['exact']:.2f} F1 {en['official']['f1']:.2f} | agreement {en['consistency']['agreement_em']:.2f} "
+                  f"| dEM {en['delta']['d_em']:+.2f} dAgreement {en['delta']['d_agreement_em']:+.2f} | both correct {en['pair_accuracy']['both_correct']:.2f}")
 
     # ---- candidate dump and qualitative disagreements -------------------------------------------
     with open(os.path.join(out_dir, "candidates.jsonl"), "w", encoding="utf-8") as f:
