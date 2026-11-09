@@ -1,20 +1,20 @@
 \begin{table*}[t]
 \centering\small
-\setlength{\tabcolsep}{6pt}
+\setlength{\tabcolsep}{5pt}
 \begin{tabular}{lcccc@{\hspace{14pt}}cc}
 \toprule
 & \multicolumn{4}{c}{\textbf{SQuAD dev}} & \textbf{AddSent} & \textbf{AddOneSent} \\
 \cmidrule(lr){2-5} \cmidrule(lr){6-7}
-\textbf{Second stage on the proposed extractor} & $\Delta$EM & $\Delta$F1 & $\Delta$Agreement & Both correct & $\Delta$EM & $\Delta$EM \\
+\textbf{Second stage on the proposed extractor} & $\Delta$EM & $\Delta$F1 & $\Delta$Agreement & Both correct & $\Delta$F1 & $\Delta$F1 \\
 \midrule
-extractor alone & -- & -- & -- & 86.6 & -- & -- \\
-+ reranker, pair features$^\dagger$ & +0.2 & +0.0 & +1.4$^{*}$ & 87.4 & +0.9$^{*}$ & +1.0$^{*}$ \\
-+ reranker, no pair features & +0.3 & +0.1 & +0.4$^{*}$ & 87.0 & +0.9$^{*}$ & +1.0$^{*}$ \\
-\quad blended, $\alpha{=}1$ & +0.2 & +0.0 & +0.3$^{*}$ & 86.8 & +0.6$^{*}$ & +0.5$^{*}$ \\
-\quad consistency-trained, $w{=}1$ & +0.2 & +0.0 & +0.3 & 86.9 & +0.7$^{*}$ & +0.9$^{*}$ \\
-+ paraphrase ensemble, $\beta{=}1$$^\dagger$ & -0.4$^{*}$ & -0.3 & +6.6$^{*}$ & 89.3 & +0.0 & +0.0 \\
+Extractor alone & -- & -- & -- & 86.6 & -- & -- \\
+Reranker (pair features)$^\dagger$ & +0.2 & +0.0 & +1.4$^{*}$ & 87.4 & +0.6 & +0.6 \\
+Reranker (no pair features) & +0.3 & +0.1 & +0.4$^{*}$ & 87.0 & +0.5 & +0.7 \\
+Reranker (no pair), blended $\alpha{=}1$ & +0.2 & +0.0 & +0.3$^{*}$ & 86.8 & +0.3 & +0.2 \\
+Reranker (no pair), cons.-trained $w{=}1$ & +0.2 & +0.0 & +0.3 & 86.9 & +0.4 & +0.4 \\
+Paraphrase ensemble, training-free$^\dagger$ & -0.4$^{*}$ & -0.3 & +6.6$^{*}$ & 89.3 & +0.0 & +0.1 \\
 \bottomrule
 \end{tabular}
-\caption{Second-stage selection among the top-20 spans of the proposed extractor. $\Delta$ = second stage $-$ extractor; $^{*}$: 95\% paired-bootstrap interval excludes zero. \emph{Both correct}: pairs where both answers are exact matches. $^\dagger$needs the paraphrase at test time.}
+\caption{Second-stage selection among the top-20 spans of the proposed extractor. $\Delta$ = second stage $-$ extractor; $^{*}$: 95\% paired-bootstrap interval excludes zero (dev EM/agreement only; no F1 intervals). \emph{Both correct}: pairs where both answers are exact matches. $^\dagger$needs a paraphrase at test time.}
 \label{tab:second}
 \end{table*}
