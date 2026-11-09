@@ -1,71 +1,37 @@
-# ACL 2026 Short Paper: Camera-Ready Manuscript
+# Report (ACL short-paper format)
 
-This directory contains the complete LaTeX source and style files for the CS4248 Group G17 project paper:
-**"Optimal Transport and Bipartite Matching for Paraphrase-Consistent Extractive Question Answering"**
+`main.tex` is the 4-page report (plus one page of references) in the official ACL style (`acl.sty`,
+`acl_natbib.bst`, Times 11pt). `main.pdf` is the compiled version committed alongside it.
 
-The manuscript adheres strictly to the ACL format requirements:
-- Maximum 4 pages of main text content (Sections 1 through 7, including Limitations)
-- Extra 1 page strictly reserved for references
-- Total document length: **strictly $\le 5$ pages**
+## How numbers get into the paper
 
----
-
-## Directory Contents
-
-| File | Description |
-| :--- | :--- |
-| `main.tex` | Main LaTeX source code |
-| `main.pdf` | Pre-compiled camera-ready publication PDF (verified 5 pages) |
-| `custom.bib` | BibTeX bibliography containing 16 peer-reviewed citations |
-| `acl.sty` | Official ACL 2026 conference style package |
-| `acl_natbib.bst` | Official ACL Natbib bibliography format |
-| `figures/` | Vector graphics (`.pdf`) produced by `visualize.py` |
-| `table1_ablation_results.tex` | Formatted LaTeX Table 1: Empirical Ablation Benchmark |
-| `table2_qualitative_cases.tex` | Formatted LaTeX Table 2: Qualitative Case Studies |
-
----
-
-## Local Compilation Instructions
-
-### Prerequisites
-A working TeX Live installation (2022 or later) with `pdflatex` and `bibtex`.
-
-### Build Commands
-Execute from within the `report/` folder:
+Nothing in the tables is typed by hand:
 
 ```bash
-# 4-step compilation pass for cross-references, citations, and figure layouts:
-pdflatex -interaction=batchmode main.tex
-bibtex main
-pdflatex -interaction=batchmode main.tex
-pdflatex -interaction=batchmode main.tex
+python scripts/make_results_report.py     # runs/ -> docs/RESULTS.md + docs/results_digest.json
+python scripts/make_report_tables.py      # digest -> report/tables/rep_main.tex, rep_second.tex (the paper's two tables)
+python scripts/visualize.py --best bert_kl_lam1.0 # docs/figures/ (general plots and Markdown summary tables)
 ```
 
-Alternatively, if you have `latexmk`:
+Numbers quoted in the prose follow `docs/RESULTS.md` (one-decimal rounding; differences are differences of rounded
+values). The qualitative table is transcribed from `runs/deb_large_ce/eval_dev/disagreements.jsonl` and
+`runs/deb_large_kl/eval_dev/{candidates,disagreements}.jsonl`; the question ids are in a comment above the table.
+The representation-geometry numbers come from `docs/figures/tsne_bert_ce.json` and `docs/figures/tsne_bert_kl.json`.
+
+## Build
+
 ```bash
-latexmk -pdf main.tex
+cd report
+tectonic main.tex                                             # one command (brew install tectonic); runs BibTeX itself
+# or: pdflatex main && bibtex main && pdflatex main && pdflatex main
 ```
+or upload `main.tex`, `custom.bib`, `acl.sty`, `acl_natbib.bst` and `tables/` to Overleaf (pdfLaTeX).
+`\usepackage[T1]{fontenc}` is required so that XeTeX-based engines (Tectonic) pick up the Times fonts.
 
-To clean auxiliary files after building:
-```bash
-rm -f *.aux *.bbl *.blg *.log *.out *.toc *.fls *.fdb_latexmk missfont.log
-```
+## Checklist before submission
 
----
-
-## Overleaf Compilation Instructions
-
-1. Log into [Overleaf](https://www.overleaf.com/) and create a **Blank Project**.
-2. Upload the entire contents of this directory (`report/`):
-   - `main.tex`
-   - `custom.bib`
-   - `acl.sty`
-   - `acl_natbib.bst`
-   - `table1_ablation_results.tex`
-   - `table2_qualitative_cases.tex`
-   - `figures/` folder with `loss_convergence.pdf`, `ablation_benchmark.pdf`, and `boundary_displacement.pdf`
-3. Under Overleaf **Menu** (top-left):
-   - **Compiler**: `pdfLaTeX`
-   - **TeX Live version**: `2023` or `2024`
-   - **Main document**: `main.tex`
-4. Click **Recompile**.
+- 4 pages of content, references on at most 1 extra page, Times 11pt (do not change the preamble or font sizes).
+- All five names in the author block; e-mail addresses may be added to it.
+- The "Contributions and external code" section is required by the course and must stay.
+- After any change to `runs/`, rerun the three commands above and recompile; cross-check quoted numbers against
+  `docs/RESULTS.md`.

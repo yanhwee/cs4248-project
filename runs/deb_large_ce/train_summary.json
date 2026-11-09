@@ -1,0 +1,49 @@
+{
+  "run_name": "deb_large_ce",
+  "model": "microsoft/deberta-v3-large",
+  "loss_mode": "ce",
+  "lambda_kl": 1.0,
+  "best_val_f1": 88.607,
+  "best_val_exact": 76.4,
+  "best_val_agreement_em": 90.731,
+  "best_val_agreement_f1": 94.414,
+  "best_val_pairs": 1683,
+  "selection_note": "best checkpoint within the run by validation F1; choose lambda across runs on validation F1 and agreement",
+  "val_history": [
+    {
+      "step": 5268,
+      "tag": "epoch1",
+      "exact": 76.15,
+      "f1": 88.4,
+      "n": 2000,
+      "pairs": 1683,
+      "agreement_em": 91.444,
+      "agreement_f1": 94.86,
+      "elapsed_sec": 1268.9
+    },
+    {
+      "step": 10536,
+      "tag": "epoch2",
+      "exact": 76.4,
+      "f1": 88.607,
+      "n": 2000,
+      "pairs": 1683,
+      "agreement_em": 90.731,
+      "agreement_f1": 94.414,
+      "elapsed_sec": 2513.5
+    }
+  ],
+  "final_full_val": {
+    "exact": 75.40704738760631,
+    "f1": 88.17769560672623,
+    "total": 4115,
+    "pairs": 3447,
+    "agreement_em": 90.86161879895562,
+    "agreement_f1": 94.60386872904152
+  },
+  "train_time_sec": 2552.4,
+  "steps": 10536,
+  "best_checkpoint": "weights/deb_large_ce/best.pt",
+  "last_checkpoint": "weights/deb_large_ce/last.pt",
+  "peak_gpu_mem_gb": 16.38
+}

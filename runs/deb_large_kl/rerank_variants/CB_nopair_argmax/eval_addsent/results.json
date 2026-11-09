@@ -1,0 +1,250 @@
+{
+  "eval_set": "addsent",
+  "data_file": "data/external/adversarial_squad/AddSent.json",
+  "orig_file": null,
+  "weights": "weights/deb_large_kl/best.pt",
+  "model": "microsoft/deberta-v3-large",
+  "loss_mode": "kl",
+  "reranker_path": "weights/deb_large_kl/reranker_nopair.pt",
+  "rerank_margin": null,
+  "top_k": 20,
+  "reranker_variant": {
+    "tag": "CB_nopair_argmax",
+    "use_pair_score": false,
+    "scalar_features_used": [
+      "score",
+      "raw_score",
+      "null_score",
+      "start_logit",
+      "end_logit",
+      "gap_to_top",
+      "prob",
+      "rank",
+      "len_tokens",
+      "len_chars",
+      "n_windows"
+    ],
+    "select_mode": "reranker",
+    "alpha": 1.0,
+    "override_margin": null,
+    "rerank_margin": null,
+    "trained_with": {
+      "tag": "_nopair",
+      "target_mode": "graded",
+      "partial_weight": 0.3,
+      "pair_features": true,
+      "extractor": "weights/deb_large_kl/best.pt",
+      "top_k": 20,
+      "use_pair_score": false
+    }
+  },
+  "n_questions": 3560,
+  "paired_view": "back-translated paraphrase",
+  "n_pairs": 3007,
+  "official_scorer": "provided/evaluate-v2.0.py",
+  "extractor": {
+    "official": {
+      "exact": 81.17977528089888,
+      "f1": 86.96908179480431,
+      "total": 3560,
+      "HasAns_exact": 81.17977528089888,
+      "HasAns_f1": 86.96908179480431,
+      "HasAns_total": 3560
+    },
+    "by_question_type": {
+      "how": {
+        "n": 102,
+        "exact": 53.92156862745098,
+        "f1": 79.4980376520624
+      },
+      "how many/much": {
+        "n": 307,
+        "exact": 85.01628664495114,
+        "f1": 89.70151093929586
+      },
+      "other": {
+        "n": 13,
+        "exact": 38.46153846153846,
+        "f1": 44.23076923076923
+      },
+      "what": {
+        "n": 2108,
+        "exact": 81.45161290322581,
+        "f1": 87.21926663109699
+      },
+      "when": {
+        "n": 278,
+        "exact": 92.0863309352518,
+        "f1": 93.46522781774581
+      },
+      "where": {
+        "n": 143,
+        "exact": 86.7132867132867,
+        "f1": 89.86316713589441
+      },
+      "which": {
+        "n": 230,
+        "exact": 79.56521739130434,
+        "f1": 83.45819397993311
+      },
+      "who": {
+        "n": 310,
+        "exact": 83.2258064516129,
+        "f1": 84.76659390411514
+      },
+      "why": {
+        "n": 69,
+        "exact": 44.927536231884055,
+        "f1": 75.69215178043979
+      }
+    },
+    "consistency": {
+      "pairs": 3007,
+      "agreement_em": 90.35583638177586,
+      "agreement_f1": 93.56359286139127
+    },
+    "candidate_ceiling": {
+      "top_k": 20,
+      "n": 3560,
+      "recall_em": 95.95505617977528,
+      "best_f1": 97.03802420014746
+    },
+    "recall_at_k": {
+      "recall_em@1": 81.17977528089888,
+      "best_f1@1": 86.9690818835594,
+      "recall_em@3": 89.63483146067416,
+      "best_f1@3": 92.07449662174737,
+      "recall_em@5": 91.48876404494382,
+      "best_f1@5": 93.61410858967666,
+      "recall_em@10": 93.96067415730337,
+      "best_f1@10": 95.55081766768453,
+      "recall_em@20": 95.95505617977528,
+      "best_f1@20": 97.03802420014746
+    },
+    "pair_accuracy": {
+      "pairs": 3007,
+      "em_q": 81.64283338875956,
+      "em_paraphrase": 80.34585966079149,
+      "both_correct": 78.08446957100101,
+      "either_correct": 83.90422347855005
+    }
+  },
+  "reranker": {
+    "official": {
+      "exact": 82.13483146067416,
+      "f1": 87.48461271958362,
+      "total": 3560,
+      "HasAns_exact": 82.13483146067416,
+      "HasAns_f1": 87.48461271958362,
+      "HasAns_total": 3560
+    },
+    "by_question_type": {
+      "how": {
+        "n": 102,
+        "exact": 56.86274509803921,
+        "f1": 81.02772054986963
+      },
+      "how many/much": {
+        "n": 307,
+        "exact": 86.64495114006515,
+        "f1": 90.70611256279001
+      },
+      "other": {
+        "n": 13,
+        "exact": 38.46153846153846,
+        "f1": 44.23076923076923
+      },
+      "what": {
+        "n": 2108,
+        "exact": 82.3529411764706,
+        "f1": 87.42266626063571
+      },
+      "when": {
+        "n": 278,
+        "exact": 92.0863309352518,
+        "f1": 93.46522781774581
+      },
+      "where": {
+        "n": 143,
+        "exact": 89.5104895104895,
+        "f1": 92.01101928374658
+      },
+      "which": {
+        "n": 230,
+        "exact": 81.73913043478261,
+        "f1": 86.17391304347828
+      },
+      "who": {
+        "n": 310,
+        "exact": 82.90322580645162,
+        "f1": 84.8763440860215
+      },
+      "why": {
+        "n": 69,
+        "exact": 43.47826086956522,
+        "f1": 75.34871005592389
+      }
+    },
+    "consistency": {
+      "pairs": 3007,
+      "agreement_em": 90.92118390422348,
+      "agreement_f1": 93.84263825719727
+    },
+    "delta": {
+      "d_em": 0.9550561797752835,
+      "d_f1": 0.5155309247793127,
+      "d_agreement_em": 0.5653475224476239
+    },
+    "delta_ci": {
+      "em": {
+        "delta": 0.9550561797752809,
+        "ci_low": 0.42134831460674155,
+        "ci_high": 1.4887640449438202,
+        "n": 3560,
+        "excludes_zero": true
+      },
+      "agreement_em": {
+        "delta": 0.5653475224476222,
+        "ci_low": -0.19953441968739608,
+        "ci_high": 1.2969737279680744,
+        "n": 3007,
+        "excludes_zero": false
+      }
+    },
+    "pair_accuracy": {
+      "pairs": 3007,
+      "em_q": 82.50748254073828,
+      "em_paraphrase": 81.07748586631193,
+      "both_correct": 78.78284003990689,
+      "either_correct": 84.80212836714334
+    },
+    "changes": {
+      "n": 3560,
+      "FIX": 62,
+      "FIX_pct": 1.7415730337078652,
+      "BREAK": 28,
+      "BREAK_pct": 0.7865168539325843,
+      "SAME_CORRECT": 2862,
+      "SAME_CORRECT_pct": 80.3932584269663,
+      "SAME_WRONG": 608,
+      "SAME_WRONG_pct": 17.078651685393258,
+      "net_em_change": 34,
+      "n_prediction_changed": 171,
+      "mean_f1_change_when_changed": 0.10732690597744067
+    }
+  },
+  "elapsed_sec": 44.6,
+  "extractor_config": {
+    "model": "microsoft/deberta-v3-large",
+    "loss_mode": "kl",
+    "lambda_kl": 1.0,
+    "lambda_ot": 0.5,
+    "mu_hung": 0.1,
+    "max_seq_len": 384,
+    "doc_stride": 128,
+    "epochs": 2,
+    "lr": 1e-05,
+    "val_frac": 0.05,
+    "split_seed": 42
+  }
+}

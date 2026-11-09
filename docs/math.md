@@ -9,9 +9,9 @@
 3. [Model Architecture & The Forward Computation Graph](#3-model-architecture--the-forward-computation-graph)
 4. [Standard Supervised Learning & Cross-Entropy Loss](#4-standard-supervised-learning--cross-entropy-loss)
 5. [The Fragility of Lexical Overlap & Consistency Regularization](#5-the-fragility-of-lexical-overlap--consistency-regularization)
-6. [The Geometry of Distributions: Why KL Fails and Optimal Transport Succeeds](#6-the-geometry-of-distributions-why-kl-fails-and-optimal-transport-succeeds)
-7. [From 1D Marginal Tokens to 2D Phrases: Span-Level Hungarian Matching](#7-from-1d-marginal-tokens-to-2d-phrases-span-level-hungarian-matching)
-8. [The Unified Multi-Level Optimization Objective](#8-the-unified-multi-level-optimization-objective)
+6. [Token-Level Consistency Regularization: Symmetric KL vs. 1D Optimal Transport](#6-token-level-consistency-regularization-symmetric-kl-vs-1d-optimal-transport)
+7. [From 1D Marginal Tokens to 2D Phrases: Span-Level Hungarian Matching](#7-from-1d-marginal-tokens-to-2D-phrases-span-level-hungarian-matching)
+8. [The Unified Optimization Objective & Second-Stage Span Selection](#8-the-unified-optimization-objective--second-stage-span-selection)
 9. [Appendix: Comprehensive Symbol Glossary & Type Signatures](#9-appendix-comprehensive-symbol-glossary--type-signatures)
 
 ---
@@ -329,26 +329,31 @@ $$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{supervised}} + \mathcal{L}_{\t
 
 ---
 
-## 6. The Geometry of Distributions: Why KL Fails and Optimal Transport Succeeds
+## 6. Token-Level Consistency Regularization: Symmetric KL vs. 1D Optimal Transport
 
-Feeding both $q$ and $q'$ with passage $c$ through the shared encoder yields two discrete probability distributions over the $m$ passage tokens:
-$$P = P_{\text{start}}^{(q)} \in \Delta^{m-1}, \qquad Q = P_{\text{start}}^{(q')} \in \Delta^{m-1}$$
+Feeding both $q$ and $q'$ with passage $c$ through the shared encoder yields two discrete probability distributions over the $m$ passage tokens for both boundary heads ($t \in \{\text{start}, \text{end}\}$):
+$$P_t = P_t^{(q)} \in \Delta^{m-1}, \qquad P'_t = P_t^{(q')} \in \Delta^{m-1}$$
 
-How should we define the discrepancy $\mathcal{D}(P, Q)$ between these two vectors?
+How should we define the discrepancy $\mathcal{D}(P_t, P'_t)$ between these two distributions? We formulate and compare our **primary consistency regularizer (Symmetric KL Divergence)** against a **metric-aware ablation (1D Wasserstein Optimal Transport)**.
 
 ---
 
-### 6.1. The Classical Approach: Symmetric KL Divergence
-A standard choice in consistency regularization (e.g., *Xie et al., 2020*) is symmetric Kullback-Leibler (KL) divergence:
-$$\mathcal{D}_{\text{KL}}^{\text{sym}}(P \parallel Q) = \frac{1}{2} \sum_{i=0}^{m-1} \left[ P(i) \log \frac{P(i)}{Q(i)} + Q(i) \log \frac{Q(i)}{P(i)} \right]$$
+### 6.1. Primary Objective: Symmetric KL Divergence ($\mathcal{D}_{\text{KL}}^{\text{sym}}$)
+Following consistency training principles (*Xie et al., 2020*), our primary consistency term penalizes divergence between the passage-token start and end distributions of $q$ and $q'$ using symmetric Kullback-Leibler (KL) divergence (`--loss_mode kl`):
+$$\mathcal{D}_{\text{KL}}^{\text{sym}} = \frac{1}{4} \sum_{t \in \{\text{start}, \text{end}\}} \Big[ \mathrm{KL}(P_t \parallel P'_t) + \mathrm{KL}(P'_t \parallel P_t) \Big]$$
+where:
+$$\mathrm{KL}(P \parallel Q) = \sum_{i=0}^{m-1} P(i) \log \frac{P(i)}{Q(i)}$$
 
-#### The Fundamental Geometric Pathology of KL on Sequences:
-KL divergence treats passage token indices $\{0, 1, \dots, m-1\}$ as an **unordered discrete set of categorical classes** (identical to distinct ImageNet classes like `"dog"` vs. `"car"`). It implicitly assumes the discrete indicator ground metric:
+#### Why Symmetric KL Works Strongly under Joint Supervision:
+When trained jointly with supervised cross-entropy on both views ($\mathcal{L}_{\text{CE}}(q) + \mathcal{L}_{\text{CE}}(q')$), both $P_t$ and $P'_t$ are anchored toward the true gold boundary $(s^*, e^*)$. Symmetric KL directly penalizes log-probability disagreement at every token index, strongly encouraging the two phrasings to concentrate probability mass on the exact same start and end tokens (critical for Exact Match).
+
+#### Theoretical Motivation for a Metric-Space Alternative:
+From a purely geometric perspective, KL divergence treats passage token indices $\{0, 1, \dots, m-1\}$ as an **unordered discrete set of categorical classes**, implicitly assuming the discrete indicator ground metric:
 $$d_{\text{KL}}(i, j) = \begin{cases} 0 & \text{if } i = j \\ \infty & \text{if } i \neq j \end{cases}$$
 
-Consider an answer starting at token index 10 (`"Virgin Mary"`):
-* **Case 1 (Harmless 1-token boundary shift)**: $P$ peaks at token 10 (`"Virgin"`), while $Q$ peaks at token 11 (`"Mary"`). Because $P(10) \gg 0$ and $Q(10) \approx 0$, the ratio $\frac{P(10)}{Q(10)}$ becomes immense, and $\log \frac{P(10)}{Q(10)}$ explodes.
-* **Case 2 (Catastrophic 80-token distractor jump)**: $P$ peaks at token 10, while $Q$ peaks at token 90 (an entirely unrelated paragraph). The KL divergence also explodes.
+Consider an unanchored prediction for an answer starting at token index 10 (`"Virgin Mary"`):
+* **Case 1 (1-token boundary shift)**: $P$ peaks at token 10 (`"Virgin"`), while $Q$ peaks at token 11 (`"Mary"`).
+* **Case 2 (80-token distractor jump)**: $P$ peaks at token 10, while $Q$ peaks at token 90 (an unrelated paragraph).
 
 $$
 \begin{array}{lcccc|c|c}
@@ -357,18 +362,18 @@ $$
 \hline
 \textbf{Context Token } c_t & \text{\small [Virgin]} & \text{\small [Mary]} & \dots & \text{\small [Distractor]} & \text{Physical Separation} & \text{Categorical Metric} \\
 \hline\hline
-\textbf{Case 1 (1-Token Slip)} & P(10)=1 & Q(11)=1 & \dots & 0 & \vert 10 - 11 \vert = \mathbf{1} & \mathcal{D}_{\text{KL}} \to \boldsymbol{\infty} \;\; (\text{Explodes}) \\
-\textbf{Case 2 (Distractor Jump)} & P(10)=1 & 0 & \dots & Q(90)=1 & \vert 10 - 90 \vert = \mathbf{80} & \mathcal{D}_{\text{KL}} \to \boldsymbol{\infty} \;\; (\text{Explodes}) \\
+\textbf{Case 1 (1-Token Slip)} & P(10)=1 & Q(11)=1 & \dots & 0 & \vert 10 - 11 \vert = \mathbf{1} & \mathcal{D}_{\text{KL}} \to \boldsymbol{\infty} \\
+\textbf{Case 2 (Distractor Jump)} & P(10)=1 & 0 & \dots & Q(90)=1 & \vert 10 - 90 \vert = \mathbf{80} & \mathcal{D}_{\text{KL}} \to \boldsymbol{\infty} \\
 \hline
 \end{array}
 $$
 
-> [!CAUTION]
-> **KL Ignores Spatial Metric Distance**: KL divergence treats a benign 1-token boundary slip identically to jumping 80 tokens away. When backpropagated, its gradients $\frac{\partial \mathcal{D}_{\text{KL}}}{\partial s_i}$ produce extreme gradient spikes that over-penalize minor boundary uncertainty.
+> [!NOTE]
+> **Motivating the Optimal Transport Ablation**: Because KL divergence is position-agnostic ($d_{\text{KL}}(10,11) = d_{\text{KL}}(10,90)$), we also derive and evaluate a 1D Optimal Transport ($W_1$) consistency loss (`--loss_mode ot`) that incorporates physical token distance $\vert i - j \vert / m$. Empirically on SQuAD v1.1 (see [docs/RESULTS.md](RESULTS.md) §10), symmetric KL ($\lambda=1$) achieves higher paraphrase agreement than untuned 1D OT (`87.9%` vs. `86.3%` on BERT-base), because exact token-index alignment is what Exact Match rewards once both views are simultaneously supervised by $\mathcal{L}_{\text{CE}}(q) + \mathcal{L}_{\text{CE}}(q')$.
 
 ---
 
-### 6.2. The Metric Solution: 1D Optimal Transport ($W_1$ Distance)
+### 6.2. Metric-Space Ablation: 1D Optimal Transport ($W_1$ Distance)
 
 Tokens in a passage reside on an **ordered 1D metric space** $(\{0, \dots, m-1\}, d)$ endowed with the physical coordinate ground metric $C_{ij} = \frac{\vert i - j \vert}{m}$.
 
@@ -524,59 +529,54 @@ During backpropagation, gradients flow through the continuous softmax probabilit
 
 ---
 
-## 8. The Unified Multi-Level Optimization Objective
+## 8. The Unified Optimization Objective & Second-Stage Span Selection
 
-### 8.1. End-to-End Objective Formulation
-The complete end-to-end objective function minimized via gradient descent is:
+### 8.1. Extractor Training Objectives (`g17qa/losses.py`)
 
-$$\boxed{\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{supervised}} + \lambda_{\text{OT}} \cdot \mathcal{L}_{\text{OT}} + \mu_{\text{Hung}} \cdot \mathcal{L}_{\text{Hungarian}}}$$
+Our training pipeline supports five nested loss regimes over paired windows $(q, q', c^{(w)}, a^*)$:
 
-where $\lambda_{\text{OT}} = 0.5$ and $\mu_{\text{Hung}} = 0.1$ are regularization hyperparameters tuned on validation data.
-
-#### Multitask Role Synthesis:
+1. **Plain Cross-Entropy Baseline (`--loss_mode ce`)**:
+   $$\mathcal{L}_{\text{CE-only}} = \mathcal{L}_{\text{CE}}(q)$$
+2. **Paraphrase Data Augmentation Only (`--loss_mode aug`, *Gan & Ng, 2019*)**:
+   $$\mathcal{L}_{\text{aug}} = \mathcal{L}_{\text{CE}}(q) + \mathcal{L}_{\text{CE}}(q')$$
+3. **Proposed Symmetric-KL Consistency Training (`--loss_mode kl`, $\lambda = 1.0$)**:
+   $$\boxed{\mathcal{L}_{\text{KL}} = \mathcal{L}_{\text{CE}}(q) + \mathcal{L}_{\text{CE}}(q') + \lambda \, \mathcal{D}_{\text{KL}}^{\text{sym}}}$$
+4. **1D Optimal Transport Ablation (`--loss_mode ot`, $\lambda_{\text{OT}} = 0.5$)**:
+   $$\mathcal{L}_{\text{OT-mode}} = \mathcal{L}_{\text{CE}}(q) + \mathcal{L}_{\text{CE}}(q') + \lambda_{\text{OT}} \, \mathcal{L}_{\text{OT}}$$
+5. **Dual OT + Hungarian Span-Matching Ablation (`--loss_mode dual`, $\lambda_{\text{OT}} = 0.5, \mu_{\text{Hung}} = 0.1$)**:
+   $$\mathcal{L}_{\text{dual}} = \mathcal{L}_{\text{CE}}(q) + \mathcal{L}_{\text{CE}}(q') + \lambda_{\text{OT}} \, \mathcal{L}_{\text{OT}} + \mu_{\text{Hung}} \, \mathcal{L}_{\text{Hungarian}}$$
 
 | Objective Term | Input Signatures | Target Domain | Pedagogical Function |
 | :--- | :--- | :--- | :--- |
-| **$\mathcal{L}_{\text{supervised}}$** | Logits $\mathbf{z}$, Gold $(s^*, e^*)$ | Discrete Index Labels | Anchors predictions to gold-standard human annotations. |
-| **$\mathcal{L}_{\text{OT}}$** | Continuous $P_{\text{start}}, P_{\text{end}}$ | 1D Metric Simplex $\Delta^{m-1}$ | Enforces token-level proximity; tolerates minor boundary shifts; prevents distractor jumps. |
-| **$\mathcal{L}_{\text{Hungarian}}$** | Joint Top-$k$ Candidate Spans | Permutation Space $\mathcal{S}_k$ | Enforces phrase-level ranking and probability agreement across semantically paired questions. |
+| **$\mathcal{L}_{\text{CE}}(q) + \mathcal{L}_{\text{CE}}(q')$** | Logits $\mathbf{z}$, Gold $(s^*, e^*)$ | Discrete Index Labels | Supervises both phrasings against gold-standard human annotations. |
+| **$\mathcal{D}_{\text{KL}}^{\text{sym}}$ (Proposed)** | Passage $P_t^{(q)}, P_t^{(q')}$ | Simplex $\Delta^{m-1}$ | Aligns token-level start/end distributions across question and paraphrase. |
+| **$\mathcal{L}_{\text{OT}}$ (Ablation)** | Continuous $P_{\text{start}}, P_{\text{end}}$ | 1D Metric Simplex $\Delta^{m-1}$ | Penalizes probability mass transport proportional to token distance $\vert i - j \vert / m$. |
+| **$\mathcal{L}_{\text{Hungarian}}$ (Ablation)** | Joint Top-$k$ Candidate Spans | Permutation Space $\mathcal{S}_k$ | Penalizes probability differences between bipartite-matched top-$k$ spans. |
 
 ---
 
 ### 8.2. Optimization Mechanics: Autograd Backward & Discrete Assignment Stop-Gradient
-A natural operational question arises: *Can this multi-level composite objective be optimized directly with standard PyTorch `total_loss.backward()`?*
-
-**Yes.** The backward computational graph decomposes into two distinct mathematical regimes:
-
-1. **Continuous Primitive Operations ($\mathcal{L}_{\text{supervised}}$ and $\mathcal{L}_{\text{OT}}$)**:
-   * Cross-entropy uses standard negative log-likelihood over softmax logits.
-   * 1D Wasserstein optimal transport computes prefix sums (`torch.cumsum`) and absolute value discrepancies (`torch.abs`). Both are continuous and piecewise smooth. Their subgradients are well-defined:
-     $$\frac{\partial \vert u \vert}{\partial u} = \text{sign}(u)$$
-     Gradients backpropagate smoothly through the CDF differences into the softmax probabilities and encoder representations.
-
-2. **Discrete Permutation as a Stop-Gradient Operator ($\mathcal{L}_{\text{Hungarian}}$)**:
-   * The Hungarian algorithm solves a combinatorial bijection $\pi^* = \arg\min_{\pi \in \mathcal{S}_k} \sum_{a=1}^k C_{a, \pi(a)}$ on CPU via SciPy. Permutations are discrete and non-differentiable ($\nabla_\theta \pi^* = \mathbf{0}$ almost everywhere).
-   * However, in our formulation, $\pi^*$ acts as a **fixed assignment permutation matrix** (a stop-gradient operator $\text{sg}[\pi^*]$), exactly analogous to bipartite matching in DETR:
-     $$\mathcal{L}_{\text{Hungarian}} = \frac{1}{2} \sum_{a=1}^k w_a \cdot \Big\vert p_a^{(q)} - p_{\pi^*(a)}^{(q')} \Big\vert + \sum_{a=1}^k C_{a, \pi^*(a)} \left( \frac{p_a^{(q)} + p_{\pi^*(a)}^{(q')}}{2} \right)$$
-   * Gradients do *not* need to differentiate through the permutation discovery algorithm itself. Instead, once the 1-to-1 correspondences $(a \leftrightarrow \pi^*(a))$ are identified, gradients flow directly through the continuous softmax candidate probabilities:
-     $$\frac{\partial \mathcal{L}_{\text{Hungarian}}}{\partial \mathbf{z}_{\text{start}}} = \sum_{a=1}^k \frac{\partial \mathcal{L}_{\text{Hungarian}}}{\partial p_a^{(q)}} \frac{\partial p_a^{(q)}}{\partial s(i_a, j_a)} \frac{\partial s(i_a, j_a)}{\partial \mathbf{z}_{\text{start}}}$$
-   * Hence, PyTorch's native autograd executes the backward pass in a single call to `total_loss.backward()` without requiring Reinforcement Learning policy gradients or continuous relaxation approximations (e.g., Gumbel-Sinkhorn).
+Can all five objectives be optimized directly with standard PyTorch `total_loss.backward()`? **Yes.**
+* **Continuous Operations ($\mathcal{L}_{\text{CE}}, \mathcal{D}_{\text{KL}}^{\text{sym}}, \mathcal{L}_{\text{OT}}$)**: Cross-entropy and symmetric KL are smooth over log-softmax probabilities; 1D Wasserstein uses `torch.cumsum` and `torch.abs` with well-defined piecewise subgradients $\partial \vert u \vert / \partial u = \text{sign}(u)$.
+* **Discrete Permutation as a Stop-Gradient Operator ($\mathcal{L}_{\text{Hungarian}}$)**: The Hungarian algorithm solves $\pi^* = \arg\min_{\pi \in \mathcal{S}_k} \sum_{a=1}^k C_{a, \pi(a)}$ via SciPy on CPU and acts as a stop-gradient index permutation $\text{sg}[\pi^*]$ (analogous to DETR), while gradients flow through the continuous softmax probabilities $\mathbf{p}^{(q)}$ and $\mathbf{p}^{(q')}$.
+* **AdamW with Linear Warmup**: Parameters are partitioned into weight-decay ($\lambda_{\text{wd}} = 0.01$) and no-decay (`bias`, `LayerNorm`) groups with a $10\%$ linear warmup followed by linear decay ($\eta = 3 \times 10^{-5}$ for base models, $\eta = 1 \times 10^{-5}$ with gradient accumulation $8 \times 2$ for `DeBERTa-v3-large`).
 
 ---
 
-### 8.3. Discriminative Fine-Tuning: Decoupled Learning Rates ($\eta_{\text{backbone}}$ vs. $\eta_{\text{head}}$)
-The model consists of two fundamentally distinct structural components requiring different optimization dynamics:
-1. **The Pre-Trained Transformer Backbone ($\theta_{\text{backbone}}$)**:
-   * 12 layers of multi-head self-attention initialized from pre-trained DeBERTa-v3 / BERT checkpoints trained on hundreds of gigabytes of text.
-   * **Catastrophic Forgetting Risk**: Applying a large learning rate will overwrite and distort the pre-trained contextual representations.
-   * **Learning Rate**: We assign a small, conservative rate:
-     $$\eta_{\text{backbone}} = 3 \times 10^{-5} \qquad (\text{with weight decay } \lambda_{\text{wd}} = 0.01)$$
+### 8.3. Second-Stage Span Selection: Learned Reranker & Paraphrase Ensemble (`g17qa/reranker.py`, `g17qa/consistency.py`)
 
-2. **The Task-Specific Span Prediction Head ($\theta_{\text{head}} = \{\mathbf{W}, \mathbf{b}\}$)**:
-   * A linear projection layer ($\mathbb{R}^{d \times 2}$) initialized from scratch with random Gaussian weights.
-   * At iteration 0, its weights contain zero task-specific knowledge. If restricted to the backbone's conservative learning rate ($3 \times 10^{-5}$), the head updates sluggishly, delaying convergence and passing noisy gradients into the backbone.
-   * **Learning Rate**: We decouple the optimizer parameter groups and assign a $3.3\times$ higher learning rate with zero weight decay:
-     $$\eta_{\text{head}} = 1 \times 10^{-4} \qquad (\text{with weight decay } \lambda_{\text{wd}} = 0.0)$$
+Given the extractor's top-$k$ ($k=20$) distinct candidate spans $\{(i_a, j_a)\}_{a=1}^k$ for question $q$, we also formulate two second-stage mechanisms:
+
+1. **Learned MLP Span Reranker (`g17qa/reranker.py`)**:
+   * **Feature Representation**: Each candidate span $a = (i_a, j_a)$ in window $w$ is represented by concatenating four $d$-dimensional hidden vectors from the extractor's final encoder layer $\mathbf{H} \in \mathbb{R}^{L \times d}$ with $14$ scalar features $\mathbf{f}_a \in \mathbb{R}^{14}$ (null-calibrated score, raw logit sum, null score, start/end logits, start/end probabilities, token length, normalized rank, window index, gap to top-1, and—when enabled—three paraphrase-view features: `pair_score`, `pair_gap`, `pair_missing`):
+     $$\mathbf{v}_a = \Big[ \mathbf{h}_{i_a} \;\Vert\; \mathbf{h}_{j_a} \;\Vert\; \frac{1}{j_a - i_a + 1}\sum_{t=i_a}^{j_a} \mathbf{h}_t \;\Vert\; \mathbf{h}_{\texttt{[CLS]}} \Big] \in \mathbb{R}^{4d}$$
+   * **Graded Listwise Cross-Entropy**: An MLP $g_\phi(\mathbf{v}_a, \mathbf{f}_a) \to r_a \in \mathbb{R}$ produces candidate logits $\mathbf{r} \in \mathbb{R}^k$. Against graded relevance targets $y_a = 1$ if $\text{EM}(a, a^*) = 1$ else $0.3 \cdot \mathrm{F1}(a, a^*)$, normalized to target distribution $\tilde{y}_a = \exp(y_a / \tau) / \sum_b \exp(y_b / \tau)$, the reranker minimizes listwise cross-entropy on the held-out training articles (plus an optional symmetric-KL consistency term $w \cdot \mathcal{D}_{\text{KL}}^{\text{sym}}(P_\phi(\cdot\mid q), P_\phi(\cdot\mid q'))$ over aligned candidates).
+   * **Inference Rules**: Pure reranker ($\arg\max_a r_a$), log-probability residual blending ($\arg\max_a [\log p_{\text{ext}}(a\mid q) + \alpha \log p_\phi(a\mid q)]$), and confidence gating (keeping the extractor's top-1 span unless the reranker's margin exceeds $\gamma$ nats).
+
+2. **Training-Free Paraphrase Ensemble (`g17qa/consistency.py`)**:
+   * Averages the extractor's normalized log-probabilities across the original question $q$ and paraphrase $q'$ without training a second model:
+     $$a^*_{\text{ens}} = \arg\max_{a \in S_q \cup S_{q'}} \Big[ \log p_{\text{ext}}(a \mid q) + \beta \log p_{\text{ext}}(a \mid q') \Big] \qquad (\beta = 1.0)$$
+   * As shown in [docs/RESULTS.md](RESULTS.md) §9b, this learning-free ensemble achieves higher agreement (`99.3%`, both-views-correct `89.3%`) than the learned reranker (`94.1%`, both-views-correct `87.4%`), while both require a test-time paraphrase—motivating our choice of the **extractor alone** (`DeBERTa-v3-large` + symmetric KL) as the proposed single-pass system.
 
 ---
 

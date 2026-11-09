@@ -1,0 +1,169 @@
+{
+  "eval_set": "gan_dev",
+  "data_file": "data/external/gan_ng/dev_para.json",
+  "orig_file": "data/external/gan_ng/dev_orig.json",
+  "weights": "weights/deb_ce/best.pt",
+  "model": "microsoft/deberta-v3-base",
+  "loss_mode": "ce",
+  "reranker_path": "weights/deb_ce/reranker.pt",
+  "rerank_margin": null,
+  "top_k": 20,
+  "n_questions": 1062,
+  "paired_view": "original question",
+  "n_pairs": 1061,
+  "official_scorer": "provided/evaluate-v2.0.py",
+  "extractor": {
+    "official": {
+      "exact": 85.969868173258,
+      "f1": 91.27771724687243,
+      "total": 1062,
+      "HasAns_exact": 85.969868173258,
+      "HasAns_f1": 91.27771724687243,
+      "HasAns_total": 1062
+    },
+    "by_question_type": {
+      "how": {
+        "n": 17,
+        "exact": 58.8235294117647,
+        "f1": 75.64029037174816
+      },
+      "how many/much": {
+        "n": 71,
+        "exact": 94.36619718309859,
+        "f1": 97.53521126760563
+      },
+      "other": {
+        "n": 31,
+        "exact": 61.29032258064516,
+        "f1": 77.19452590420333
+      },
+      "what": {
+        "n": 598,
+        "exact": 84.78260869565217,
+        "f1": 90.34932504052999
+      },
+      "when": {
+        "n": 84,
+        "exact": 94.04761904761905,
+        "f1": 96.84593135499811
+      },
+      "where": {
+        "n": 29,
+        "exact": 75.86206896551724,
+        "f1": 85.04378762999451
+      },
+      "which": {
+        "n": 102,
+        "exact": 90.19607843137256,
+        "f1": 92.97962322183776
+      },
+      "who": {
+        "n": 110,
+        "exact": 94.54545454545455,
+        "f1": 96.14285714285715
+      },
+      "why": {
+        "n": 20,
+        "exact": 65.0,
+        "f1": 82.15800865800865
+      }
+    },
+    "consistency": {
+      "pairs": 1061,
+      "agreement_em": 91.80018850141376,
+      "agreement_f1": 94.80093560756694
+    },
+    "paired_view_official_on_orig_file": {
+      "exact": 88.88888888888889,
+      "f1": 93.53824533420372,
+      "total": 1062,
+      "HasAns_exact": 88.88888888888889,
+      "HasAns_f1": 93.53824533420372,
+      "HasAns_total": 1062
+    }
+  },
+  "reranker": {
+    "official": {
+      "exact": 85.2165725047081,
+      "f1": 90.92638879459973,
+      "total": 1062,
+      "HasAns_exact": 85.2165725047081,
+      "HasAns_f1": 90.92638879459973,
+      "HasAns_total": 1062
+    },
+    "by_question_type": {
+      "how": {
+        "n": 17,
+        "exact": 52.94117647058823,
+        "f1": 74.16489629254785
+      },
+      "how many/much": {
+        "n": 71,
+        "exact": 91.54929577464789,
+        "f1": 96.36150234741783
+      },
+      "other": {
+        "n": 31,
+        "exact": 58.064516129032256,
+        "f1": 76.33570730344925
+      },
+      "what": {
+        "n": 598,
+        "exact": 84.44816053511705,
+        "f1": 90.359336345741
+      },
+      "when": {
+        "n": 84,
+        "exact": 95.23809523809524,
+        "f1": 97.50566893424036
+      },
+      "where": {
+        "n": 29,
+        "exact": 79.3103448275862,
+        "f1": 85.42692939244665
+      },
+      "which": {
+        "n": 102,
+        "exact": 87.25490196078431,
+        "f1": 89.83660130718955
+      },
+      "who": {
+        "n": 110,
+        "exact": 96.36363636363636,
+        "f1": 97.18181818181819
+      },
+      "why": {
+        "n": 20,
+        "exact": 50.0,
+        "f1": 76.94372294372295
+      }
+    },
+    "consistency": {
+      "pairs": 1061,
+      "agreement_em": 92.17719132893497,
+      "agreement_f1": 94.88098508796458
+    },
+    "paired_view_official_on_orig_file": {
+      "exact": 87.6647834274953,
+      "f1": 93.01944444086872,
+      "total": 1062,
+      "HasAns_exact": 87.6647834274953,
+      "HasAns_f1": 93.01944444086872,
+      "HasAns_total": 1062
+    }
+  },
+  "elapsed_sec": 17.5,
+  "extractor_config": {
+    "model": "microsoft/deberta-v3-base",
+    "loss_mode": "ce",
+    "lambda_kl": 1.0,
+    "lambda_ot": 0.5,
+    "mu_hung": 0.1,
+    "max_seq_len": 384,
+    "doc_stride": 128,
+    "epochs": 2,
+    "lr": 3e-05,
+    "val_frac": 0.05,
+    "split_seed": 42
+  }
+}

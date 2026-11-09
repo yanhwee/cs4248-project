@@ -1,0 +1,48 @@
+{
+  "run_name": "bert_dual",
+  "model": "bert-base-uncased",
+  "loss_mode": "dual",
+  "lambda_kl": 1.0,
+  "best_val_f1": 81.762,
+  "best_val_exact": 68.15,
+  "best_val_agreement_em": 89.364,
+  "best_val_agreement_f1": 92.557,
+  "best_val_pairs": 1683,
+  "selection_note": "best checkpoint within the run by validation F1; choose lambda across runs on validation F1 and agreement",
+  "val_history": [
+    {
+      "step": 5282,
+      "tag": "epoch1",
+      "exact": 66.55,
+      "f1": 79.788,
+      "n": 2000,
+      "pairs": 1683,
+      "agreement_em": 88.235,
+      "agreement_f1": 91.67,
+      "elapsed_sec": 770.1
+    },
+    {
+      "step": 10564,
+      "tag": "epoch2",
+      "exact": 68.15,
+      "f1": 81.762,
+      "n": 2000,
+      "pairs": 1683,
+      "agreement_em": 89.364,
+      "agreement_f1": 92.557,
+      "elapsed_sec": 1242.2
+    }
+  ],
+  "final_full_val": {
+    "exact": 68.40826245443499,
+    "f1": 81.70447250129764,
+    "total": 4115,
+    "pairs": 3447,
+    "agreement_em": 89.29503916449086,
+    "agreement_f1": 92.6754374765141
+  },
+  "train_time_sec": 1303.3,
+  "steps": 10564,
+  "best_checkpoint": "weights/bert_dual/best.pt",
+  "last_checkpoint": "weights/bert_dual/last.pt"
+}

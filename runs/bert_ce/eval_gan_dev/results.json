@@ -1,0 +1,169 @@
+{
+  "eval_set": "gan_dev",
+  "data_file": "data/external/gan_ng/dev_para.json",
+  "orig_file": "data/external/gan_ng/dev_orig.json",
+  "weights": "weights/bert_ce/best.pt",
+  "model": "bert-base-uncased",
+  "loss_mode": "ce",
+  "reranker_path": "weights/bert_ce/reranker.pt",
+  "rerank_margin": null,
+  "top_k": 20,
+  "n_questions": 1062,
+  "paired_view": "original question",
+  "n_pairs": 1061,
+  "official_scorer": "provided/evaluate-v2.0.py",
+  "extractor": {
+    "official": {
+      "exact": 77.68361581920904,
+      "f1": 85.5752395380805,
+      "total": 1062,
+      "HasAns_exact": 77.68361581920904,
+      "HasAns_f1": 85.5752395380805,
+      "HasAns_total": 1062
+    },
+    "by_question_type": {
+      "how": {
+        "n": 17,
+        "exact": 35.294117647058826,
+        "f1": 65.6324950469915
+      },
+      "how many/much": {
+        "n": 71,
+        "exact": 87.32394366197182,
+        "f1": 93.9067739771965
+      },
+      "other": {
+        "n": 31,
+        "exact": 51.61290322580645,
+        "f1": 63.001716815758556
+      },
+      "what": {
+        "n": 598,
+        "exact": 76.5886287625418,
+        "f1": 84.82721375652667
+      },
+      "when": {
+        "n": 84,
+        "exact": 91.66666666666667,
+        "f1": 94.41043083900225
+      },
+      "where": {
+        "n": 29,
+        "exact": 65.51724137931035,
+        "f1": 80.71975916803503
+      },
+      "which": {
+        "n": 102,
+        "exact": 73.52941176470588,
+        "f1": 80.04753416518123
+      },
+      "who": {
+        "n": 110,
+        "exact": 90.9090909090909,
+        "f1": 94.23900660742765
+      },
+      "why": {
+        "n": 20,
+        "exact": 60.0,
+        "f1": 80.77777777777777
+      }
+    },
+    "consistency": {
+      "pairs": 1061,
+      "agreement_em": 89.06691800188501,
+      "agreement_f1": 93.00096032439079
+    },
+    "paired_view_official_on_orig_file": {
+      "exact": 80.69679849340866,
+      "f1": 88.35992068171065,
+      "total": 1062,
+      "HasAns_exact": 80.69679849340866,
+      "HasAns_f1": 88.35992068171065,
+      "HasAns_total": 1062
+    }
+  },
+  "reranker": {
+    "official": {
+      "exact": 78.3427495291902,
+      "f1": 85.97583446940344,
+      "total": 1062,
+      "HasAns_exact": 78.3427495291902,
+      "HasAns_f1": 85.97583446940344,
+      "HasAns_total": 1062
+    },
+    "by_question_type": {
+      "how": {
+        "n": 17,
+        "exact": 35.294117647058826,
+        "f1": 67.97542903079236
+      },
+      "how many/much": {
+        "n": 71,
+        "exact": 87.32394366197182,
+        "f1": 94.14151576123406
+      },
+      "other": {
+        "n": 31,
+        "exact": 58.064516129032256,
+        "f1": 70.63100509020812
+      },
+      "what": {
+        "n": 598,
+        "exact": 76.75585284280936,
+        "f1": 84.64918313412264
+      },
+      "when": {
+        "n": 84,
+        "exact": 95.23809523809524,
+        "f1": 97.50566893424036
+      },
+      "where": {
+        "n": 29,
+        "exact": 65.51724137931035,
+        "f1": 79.62506841817186
+      },
+      "which": {
+        "n": 102,
+        "exact": 76.47058823529412,
+        "f1": 81.43196672608435
+      },
+      "who": {
+        "n": 110,
+        "exact": 90.0,
+        "f1": 92.96536796536796
+      },
+      "why": {
+        "n": 20,
+        "exact": 55.0,
+        "f1": 81.25396825396825
+      }
+    },
+    "consistency": {
+      "pairs": 1061,
+      "agreement_em": 90.38642789820923,
+      "agreement_f1": 93.61971367202283
+    },
+    "paired_view_official_on_orig_file": {
+      "exact": 80.50847457627118,
+      "f1": 87.58073496014637,
+      "total": 1062,
+      "HasAns_exact": 80.50847457627118,
+      "HasAns_f1": 87.58073496014637,
+      "HasAns_total": 1062
+    }
+  },
+  "elapsed_sec": 29.2,
+  "extractor_config": {
+    "model": "bert-base-uncased",
+    "loss_mode": "ce",
+    "lambda_kl": 1.0,
+    "lambda_ot": 0.5,
+    "mu_hung": 0.1,
+    "max_seq_len": 384,
+    "doc_stride": 128,
+    "epochs": 2,
+    "lr": 3e-05,
+    "val_frac": 0.05,
+    "split_seed": 42
+  }
+}

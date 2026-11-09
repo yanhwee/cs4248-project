@@ -1,58 +1,84 @@
-# Python bytecode & cache
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
+*.egg-info/
+build/
+dist/
 
-# Virtual environments
+# Environments
 .venv/
 venv/
 env/
-ENV/
 
-# Build & packaging
-build/
-dist/
-*.egg-info/
-*.egg
-
-# Operating System & IDE
+# OS / IDE
 .DS_Store
 .idea/
 .vscode/
 *.swp
-*.swo
 
 # Caches
 .cache/
 hf_cache/
-__marimo__/
 
-# Large Datasets
-data/*.json
+# Data: the course-provided files live in provided/ (kept out of git because of size),
+# downloaded evaluation sets and paraphrase caches are reproducible via the scripts
+data/
+provided/*.json
 
-# Heavy Model Checkpoints (>500MB each)
+# Model checkpoints
 weights/
 
-# Cluster execution logs and step histories
-runs/
-!runs/ablation_summary.json
+# Slurm logs (scripts/job.sbatch writes logs/slurm/<job>-<id>.out)
+logs/
 
-# LaTeX auxiliary & build artifacts
+# Run artefacts: keep the small JSON summaries that the report is built from, drop logs and large dumps
+runs/*
+!runs/*/
+runs/*/*
+!runs/*/config.json
+!runs/*/history.json
+!runs/*/train_summary.json
+!runs/*/val_history.json
+!runs/*/reranker_summary.json
+!runs/*/eval_*/
+runs/*/eval_*/*
+!runs/*/eval_*/results.json
+!runs/*/eval_*/official_eval*.json
+# proposed system and its CE twin: the scored {id: answer} files (re-scorable with provided/evaluate-v2.0.py) and the
+# question/paraphrase disagreements the report's qualitative table draws on
+!runs/deb_large_*/eval_*/predictions*.json
+!runs/*/eval_*/disagreements.jsonl
+# reranker-ablation outputs (scripts/run_reranker_variants.sh): summaries and official-scorer results only
+!runs/*/reranker_summary_*.json
+!runs/*/rerank_variants/
+runs/*/rerank_variants/*
+!runs/*/rerank_variants/summary_*.md
+!runs/*/rerank_variants/*/
+runs/*/rerank_variants/*/*
+!runs/*/rerank_variants/*/eval_*/
+runs/*/rerank_variants/*/eval_*/*
+!runs/*/rerank_variants/*/eval_*/results.json
+!runs/*/rerank_variants/*/eval_*/official_eval*.json
+# smoke-test runs are never committed (this rule must come after the re-includes above)
+runs/smoke*/
+
+# LaTeX build files
 *.aux
 *.bbl
 *.blg
 *.log
 *.out
 *.toc
-*.lof
-*.lot
 *.fls
 *.fdb_latexmk
 *.synctex.gz
-missfont.log
 
-# Scratch & temporary testing directories
+# Scratch
 scratch*/
 
+# Course handouts, the proposal and internal working notes: kept locally, not part of the submission
+docs/*.pdf
+docs/status_review*.md
+docs/CHANGES.md
+research_notes/
+reports/

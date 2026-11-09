@@ -1,333 +1,148 @@
-# Paraphrase-Consistent Extractive Question Answering
-### Resolving Distributional Fragility via 1D Optimal Transport and 2D Hungarian Span Matching
+# Paraphrase-Consistent Extractive Question Answering on SQuAD v1.1
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Framework: PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
-[![HuggingFace Transformers](https://img.shields.io/badge/🤗%20Transformers-4.38+-yellow.svg)](https://huggingface.co/)
-[![Marimo Reactive Notebook](https://img.shields.io/badge/marimo-reactive%20notebook-8A2BE2.svg)](https://marimo.io/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+**CS4248 Introduction to Large Language Models (AY2026/27 S1), National University of Singapore — Group G17**  
+Chong Xin Wei, Ng Jian Yi, Soh Jun Ying Gavin, Wang Chengke, Yee Yan Hwee
 
-**National University of Singapore • School of Computing**  
-**CS4248: Introduction to Large Language Models (AY2026/2027)**  
-**Group G17**: Chong Xin Wei, Ng Jian Yi, Soh Jun Ying Gavin, Wang Chengke, Yee Yan Hwee  
+Topic: Extractive question answering on SQuAD v1.1. Full results analysis: [docs/RESULTS.md](docs/RESULTS.md). Mathematical specification: [docs/math.md](docs/math.md). Final report: [report/main.pdf](report/main.pdf).
 
----
+## Proposed system
 
-## 📖 Table of Contents
-1. [Executive Summary & Benchmark Results](#-executive-summary--benchmark-results)
-2. [Theoretical Overview & Forward Architecture](#-theoretical-overview--forward-architecture)
-3. [Full Mathematical Foundations](#-full-mathematical-foundations)
-4. [Repository Architecture (4-Pillar Layout)](#-repository-architecture-4-pillar-layout)
-5. [Empirical Results & Publication Artifacts](#-empirical-results--publication-artifacts)
-6. [Getting Started: Local Setup & Marimo Playground](#-getting-started-local-setup--marimo-playground)
-7. [Cluster Reproduction Guide (NUS SoC Compute Cluster)](#-cluster-reproduction-guide-nus-soc-compute-cluster)
-8. [ACL 2026 Short Paper Guide & Artifact Mapping](#-acl-2026-short-paper-guide--artifact-mapping)
-9. [References & Citations](#-references--citations)
+**One DeBERTa-v3-large extractor fine-tuned with paraphrase augmentation and a symmetric-KL consistency loss, used on its own (no second stage).** Each training question is back-translated (EN→DE→EN, MarianMT) and kept when its sentence-embedding cosine similarity to the original is ≥ 0.85 (68,439 of the 83,484 training questions remaining after the 5 % article hold-out). Question and paraphrase are trained on the same passage window with:
 
----
-
-## 🚀 Executive Summary & Benchmark Results
-
-Extractive Question Answering (QA) models such as BERT and DeBERTa achieve state-of-the-art accuracy on reading comprehension benchmarks like SQuAD v1.1. However, standard models suffer from severe **distributional fragility**: semantically equivalent reformulations of the same question frequently trigger divergent passage span predictions or catastrophic distractor capture.
-
-Existing consistency regularizers commonly minimize **Symmetric Kullback-Leibler (KL) divergence** across question pairs. We prove that KL divergence is mathematically pathological for sequential span extraction because it treats tokens as unordered categorical classes, producing identical gradient explosions whether the boundary slips by a single token or jumps eighty tokens into an irrelevant passage.
-
-To solve this geometric limitation, this project introduces a **dual-level geometric regularization framework**:
-1. **1D Optimal Transport ($W_1$ Wasserstein Distance)**: Exploits the natural 1D ordered metric of token sequences $\mathcal{P} = \{0, \dots, m-1\}$, providing smooth, linearly bounded coordinate subgradients via a closed-form CDF discrepancy integral.
-2. **2D Hungarian Bipartite Span Matching**: Aligns joint top-$K$ candidate phrase predictions $(s, e)$ via combinatorial bipartite matching, preventing multi-entity cross-pairing.
-
-### 🏆 Key Empirical Findings (SQuAD v1.1 Dev Set)
-* **Exact Match (EM %)**: **82.3%** (+3.9% over standard supervised baseline).
-* **F1 Score (%)**: **89.9%** (+3.7% over standard supervised baseline).
-* **Paraphrase Agreement (%)**: **91.4%** (**+19.9% relative gain** in semantic consistency).
-
----
-
-## 📐 Theoretical Overview & Forward Architecture
-
-### Bifurcated Forward Computation Graph
-
-The forward inference and prediction process is formally expressed as a bifurcated computation graph that serves both supervised training (with null-label calibration) and metric consistency regularization:
-
-$$
-\begin{array}{c}
-\boxed{\mathbf{x} = \big[ \texttt{[CLS]}, \; q_1, \dots, q_r, \; \texttt{[SEP]}, \; c_0, \dots, c_{m-1}, \; \texttt{[SEP]} \big] \;\in\; V^L} \\[6pt]
-\Bigg\downarrow \;\; \text{\small \textbf{Transformer Encoder} } \mathcal{E}_\theta \;\; (\text{DeBERTa-v3 / BERT}) \\[6pt]
-\boxed{\mathbf{H} = \mathcal{E}_\theta(\mathbf{x}) = [\mathbf{h}_0, \mathbf{h}_1, \dots, \mathbf{h}_{L-1}]^\top \;\in\; \mathbb{R}^{L \times d}} \\[6pt]
-\Bigg\downarrow \;\; \text{\small \textbf{Linear Span Projection Head} } (\mathbf{W} \in \mathbb{R}^{d \times 2}, \; \mathbf{b} \in \mathbb{R}^2) \\[6pt]
-\boxed{[\mathbf{z}_{\text{start}}, \; \mathbf{z}_{\text{end}}] = \mathbf{H}\mathbf{W} + \mathbf{1}_L \mathbf{b}^\top \;\in\; \mathbb{R}^{L \times 2}} \\[10pt]
-\swarrow \qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad \searrow \\[8pt]
-\textbf{\small (A) Supervised Classification Pathway} \qquad\qquad\qquad \textbf{\small (B) Consistency Regularization Pathway} \\[4pt]
-\boxed{P_{\text{start}}^{\text{seq}}, P_{\text{end}}^{\text{seq}} = \mathrm{softmax}(\mathbf{z}) \;\in\; \Delta^{L-1}} \qquad\qquad\qquad \boxed{\mathbf{s} = \mathbf{z}_{\text{start}}[\mathcal{P}], \; \mathbf{e} = \mathbf{z}_{\text{end}}[\mathcal{P}] \;\in\; \mathbb{R}^m} \\[6pt]
-\Bigg\downarrow \qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad \Bigg\downarrow \\[4pt]
-\boxed{\mathcal{L}_{\text{CE}} \text{ over sequence indices (including [CLS])}} \qquad\qquad \boxed{P_{\text{start}}, P_{\text{end}} = \mathrm{softmax} \;\in\; \Delta^{m-1} \to \mathcal{L}_{\text{OT}}, \mathcal{L}_{\text{Hung}}}
-\end{array}
-$$
-
-### Core Theoretical Propositions
-
-> **Proposition 1 (Topological Invariance & Gradient Explosion of KL Divergence)**:  
-> *Let $P, Q \in \Delta^{m-1}$ be probability distributions over passage tokens $\{0, \dots, m-1\}$. The Kullback-Leibler divergence is invariant under coordinate permutations $\Pi \in \mathcal{S}_m$:*
-> $$\mathcal{D}_{\text{KL}}(\Pi P \parallel \Pi Q) \equiv \mathcal{D}_{\text{KL}}(P \parallel Q)$$
-> *If $P$ places mass on token $i$ and $Q$ places mass on token $j \neq i$, $\mathcal{D}_{\text{KL}}(P \parallel Q) \to \infty$ whenever $\text{supp}(P) \not\subseteq \text{supp}(Q)$.*  
-> *Consequently, the gradient $\Vert \nabla_{\theta} \mathcal{D}_{\text{KL}} \Vert_2 \to \infty$ explodes identically whether the boundary slips by 1 adjacent subword or jumps 80 tokens into an irrelevant distractor paragraph.*
-
-> **Proposition 2 (Exact 1D Closed-Form via CDF Prefix Sums)**:  
-> *For distributions $P, Q \in \Delta^{m-1}$ on an ordered line with ground cost $C_{ij} = \frac{\vert i - j \vert}{m}$, the Wasserstein-1 distance admits an exact closed form computable in $\mathcal{O}(m)$ time via Cumulative Distribution Functions:*
-> $$W_1(P, Q) = \frac{1}{m} \sum_{i=0}^{m-1} \Big\vert \text{CDF}_P(i) - \text{CDF}_Q(i) \Big\vert$$
-> *where $\text{CDF}_P(i) = \sum_{t=0}^i P(t)$. The subgradient with respect to cumulative mass is strictly bounded:*
-> $$\left\vert \frac{\partial W_1}{\partial \text{CDF}_P(i)} \right\vert \le \frac{1}{m}$$
-> *preventing gradient explosion during backpropagation.*
-
----
-
-## 📚 Full Mathematical Foundations
-
-For the complete, self-contained, first-principles machine learning specification—including:
-* The raw string Unicode space and character-to-token offset mapping $\phi$.
-* Sliding window chunking and the exact Likelihood-Ratio partition function cancellation derivation.
-* Proof of equivalence between joint MAP decoding and unnormalized logit summation $\arg\max(s_i + e_j)$.
-* Sentence-BERT attention-masked centroid pooling for semantic equivalence gating.
-* The 5-token toy passage numerical walkthrough table.
-* Combinatorial bipartite matching via the Hungarian algorithm with autograd stop-gradient mechanics.
-* Comprehensive mathematical symbol glossary and type signatures table.
-
-👉 **Please refer to the dedicated specification:** [**`docs/math.md`**](docs/math.md).
-
----
-
-## 🏛️ Repository Architecture (4-Pillar Layout)
-
-```
-cs4248-project-1/
-├── README.md                      # Project Overview, Setup & Results
-├── docs/
-│   └── math.md                    # Comprehensive First-Principles Math Specification
-├── requirements.txt               # Pinned pip dependencies for Local and SoC Cluster
-├── pyproject.toml                 # Workspace package configuration
-│
-├── app.py                         # Pillar 2: Core Architecture & Interactive Marimo Playground
-│                                  #          (Pedagogical math cards, interactive training,
-│                                  #           span-highlighted inference playground)
-│
-├── train.py                       # Pillar 3: Headless CLI Cluster Training Engine
-│                                  #          (Pure Python, CUDA FP16 AMP, real-time JSON flush)
-├── evaluate.py                    # Dev Set Benchmark Evaluation Pipeline (data/dev-v1.1.json)
-├── scripts/
-│   ├── run_cluster.sbatch         # Slurm script for single training runs
-│   ├── run_all_ablations.sh       # Local sequential 5-condition ablation suite
-│   └── submit_all_ablations.sbatch# Cluster Slurm batch job runner (all 5 ablations)
-│
-├── visualize.py                   # Pillar 4: Publication Artifact & LaTeX Table Generator
-│                                  #          (Produces 300 DPI PNGs, vector PDFs, & LaTeX tables)
-├── figures/                       # Generated publication figures and LaTeX tables
-│   ├── loss_convergence.pdf / .png
-│   ├── ablation_benchmark.pdf / .png
-│   ├── boundary_displacement.pdf / .png
-│   ├── table1_ablation_results.tex / .md
-│   └── table2_qualitative_cases.tex / .md
-│
-├── report/                        # Publication Manuscript: ACL 2026 Camera-Ready Paper
-│   ├── main.tex                   # LaTeX source (4-page main text + 1-page references)
-│   ├── main.pdf                   # Compiled publication-ready PDF (strictly <= 5 pages)
-│   ├── custom.bib                 # Comprehensive BibTeX literature references
-│   ├── acl.sty & acl_natbib.bst   # Official ACL formatting and bibliography style files
-│   └── figures/                   # Vector PDF graphics embedded in the paper
-│
-├── runs/                          # Real-time training telemetry JSONs & Slurm logs
-└── weights/                       # Model checkpoint weights (.pt)
+```text
+loss = CE(q) + CE(q′) + λ · KL_sym(P_q, P_q′)    (λ = 1)
 ```
 
+over the start/end distributions on passage tokens. At test time the system reads only the question and returns the top-scoring span. On SQuAD v1.1 dev it reaches **90.0 EM / 95.4 F1** with **92.7 %** agreement between a question and its paraphrase (and **95.0 %** agreement on Gan & Ng's human paraphrases, up from 92.3 % at unchanged 93.8 F1). Every reported number is generated from the committed `runs/` artefacts.
+
+### Design choices and evidence
+
+- **Backbone (`DeBERTa-v3-large`).** Plain cross-entropy fine-tuning gives 81.1 / 88.5 (`bert-base-uncased`), 88.3 / 93.9 (`deberta-v3-base`), and 90.3 / 95.5 (`deberta-v3-large`) EM / F1; no objective change moves accuracy by more than 0.3 points.
+- **Objective (paraphrase augmentation + symmetric KL).** The full recipe raises paraphrase agreement on every backbone (+4.6 on BERT-base, +3.8 on DeBERTa-v3-base, +3.3 on DeBERTa-v3-large) while keeping EM and F1 within 0.3 points of plain CE in single-seed runs. On BERT-base, where augmentation-only (`aug`) was also run, paraphrase augmentation accounts for +3.2 points and the KL penalty adds a further +1.4; on the two DeBERTa backbones the gain reflects the combined recipe. 1-D Wasserstein (`ot`) and Hungarian span-matching (`dual`) variants do not improve over augmentation alone and are reported as negative ablations.
+- **λ = 1, selected on held-out training articles.** 5 % of training articles (23 articles, 4,115 questions) are held out for checkpoint selection, λ tuning (`λ ∈ {0.5, 1, 2}` on BERT-base using the rule "largest λ within 0.5 F1 of the best"), and reranker training. SQuAD dev and external test sets are used only for final evaluation.
+- **Extractor alone (why the second stage was dropped).** Although the top-20 candidates contain an exact match for 99.5 % of dev questions, a learned MLP span reranker changes dev EM by only +0.2 to +0.3 points (95 % bootstrap CIs include zero), and its consistency gain relies on test-time paraphrase features that a training-free paraphrase ensemble exceeds (+6.6 vs +1.4 agreement).
+
+### Main results
+
+Official `evaluate-v2.0.py` on SQuAD v1.1 dev (10,570 questions; agreement over the 8,622 pairs with an accepted back-translated paraphrase), Gan & Ng (2019) human paraphrases (1,062 dev and 56 adversarial questions), and Adversarial SQuAD AddSent / AddOneSent (Jia & Liang, 2017):
+
+| System (single seed) | Dev EM | Dev F1 | Dev agreement | G&N orig F1 | G&N para F1 | G&N agreement | AddSent F1 | AddOneSent F1 |
+| :-- | --: | --: | --: | --: | --: | --: | --: | --: |
+| BERT-base, CE (baseline) | 81.1 | 88.5 | 83.3 | 88.4 | 85.6 | 89.1 | 64.9 | 73.9 |
+| BERT-base, CE + aug. | 81.0 | 88.2 | 86.5 | 87.4 | 85.7 | 91.4 | 65.9 | 73.8 |
+| BERT-base, CE + aug. + KL (λ = 1) | 81.4 | 88.6 | 87.9 | 87.5 | 86.1 | 91.0 | 66.1 | 74.5 |
+| DeBERTa-v3-base, CE | 88.3 | 93.9 | 88.0 | 93.5 | 91.3 | 91.8 | 85.1 | 88.7 |
+| DeBERTa-v3-base, CE + aug. + KL (λ = 1) | 88.3 | 93.7 | 91.8 | 92.4 | 91.0 | 93.7 | 84.2 | 87.9 |
+| DeBERTa-v3-large, CE | 90.3 | 95.5 | 89.4 | 94.9 | 93.8 | 92.3 | 86.0 | 89.3 |
+| **DeBERTa-v3-large, CE + aug. + KL (λ = 1) — proposed** | **90.0** | **95.4** | **92.7** | **94.9** | **93.8** | **95.0** | **87.0** | **90.2** |
+
+Second-stage variants on top of the proposed `deb_large_kl` extractor (dev; full breakdown in [docs/RESULTS.md](docs/RESULTS.md) §9–9b):
+
+| Variant on `deb_large_kl` (dev) | EM | F1 | Agreement | Both views correct | Needs paraphrase at test time |
+| :-- | --: | --: | --: | --: | :-- |
+| Extractor alone (**proposed**) | 90.0 | 95.4 | 92.7 | 86.6 | no |
+| + Learned span reranker (pair features) | 90.2 | 95.4 | 94.1 | 87.4 | yes |
+| + Learned span reranker (no pair features) | 90.3 | 95.5 | 93.1 | 87.0 | no |
+| + Paraphrase ensemble (no learning) | 89.6 | 95.1 | 99.3 | 89.3 | yes |
+
 ---
 
-## 📊 Empirical Results & Publication Artifacts
+## Setup & Quick Verification
 
-### Table 1: Empirical Ablation Benchmark on SQuAD v1.1
-*(Source: `figures/table1_ablation_results.tex` & `figures/table1_ablation_results.md`)*
-
-| Regularization Strategy | Objective Loss Formulation | Exact Match (EM %) | F1 Score (%) | Paraphrase Agreement (%) | $\Delta$ Consistency |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **Baseline (Standard CE)** | $\mathcal{L}_{\text{CE}}$ | 78.4 | 86.2 | 71.5 | — |
-| **+ Symmetric KL Baseline** | $\mathcal{L}_{\text{CE}} + \lambda_{\text{KL}}\mathcal{D}_{\text{KL}}^{\text{sym}}$ | 79.1 | 86.8 | 76.2 | +4.7% |
-| **+ 1D Optimal Transport** | $\mathcal{L}_{\text{CE}} + \lambda_{\text{OT}}\mathcal{L}_{W_1}$ | 80.1 | 87.8 | 84.6 | +13.1% |
-| **+ 2D Hungarian Matching** | $\mathcal{L}_{\text{CE}} + \mu_{\text{Hung}}\mathcal{L}_{\text{Hungarian}}$ | 80.8 | 88.4 | 86.2 | +14.7% |
-| **Proposed Dual Regularization** | $\mathcal{L}_{\text{CE}} + \lambda_{\text{OT}}\mathcal{L}_{W_1} + \mu_{\text{Hung}}\mathcal{L}_{\text{Hungarian}}$ | **82.3** | **89.9** | **91.4** | **+19.9%** |
-
-### Table 2: Qualitative Paraphrase Invariance Case Studies
-*(Source: `figures/table2_qualitative_cases.tex` & `figures/table2_qualitative_cases.md`)*
-
-| Context Passage Excerpt | Query Formulations | Baseline Answer | Proposed Dual Answer | Ground Truth |
-| :--- | :--- | :--- | :--- | :--- |
-| *"...founded on November 26, 1842 by Rev. Edward Sorin..."* | **q:** When was the university founded?<br>**q':** In what year was the institution established? | **q:** November 26, 1842<br>**q':** 1842 ❌ *(Boundary Shift)* | **q:** 1842<br>**q':** 1842 ✅ *(Consistent)* | 1842 |
-| *"...allegedly appeared to Bernadette Soubirous in 1858 in Lourdes..."* | **q:** To whom did the Virgin Mary appear in 1858?<br>**q':** Who allegedly witnessed the 1858 Marian apparitions? | **q:** Bernadette Soubirous<br>**q':** Lourdes ❌ *(Semantic Flip)* | **q:** Bernadette Soubirous<br>**q':** Bernadette Soubirous ✅ *(Consistent)* | Bernadette Soubirous |
-| *"...Denver Broncos defeated the Carolina Panthers 24–10..."* | **q:** Which team won Super Bowl 50?<br>**q':** Who were the champions of Super Bowl 50? | **q:** Denver Broncos<br>**q':** Carolina Panthers ❌ *(Antonym Flip)* | **q:** Denver Broncos<br>**q':** Denver Broncos ✅ *(Consistent)* | Denver Broncos |
-
-### Publication Figures (Available in `figures/`)
-* **`loss_convergence.png` / `.pdf`**: Displays smooth monotonic descent of total composite loss alongside supervised CE and subgradient stability of OT and Hungarian regularization terms.
-* **`ablation_benchmark.png` / `.pdf`**: Grouped bar chart documenting accuracy gains and substantial closure of the paraphrase consistency gap.
-* **`boundary_displacement.png` / `.pdf`**: Empirical probability density distribution of token displacement $\Delta = \vert s_q - s_{q'} \vert + \vert e_q - e_{q'} \vert$, showing collapse of the baseline heavy error tail into a Dirac-like concentration at displacement 0.
-
----
-
-## 💻 Getting Started: Local Setup & Marimo Playground
-
-### 1. Environment Installation
 ```bash
-# Standard Python venv
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate      # Python >= 3.10
 pip install -r requirements.txt
+# Place SQuAD v1.1 files from Canvas at provided/train-v1.1.json and provided/dev-v1.1.json
+python scripts/download_eval_sets.py                     # Gan & Ng sets + Adversarial SQuAD -> data/external/
 
-# Or with uv (fastest)
-uv sync
-```
-
-### 2. Launching the Interactive Marimo Notebook (Pillar 2)
-```bash
-# Interactive editing mode:
-uv run marimo edit app.py
-
-# Read-only standalone app view:
-uv run marimo run app.py
-```
-Open `http://localhost:2718` to explore interactive math explanations, sliding-window tokenization cards, training sandbox, and the dual-query inference playground.
-
-### 3. Running Headless CLI Training (Pillar 3)
-```bash
-# Fast 50-sample smoke test
-python train.py --samples 50 --epochs 1 --batch_size 4
-
-# Train Proposed Dual Model with CUDA FP16
-python train.py --loss_type dual --samples 1000 --epochs 2 --batch_size 16 --fp16
-```
-
-### 4. Evaluating Checkpoints on Held-Out Dev Set
-```bash
-python evaluate.py --weights weights/best_model.pt --samples 200
-```
-
-### 5. Re-generating Publication Artifacts & LaTeX Tables (Pillar 4)
-```bash
-python visualize.py
+# Run unit tests (< 1 min) and CPU smoke test (~5 min with BERT-tiny)
+python tests/test_core.py && python tests/test_reranker.py && python tests/test_consistency.py && python tests/test_consistency_reranker.py
+bash scripts/smoke_test_cpu.sh
 ```
 
 ---
 
-## 🖥️ Cluster Reproduction Guide (NUS SoC Compute Cluster)
+## Running & Reproducing Experiments
 
-The headless training pipeline is optimized for the NUS SoC Compute Cluster (`xlogin.comp.nus.edu.sg`). Because external access to compute nodes is firewalled, all connections must route through the student bastion jump host (`stujump.comp.nus.edu.sg`).
-
-### 1. Copying Project Files to the Cluster (via Jump Host)
-Run from your local workstation:
+### 1. Single-GPU reproduction (proposed system & ablations)
 
 ```bash
-# Recommended: rsync over SSH jump host (skips virtualenvs, caches, and large checkpoints)
-rsync -avz --progress \
-  --exclude={'.venv','.git','__pycache__','*.pt','*.pdf','scratch*'} \
-  -e "ssh -J <user-id>@stujump.comp.nus.edu.sg" \
-  ./ <user-id>@xlogin.comp.nus.edu.sg:~/cs4248-project-1/
+# 1. Build resumable paraphrase caches (MarianMT EN->DE->EN + MiniLM similarity >= 0.85)
+python scripts/prepare_paraphrases.py --input provided/train-v1.1.json --output data/paraphrases/train.jsonl
+python scripts/prepare_paraphrases.py --input provided/dev-v1.1.json   --output data/paraphrases/dev.jsonl
 
-# Alternatively, using standard scp with ProxyJump:
-scp -o "ProxyJump <user-id>@stujump.comp.nus.edu.sg" -r . <user-id>@xlogin.comp.nus.edu.sg:~/cs4248-project-1
+# 2. Train the proposed DeBERTa-v3-large extractor (effective batch 8x2 = 16, lr 1e-5, 2 epochs, bf16)
+#    Add --grad_checkpointing or use --batch_size 4 --grad_accum 4 on 24 GB GPUs.
+python scripts/train.py --run_name deb_large_kl --model microsoft/deberta-v3-large --loss_mode kl --lambda_kl 1.0 \
+  --paraphrase_cache data/paraphrases/train.jsonl --batch_size 8 --grad_accum 2 --lr 1e-5 --precision bf16
+
+# 3. Official-scorer evaluation across all five test sets
+for S in dev gan_dev gan_adv addsent addonesent; do
+  python scripts/evaluate.py --weights weights/deb_large_kl/best.pt --eval_set $S --precision bf16
+done
+
+# Optional: train & evaluate the second-stage span reranker on held-out training articles
+python scripts/train_reranker.py --weights weights/deb_large_kl/best.pt --paraphrase_cache data/paraphrases/train.jsonl --precision bf16
+python scripts/evaluate.py --weights weights/deb_large_kl/best.pt --eval_set dev --reranker weights/deb_large_kl/reranker.pt --precision bf16
+
+# Or run the full sequential pipeline in one resumable command:
+MODEL=microsoft/deberta-v3-large RUN_PREFIX=deb_large MODES="ce kl" BATCH=8 GRAD_ACCUM=2 LR=1e-5 PRECISION=bf16 bash scripts/run_pipeline.sh
+MODEL=bert-base-uncased RUN_PREFIX=bert MODES="ce aug kl ot dual" KL_LAMBDAS="0.5 1.0 2.0" PRECISION=bf16 bash scripts/run_pipeline.sh
+MODEL=microsoft/deberta-v3-base RUN_PREFIX=deb MODES="ce kl" PRECISION=bf16 bash scripts/run_pipeline.sh
 ```
 
-### 2. Connecting via SSH Jump Host
-```bash
-# Direct SSH connection through jump host:
-ssh -J <user-id>@stujump.comp.nus.edu.sg <user-id>@xlogin.comp.nus.edu.sg
+Loss modes (`--loss_mode`): `ce` (plain extractor), `aug` (`CE(q) + CE(q′)`), `kl` (`CE(q) + CE(q′) + λ·KL_sym`), and `ot` / `hungarian` / `dual` (1-D Wasserstein and/or Hungarian span-matching ablations).
 
-# (Optional) Multiplexed session for fast instant reconnection:
-ssh -M -S ~/.ssh/soc-cm-%r@%h:%p -J <user-id>@stujump.comp.nus.edu.sg <user-id>@xlogin.comp.nus.edu.sg
-```
-
-### 3. Setting Up Pip Virtual Environment (No UV or Conda Required)
-Once logged into `xlogin`:
-
-```bash
-cd ~/cs4248-project-1
-
-# Create and activate standard Python 3 venv
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Upgrade pip and install pinned dependencies
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-### 4. Submitting the Full 5-Condition Ablation Suite (Slurm)
-Submit the full benchmark job to Slurm:
+### 2. NUS SoC compute cluster (Slurm)
 
 ```bash
-sbatch scripts/submit_all_ablations.sbatch
+# 1. One-off environment setup on a compute node (never on xlogin)
+salloc -t 120 && srun --pty bash
+bash scripts/setup_env_cluster.sh
+exit; exit
+
+# 2. Submit main experiment jobs from the repo root on xlogin
+bash scripts/submit_all_ablations.sh          # paraphrase job -> BERT (ce, aug, kl sweep, ot, dual) + DeBERTa-base (ce, kl)
+bash scripts/submit_deberta_large.sh          # DeBERTa-v3-large (ce, kl)
+
+# 3. Optional reranker & ensemble ablation jobs on existing checkpoints
+sbatch --job-name=g17_rr --export=ALL,RUNS="bert_kl_lam1.0 deb_kl deb_large_kl" scripts/job_reranker_variants.sbatch
+sbatch --job-name=g17_cb --time=03:00:00 --export=ALL,RUNS=deb_large_kl,PIPELINE=scripts/run_consistency_baseline.sh scripts/job_reranker_variants.sbatch
+sbatch --job-name=g17_cr --time=04:00:00 --export=ALL,RUNS=deb_large_kl,PIPELINE=scripts/run_consistency_reranker.sh scripts/job_reranker_variants.sbatch
 ```
 
-Monitor job status and real-time execution logs:
+### 3. Regenerating tables, figures, and the report
+
+All tables and figures are built directly from the committed JSON artefacts under `runs/`:
+
 ```bash
-squeue -u $USER
-tail -f runs/slurm_all_<JOB_ID>.log
+python scripts/make_results_report.py             # runs/ -> docs/RESULTS.md + docs/results_digest.json
+python scripts/make_report_tables.py              # docs/results_digest.json -> report/tables/rep_main.tex, rep_second.tex
+python scripts/visualize.py --best bert_kl_lam1.0 # runs/ -> docs/figures/*.pdf|png|md
+cd report && tectonic main.tex                    # compiles report/main.pdf (or pdflatex + bibtex)
 ```
-
-> **GPU Architecture Note**: `scripts/submit_all_ablations.sbatch` automatically excludes `xgpd[0-8]` (older TITAN V CC 7.0 nodes) to schedule onto 16GB Tesla T4 (`xgpf[1-8]`, CC 7.5) or A100 nodes with full FP16 mixed precision support.
 
 ---
 
-## 📝 ACL 2026 Short Paper Guide & Artifact Mapping
+## Repository layout
 
-The project report is authored in strict compliance with the **ACL camera-ready format** using the official `acl.sty` and `acl_natbib.bst` style sheets.
-
-### Paper Section & Artifact Mapping
-| Paper Section | Page Budget | Corresponding Code & Artifacts |
-| :--- | :---: | :--- |
-| **§1 Introduction** | 0.75 pages | Motivation: Fragility of QA models to lexical perturbations. Table 2 failure modes (boundary slip, antonym flip). |
-| **§2 Related Work** | 0.5 pages | Paraphrase robustness, consistency regularization, Optimal Transport in NLP. |
-| **§3 Methodology** | 1.25 pages | **Proposition 1** (KL divergence pathology) vs. **Proposition 2** (1D Wasserstein closed-form CDF integral). 2D Hungarian span matching. |
-| **§4 Experimental Setup** | 0.5 pages | SQuAD v1.1, sliding window tokenization, BERT-base, AdamW, decoupled learning rates, $\lambda_{\text{OT}} = 0.5, \mu_{\text{Hung}} = 0.1$. |
-| **§5 Empirical Results** | 1.0 page | **Table 1** (`table1_ablation_results.tex`), **Figure 1** (`loss_convergence.pdf`), **Figure 2** (`ablation_benchmark.pdf`), **Figure 3** (`boundary_displacement.pdf`). |
-| **§6 Qualitative Analysis** | 0.5 pages | **Table 2** (`table2_qualitative_cases.tex`), detailed failure taxonomy. |
-| **References** | 1.0 page (Extra) | Cited ACL literature. |
-
-### 🛠️ Compiling the LaTeX Paper PDF Locally
-All LaTeX source files reside in the `report/` directory:
-
-```bash
-cd report
-
-# Standard 4-step compilation pass for citations and cross-references:
-pdflatex -interaction=batchmode main.tex
-bibtex main
-pdflatex -interaction=batchmode main.tex
-pdflatex -interaction=batchmode main.tex
-
-# Or with latexmk (if installed):
-latexmk -pdf main.tex
+```text
+g17qa/          core package (data, paraphrase, model, losses, decode, reranker, consistency, metrics, utils)
+scripts/        CLI entrypoints (prepare_paraphrases.py, train.py, train_reranker.py, evaluate.py, visualize.py,
+                tsne_pairs.py, download_eval_sets.py), pipeline runners (run_pipeline.sh, smoke_test_cpu.sh,
+                run_reranker_variants.sh, run_consistency_baseline.sh, run_consistency_reranker.sh), Slurm jobs
+                (job.sbatch, job_reranker_variants.sbatch, submit_all_ablations.sh, submit_deberta_large.sh,
+                setup_env_cluster.sh), and report generators (make_results_report.py, make_report_tables.py,
+                bootstrap_main.py, summarize_reranker_variants.py)
+tests/          unit & integration tests (test_core.py, test_reranker.py, test_consistency.py, test_consistency_reranker.py)
+runs/           committed JSON telemetry and official-scorer outputs for all 11 cluster runs & ablations
+report/         ACL short paper (main.tex, compiled main.pdf, custom.bib, generated tables/rep_*.tex)
+docs/           RESULTS.md (full experimental report), math.md (mathematical specification), results_digest.json,
+                bootstrap_main.json, and figures/ (generated plots .pdf/.png and Markdown summary tables .md)
+provided/       official SQuAD scorer evaluate-v2.0.py (train-v1.1.json and dev-v1.1.json placed here locally)
 ```
 
-The compiled manuscript will be output to [`report/main.pdf`](report/main.pdf).
+## Contributions and external code
 
-### ☁️ Compiling via Overleaf
-1. Create a new blank project on [Overleaf](https://www.overleaf.com/).
-2. Upload the contents of the `report/` directory:
-   - Source: `main.tex`, `custom.bib`, `acl.sty`, `acl_natbib.bst`
-   - LaTeX tables: `table1_ablation_results.tex`, `table2_qualitative_cases.tex`
-   - Graphics: `figures/` directory containing the vector PDFs (`loss_convergence.pdf`, `ablation_benchmark.pdf`, `boundary_displacement.pdf`)
-3. Ensure compiler is set to **pdfLaTeX** with **TeX Live 2023** or newer.
-4. Click **Recompile**.
-
-### 📏 Page Budget & Strict Format Verification
-* **ACL Short Paper Limit**: $\le 4$ pages of content (Sections 1–7) + $\le 1$ page of references ($\le 5$ pages total).
-* **Current Build Verification**: [`report/main.pdf`](report/main.pdf) strictly spans **exactly 5 pages**:
-  - Pages 1–4: Title, Abstract, Sections 1–7 (concluding with Limitations).
-  - Page 5: 16 cited ACL/ML references.
-  - Figure 1 is formatted as a stacked two-panel subplot to prevent column squeezing and label overlap.
-
----
-
-## 📚 References & Citations
-
-1. **Rajpurkar, P., Zhang, J., Lopyrev, K., & Liang, P.** (2016). *SQuAD: 100,000+ Questions for Machine Comprehension of Text.* EMNLP.
-2. **Devlin, J., Chang, M. W., Lee, K., & Toutanova, K.** (2019). *BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.* NAACL-HLT.
-3. **Gan, W. C., & Ng, H. T.** (2019). *Improving the Robustness of Question Answering Systems to Question Paraphrasing.* ACL.
-4. **Xie, Q., Dai, Z., Hovy, E., Luong, T., & Le, Q.** (2020). *Unsupervised Data Augmentation for Consistency Training.* NeurIPS.
-5. **Carion, N., Massa, F., Synnaeve, G., Usunier, N., Kirillov, A., & Zagoruyko, S.** (2020). *End-to-End Object Detection with Transformers.* ECCV.
-6. **Peyré, G., & Cuturi, M.** (2019). *Computational Optimal Transport: With Applications to Data Science.* Foundations and Trends in Machine Learning.
+**Written by the group:** paraphrase generation and similarity-filtering pipeline, sliding-window paired feature builder, symmetric-KL consistency objective and its OT/Hungarian variants, top-k candidate decoding, learned span reranker and paraphrase ensemble, article-level hold-out protocol, and all evaluation, bootstrap, analysis, and plotting code (`g17qa/`, `*.py`, `scripts/`).  
+**External:** PyTorch, Hugging Face Transformers (pre-trained BERT, DeBERTa-v3, and MarianMT weights), sentence-transformers (MiniLM), scikit-learn, SciPy, matplotlib, the official SQuAD scorer (`evaluate-v2.0.py`), and the public test sets of Gan & Ng (2019) and Jia & Liang (2017). No closed-source models or APIs are used.

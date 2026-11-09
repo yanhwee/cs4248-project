@@ -1,30 +1,27 @@
+% CS4248 G17 final report, ACL short-paper format (4 pages of content + up to 1 page of references).
+% Both tables are generated: scripts/make_results_report.py (runs/ -> docs/results_digest.json) and
+% scripts/make_report_tables.py (digest -> report/tables/rep_*.tex).
 \documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
 \usepackage{acl}
 \usepackage{times}
 \renewcommand{\ttdefault}{cmtt}
 \usepackage{latexsym}
-\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{microtype}
-\usepackage{tabularx}
 
 \setlength{\abovedisplayskip}{4pt plus 1pt minus 1pt}
 \setlength{\belowdisplayskip}{4pt plus 1pt minus 1pt}
-\setlength{\abovedisplayshortskip}{2pt plus 1pt minus 1pt}
-\setlength{\belowdisplayshortskip}{2pt plus 1pt minus 1pt}
-\setlength{\textfloatsep}{6pt plus 2pt minus 2pt}
-\setlength{\floatsep}{5pt plus 2pt minus 2pt}
-\setlength{\intextsep}{5pt plus 2pt minus 2pt}
-\setlength{\abovecaptionskip}{4pt plus 1pt minus 1pt}
-\setlength{\belowcaptionskip}{2pt plus 1pt minus 1pt}
+\setlength{\textfloatsep}{4pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{2pt plus 1pt minus 1pt}
 
-\title{Optimal Transport and Bipartite Matching for\\Paraphrase-Consistent Extractive Question Answering}
+\title{Paraphrase-Consistent Extractive Question Answering on SQuAD v1.1}
 
-\author{Group G17 \\
-  Department of Computer Science \\
-  National University of Singapore \\
-  \texttt{\{e0958614\}@u.nus.edu} \\}
+\author{Chong Xin Wei \quad Ng Jian Yi \quad Soh Jun Ying Gavin \quad Wang Chengke \quad Yee Yan Hwee \\
+  Group G17, CS4248 Introduction to Large Language Models \\
+  National University of Singapore}
 
 \date{}
 
@@ -32,198 +29,88 @@
 \maketitle
 
 \begin{abstract}
-Extractive question answering (QA) systems based on pretrained language models are notoriously brittle to surface syntactic variation: asking the same underlying question with different phrasing often yields divergent answer spans. Standard consistency regularization methods minimize symmetric Kullback-Leibler (KL) divergence between output distributions. However, we prove that KL divergence treats sequence coordinates as an unordered categorical set, suffering from infinite penalties and exploding gradients under benign off-by-one boundary shifts. To resolve this geometric pathology, we propose a dual-level consistency regularization framework: (1) a continuous \textbf{1D Optimal Transport ($W_1$)} objective that computes exact closed-form Wasserstein distances over cumulative boundary distributions with strictly bounded gradients; and (2) a polynomial-time \textbf{2D Hungarian Bipartite Matching} objective that aligns joint top-$k$ candidate spans using spatial and IoU cost matrices, suppressing cross-entity chimeric spans. Evaluated on SQuAD v1.1, our dual regularization approach improves exact match by $+3.9\%$ (to $82.3\%$), macro $F_1$ by $+3.7\%$ (to $89.9\%$), and semantic paraphrase agreement by $+19.9\%$ (to $91.4\%$) over standard supervised training.
+Extractive question answering (QA) models fine-tuned on SQuAD often change their answer when a question is rephrased without changing its meaning. We train extractors on each original question and a filtered EN$\rightarrow$DE$\rightarrow$EN back-translation of it, with a symmetric KL term between the start/end distributions of the two views, and separate the effect of the paraphrased training data from that of the KL term. On BERT-base, DeBERTa-v3-base and DeBERTa-v3-large the full recipe raises the share of paraphrase pairs answered identically by 4.6, 3.8 and 3.3 points over plain training, while SQuAD v1.1 EM and F1 stay within 0.3 points in our single-seed runs; only on BERT-base do we isolate the KL term (+1.4 of the 4.6 points, over augmentation alone). The proposed system, a DeBERTa-v3-large extractor trained with augmentation and KL, reaches 90.0 EM / 95.4 F1 with 92.7\% agreement. On the human paraphrases of \citet{gan2019improving} its paraphrase F1 stays at 93.8 while agreement rises from 92.3\% to 95.0\%. A learned second-stage span reranker does not improve in-distribution accuracy beyond noise and is not part of the system.
 \end{abstract}
 
 \section{Introduction}
-Extractive Question Answering (QA) requires identifying a contiguous segment of text within a document context $c$ that answers a given interrogative query $q$~\citep{rajpurkar2016squad}. Although transformer architectures such as BERT~\citep{devlin2019bert} and DeBERTa~\citep{he2021deberta} achieve competitive nominal performance on standardized benchmarks, extensive behavioral testing reveals acute sensitivity to surface syntactic variation~\citep{gan2019improving,ribeiro2020beyond}. Syntactically paraphrasing an interrogative prompt (e.g., transforming \textit{``When was the university founded?''} into \textit{``In what year was the institution established?''}) frequently triggers answer boundary drift or catastrophic semantic flips to unrelated distractor entities.
+Fine-tuned encoders for extractive QA \citep{rajpurkar2016squad} such as BERT \citep{devlin2019bert} and DeBERTa \citep{he2021deberta,he2023debertav3} score highly on SQuAD, but they are \emph{over-sensitive} to the surface form of the question, with sizeable drops on human paraphrases \citep{gan2019improving} and on distractor sentences \citep{jia2017adversarial}.
 
-A standard paradigm for enforcing prediction invariance is consistency training~\citep{clark2018semi,xie2020unsupervised}, wherein a semantic-preserving perturbation $q'$ is generated and output distributions $P(a \mid q, c)$ and $P(a \mid q', c)$ are encouraged to agree via symmetric Kullback-Leibler (KL) divergence. However, as we demonstrate both theoretically and empirically, KL divergence is fundamentally ill-suited for sequence span modeling:
-\begin{enumerate}
-    \itemsep0pt \parskip0pt \parsep0pt
-    \item \textbf{Categorical Metric Pathology}: KL divergence operates over unordered categorical supports with an implicit discrete indicator metric $d(i, j) = \mathbf{1}_{i \neq j}$. It assigns identical infinite penalties to a harmless 1-token boundary slip as to an 80-token distractor jump.
-    \item \textbf{Gradient Explosion on Disjoint Supports}: When predicted probability masses between $q$ and $q'$ do not overlap ($\mathrm{supp}(P) \cap \mathrm{supp}(Q) = \emptyset$), the KL gradient norm explodes ($\|\nabla_\theta \mathcal{D}_{\text{KL}}\|_2 \to \infty$), causing severe numerical instability and representation collapse.
-\end{enumerate}
+\citet{gan2019improving} train on paraphrased questions; \citet{xie2020unsupervised} regularise the output distribution towards invariance under label-preserving perturbations (e.g.\ back-translation \citep{sennrich2016improving}). Consistency training itself is not new. Our question is narrower: \emph{does explicitly regularising the start/end span distributions of an original and a paraphrased question add stability beyond simply training on the paraphrases}, and does it cost accuracy?
 
-To overcome these structural limitations, this work introduces a geometrically grounded dual-level regularization framework:
-\begin{itemize}
-    \itemsep0pt \parskip0pt \parsep0pt
-    \item \textbf{Token-Level 1D Optimal Transport}: By formalizing sequence coordinates as an ordered 1D metric lattice $(\mathcal{X}, d_{\text{seq}})$, we leverage the 1D Wasserstein metric ($W_1$) to compute exact closed-form Earth Mover's Distance via cumulative distribution functions (CDFs). This yields subgradients that are strictly bounded by $1/m$, providing smooth optimization across non-overlapping predictions.
-    \item \textbf{Span-Level 2D Hungarian Bipartite Matching}: Because independent start and end marginals cannot penalize multi-entity cross-pairing run-on spans, we solve a polynomial-time Kuhn-Munkres bipartite assignment over top-$k$ candidate spans with a joint geometric and IoU cost matrix.
-    \item \textbf{Multi-Window Relative Margin Inference}: We integrate unanswerable null anchors $[\texttt{CLS}]$ to cancel inter-window logit drift during document-level sliding-window inference.
-\end{itemize}
+Our contributions are: (i) a symmetric-KL consistency objective on span distributions with filtered back-translated paraphrases, and a controlled comparison of plain training, augmentation only and augmentation plus KL, where the KL term is isolated on BERT-base only (\S\ref{sec:method}, \S\ref{sec:exp}); (ii) its evaluation on three backbones of different strength against human paraphrases \citep{gan2019improving} and distractor sentences \citep{jia2017adversarial}, with every decision taken on held-out training articles; (iii) negative results: optimal-transport variants \citep{peyre2019computational,kuhn1955hungarian} that do not beat KL, and a second-stage span reranker in the style of RankQA \citep{kratzwald2019rankqa} and a training-free paraphrase ensemble that do not improve in-distribution accuracy (\S\ref{sec:second}).
 
-\section{Related Work}
-\textbf{Extractive Question Answering.} Pretrained bidirectional transformers formulate extractive QA by predicting start and end boundary indices via linear projections over contextual hidden states~\citep{devlin2019bert}. Standard sliding-window strategies handle long documents but frequently suffer from score calibration discrepancies across overlapping window boundaries.
+\section{Method}
+\label{sec:method}
+\textbf{Extractor and candidates.} Each (question, passage) pair is encoded as \texttt{[CLS]}\,$q$\,\texttt{[SEP]}\,$c^{(w)}$\,\texttt{[SEP]} for sliding windows $c^{(w)}$ of at most $L$ tokens with step $S$; a linear head gives start and end logits, windows without the answer are labelled with the \texttt{[CLS]} position, and $\mathcal{L}_{\mathrm{CE}}$ is the mean of the start and end cross-entropies \citep{devlin2019bert}. At inference every span $(i,j)$ with $i\le j<i+30$ inside the passage is scored by $z_s[i]+z_e[j]$ minus the window's null score $z_s[0]+z_e[0]$; the $k=20$ best spans with distinct normalised text are kept, and the top one is the extractor's answer.
 
-\textbf{Consistency Regularization in NLP.} Consistency regularization enforces prediction invariance under semantic-preserving transformations, typically using data augmentation techniques such as back-translation~\citep{sennrich2016improving,xie2020unsupervised} or virtual adversarial perturbations~\citep{miyato2018virtual}. While successful for text classification, prior applications to sequence span extraction rely on categorical KL divergence, which ignores token ordering and boundary proximity.
+\textbf{Paraphrases.} Every training question is back-translated through German with \texttt{opus-mt-en-de} and \texttt{opus-mt-de-en} \citep{tiedemann2020opus}. A pair is kept when the paraphrase differs from the question after normalisation and the cosine similarity of their \texttt{all-MiniLM-L6-v2} embeddings \citep{reimers2019sentence} is at least $0.85$. This accepts a paraphrase for 68,439 of the 83,484 training questions (82.0\%) and 8,622 of the 10,570 dev questions (81.6\%); dev paraphrases are used only to measure agreement.
 
-\textbf{Optimal Transport in Deep Learning.} Optimal transport and Wasserstein metrics have been successfully utilized for word embedding alignment~\citep{kusner2015word} and distribution matching~\citep{peyre2019computational}. Unlike multidimensional Sinkhorn approximations, 1D optimal transport on sequence positions admits an exact closed form~\citep{villani2008optimal}. Similarly, bipartite matching via the Hungarian algorithm has proven effective for set prediction in object detection~\citep{carion2020end}; here, we repurpose it for candidate answer span alignment.
-
-\section{Methodology}
-
-\subsection{Problem Formulation \& Architecture}
-Let context $c = (c_1, \dots, c_m)$ denote a document sequence of $m$ tokens and $q = (q_1, \dots, q_n)$ denote an interrogative query. When $m$ exceeds the transformer window limit $L$, $c$ is partitioned into sliding windows $\mathcal{W}$ with stride $S$. For each window $w$, input tokens $\mathbf{x} = [\texttt{[CLS]}, q, \texttt{[SEP]}, c^{(w)}, \texttt{[SEP]}]$ are encoded via transformer backbone $\mathcal{E}_\theta$ into hidden representations $\mathbf{H} \in \mathbb{R}^{L \times d}$.
-
-Linear projection $\mathbf{W}_{\text{span}} \in \mathbb{R}^{d \times 2}$ computes raw start and end sequence logits $[\mathbf{z}_{\text{start}}, \mathbf{z}_{\text{end}}] = \mathbf{H} \mathbf{W}_{\text{span}}$. To ensure consistency penalties apply strictly to passage tokens, we apply a binary passage mask $\mathbf{M}_{\text{pass}} \in \{0, 1\}^L$, isolating document logits $\mathbf{s} = \mathbf{z}_{\text{start}}[\mathbf{M}_{\text{pass}}], \mathbf{e} = \mathbf{z}_{\text{end}}[\mathbf{M}_{\text{pass}}] \in \mathbb{R}^m$. Applying softmax yields passage boundary distributions $P_{\text{start}}, P_{\text{end}} \in \Delta^{m-1}$.
-
-The supervised objective for ground-truth span $(s^*, e^*)$ is standard cross-entropy:
+\textbf{Consistency objective.} For a question $q$, its paraphrase $q'$ and a shared window, let $P_t,P'_t$ ($t\in\{s,e\}$) be the start and end distributions restricted to the $m$ passage tokens. We minimise
 \begin{equation}
-\mathcal{L}_{\text{CE}} = -\frac{1}{2} \left[ \log P_{\text{start}}^{\text{seq}}(s^*) + \log P_{\text{end}}^{\text{seq}}(e^*) \right]
+\begin{split}
+\mathcal{L}&=\mathcal{L}_{\mathrm{CE}}(q)+\mathcal{L}_{\mathrm{CE}}(q')+\lambda\,\mathcal{D}_{\mathrm{KL}}^{\mathrm{sym}},\\
+\mathcal{D}_{\mathrm{KL}}^{\mathrm{sym}}&=\tfrac14\!\sum_{t\in\{s,e\}}\!\big[\mathrm{KL}(P_t\|P'_t)+\mathrm{KL}(P'_t\|P_t)\big].
+\end{split}
 \end{equation}
-where $s^* = e^* = 0$ corresponds to the null token $[\texttt{CLS}]$ when the answer is absent from window $w$.
+$\lambda=0$ is the augmentation-only baseline of \citet{gan2019improving}; dropping $\mathcal{L}_{\mathrm{CE}}(q')$ as well gives the plain extractor (CE). KL ignores token order, so as negative ablations we replace it by $\lambda_{\mathrm{OT}}=0.5$ times the 1-D Wasserstein distance between $P_t$ and $P'_t$ (\emph{OT}) and add $\mu=0.1$ times a Hungarian matching of the two views' top-5 spans with cost $0.5\,d_{\mathrm{pos}}+0.5\,(1-\mathrm{IoU})$, where $d_{\mathrm{pos}}$ is the boundary-position distance normalised by twice the window length (\emph{dual}); these weights were not tuned.
 
-\subsection{Pathology of Categorical KL Divergence}
-Given a query $q$ and its paraphrase $q'$ with predicted passage distributions $P, Q \in \Delta^{m-1}$, the symmetric KL divergence is:
-\begin{equation}
-\mathcal{D}_{\text{KL}}^{\text{sym}}(P \parallel Q) = \frac{1}{2} \sum_{i=0}^{m-1} (P_i - Q_i) (\log P_i - \log Q_i)
-\end{equation}
+\textbf{Second-stage span selection (secondary experiment).}
+The top-20 list contains an exactly correct span for 98.9\% of the held-out early-stopping questions, so we also tried a \emph{learned span reranker}. For each candidate it receives the extractor's span hidden states \citep{lee2017end} and 14 scalar features (scores, rank, length and, when a paraphrase is available, three \emph{pair features} from the paraphrase view's score for the same span). A small MLP scores each candidate and is trained with listwise softmax cross-entropy \citep{cao2007learning} against graded targets on the held-out training articles only (758 for early stopping). We test it with and without the pair features, with its arg-max replacing the extractor's answer or added to the extractor's log-probability (\emph{blend}, weight $\alpha$), and trained with a symmetric-KL term between its distributions for $q$ and $q'$ (\emph{consistency-trained}, weight $w$). The \emph{training-free paraphrase ensemble} takes the candidate maximising $\log p(\cdot\mid q)+\beta\log p(\cdot\mid q')$ over the extractor's own scores. Both the pair-feature reranker and the ensemble need a paraphrase at inference time.
 
-\textbf{Proposition 1 (Metric Insensitivity \& Gradient Pathology).} \textit{Let token positions $\{0, \dots, m-1\}$ be ordered on metric lattice $(\mathcal{X}, d_{\text{seq}})$ with normalized distance $d_{\text{seq}}(i, j) = |i - j| / m$. Then:
-(1)~\textbf{Permutation Invariance}: For any spatial coordinate permutation $\pi$, $\mathcal{D}_{\text{KL}}(\pi(P) \parallel \pi(Q)) \equiv \mathcal{D}_{\text{KL}}(P \parallel Q)$. Thus, an off-by-one boundary shift ($P=\delta_i, Q=\delta_{i+1}$) is penalized identically to an 80-token distractor jump ($P=\delta_i, Q=\delta_{i+80}$).
-(2)~\textbf{Exploding Gradients}: For disjoint supports, $\lim_{Q_i \to 0^+} \|\nabla_\theta \mathcal{D}_{\text{KL}}\|_2 = \infty$.}
-\textit{Proof.} Invariance follows from summation symmetry. For disjoint supports, pre-softmax gradients contain $P_i/Q_i \to \infty$ as $Q_i \to 0$. $\blacksquare$
+\textbf{Protocol.}
+We hold out 5\% of the training \emph{articles} (23 of 442; 4,115 questions) for every decision: the best checkpoint of a run is chosen on a fixed 2,000-question sample of them, $\lambda$ on their F1 and agreement, and the reranker is trained on them. The dev and external sets are used only for final numbers, with the official \texttt{evaluate-v2.0.py}. \emph{Agreement} is the percentage of (question, paraphrase) pairs whose normalised answers are identical; since always returning the same wrong span would also agree, we also report \emph{both correct}, the share of pairs where both answers are exact matches (available for the proposed extractor, whose paraphrase-view predictions were saved), and read agreement together with EM/F1 and with F1 on human paraphrases, which is scored against gold answers. The $\lambda$ rule was fixed before training: the largest $\lambda\in\{0.5,1,2\}$ whose held-out F1 is within 0.5 points of the best. Second-stage differences, and the DeBERTa-v3-large CE-vs-KL differences on dev EM/F1, carry 95\% paired percentile-bootstrap intervals over questions (pairs for agreement); they quantify evaluation-sample uncertainty only, not training-seed variability.
 
-\subsection{Proposed 1D Optimal Transport ($W_1$)}
-To embed spatial sequence geometry into consistency regularization, we formulate transport over the continuous line $(\mathcal{X}, d_{\text{seq}})$. By the Kantorovich-Rubinstein theorem, the 1D 1-Wasserstein metric admits an exact closed-form solution via cumulative distribution functions (CDFs):
-\begin{equation}
-W_1(P, Q) = \frac{1}{m} \sum_{i=0}^{m-1} \Big| \mathrm{CDF}_P(i) - \mathrm{CDF}_Q(i) \Big|
-\end{equation}
-where $\mathrm{CDF}_P(i) = \sum_{k=0}^i P_k$. The 1D OT loss evaluates both boundary marginals:
-\begin{equation}
-\mathcal{L}_{\text{OT}} = \frac{1}{2} \left[ W_1(P_{\text{start}}^{(q)}, P_{\text{start}}^{(q')}) + W_1(P_{\text{end}}^{(q)}, P_{\text{end}}^{(q')}) \right]
-\end{equation}
+\section{Experiments}
+\label{sec:exp}
+\textbf{Setup.} Backbones: \texttt{bert-base-uncased}, DeBERTa-v3-base and DeBERTa-v3-large, all with $L=384$, $S=128$, AdamW, 10\% linear warm-up, 2 epochs and the best held-out-F1 checkpoint; learning rate $3\times10^{-5}$, batch 16 (base models) or $10^{-5}$, batch 8 with two-step accumulation (large), bf16. Each run was trained once on one H100. \textbf{Test sets}: SQuAD v1.1 dev (10,570 questions) with back-translated paraphrases for agreement; the paraphrased dev questions of \citet{gan2019improving} (1,062 non-adversarial and 56 adversarial, each paired with its original question); and AddSent (3,560) and AddOneSent (1,787) of \citet{jia2017adversarial}, again with back-translated paraphrases.
 
-\textbf{Proposition 2 (Linear Distance \& Bounded Gradient).} \textit{The 1D Wasserstein metric satisfies:
-(1)~$W_1(\delta_i, \delta_j) = \frac{|i - j|}{m}$, scaling linearly with boundary token displacement.
-(2)~The subgradient magnitude with respect to cumulative distributions is uniformly bounded: $|\partial W_1 / \partial \mathrm{CDF}_P(i)| \le \frac{1}{m}$.}
-Consequently, $W_1$ gracefully penalizes minor syntactic boundary variations while providing stable, non-exploding gradient trajectories.
+\input{tables/rep_main.tex}
 
+\textbf{Main results.} Table~\ref{tab:main} gives the extractor-alone results. \emph{Agreement rises on every backbone.} Relative to plain CE, the full recipe (paraphrase augmentation + KL, $\lambda=1$) gives +4.6 agreement on BERT-base (83.3\% $\rightarrow$ 87.9\%), +3.8 on DeBERTa-v3-base (88.0\% $\rightarrow$ 91.8\%) and +3.3 on DeBERTa-v3-large (89.4\% $\rightarrow$ 92.7\%). \emph{Augmentation and KL are separated only on BERT-base:} augmentation alone gives 86.5\% (+3.2) and the KL term a further +1.4; for the two DeBERTa models there is no augmentation-only run, so their gains cannot be split. \emph{Accuracy changes little:} the seven BERT-base runs lie within 80.9--81.4 EM and 88.2--88.6 F1; DeBERTa-v3-base moves by $-$0.2 F1 and DeBERTa-v3-large by $-$0.3 EM / $-$0.1 F1. For DeBERTa-v3-large, the paired bootstrap over the 10,570 dev questions gives $\Delta$EM $-$0.28 ($[-0.69,+0.14]$) and $\Delta$F1 $-$0.12 ($[-0.36,+0.13]$), consistent with no change; these intervals ignore training-seed variance. $\Delta$agreement could not be bootstrapped (the CE runs' paraphrase-view predictions were not saved). For the proposed system both answers are exact for 86.6\% of dev pairs (no CE counterpart). Backbone choice dominates the accuracy differences in our experiments (88.5, 93.9 and 95.5 F1 for the plain extractors). Plain BERT-base (81.1 / 88.5) is close to the 80.8 / 88.5 of \citet{devlin2019bert}; the original DeBERTa-large reports 90.1 / 95.5 \citep{he2021deberta}, a different model from our v3-large, so this is context only.
+
+\textbf{Human paraphrases.} The \citet{gan2019improving} sets are the most direct test of our question, since the paraphrases are written by people and not generated by our pipeline. DeBERTa-v3-large scores 94.9 F1 on the original questions and 93.8 on their paraphrases both with CE and with augmentation + KL, but agreement rises from 92.3\% to 95.0\% (1,061 pairs): the model answers the two phrasings more alike without losing paraphrase F1 in this run. On BERT-base, rephrasing costs CE 2.8 F1 and the full recipe 1.4 (86.1 vs.\ 87.5), with agreement 89.1\% $\rightarrow$ 91.0\%.
+
+\textbf{Selecting $\lambda$; ablations.} On the 2,000 held-out selection questions, $\lambda=0.5$, 1 and 2 give F1 82.5, 82.1 and 81.7 with agreement 89.5\%, 90.6\% and 91.0\%: agreement rises with $\lambda$ while F1 falls by a few tenths. The rule selects $\lambda=1$, reused for DeBERTa. With untuned weights, OT and dual reach 86.3\% and 86.7\% agreement against 86.5\% for augmentation alone and 87.9\% with KL, so they are negative ablations and we keep KL.
+
+\textbf{Distractor robustness.} The plain BERT-base extractor falls from 88.5 F1 on dev to 64.9 on AddSent and 73.9 on AddOneSent. All six paraphrase-trained BERT-base runs lie within 65.7--66.1 F1 on AddSent, and augmentation alone gives +1.0 of the +1.2, so we attribute the F1 change mostly to the paraphrase data; what differs is agreement (AddSent 77.9\% $\rightarrow$ 84.1\%). DeBERTa-v3-base (85.1 F1) loses 0.9 F1 under the full recipe, whereas DeBERTa-v3-large gains 1.0 on AddSent (86.0 $\rightarrow$ 87.0, agreement 84.1\% $\rightarrow$ 90.4\%) and 0.9 on AddOneSent (89.3 $\rightarrow$ 90.2). These single-run differences have opposite signs across backbones, so we report them as observations only.
+
+\input{tables/rep_second.tex}
+
+\subsection{Second-stage span selection}
+\label{sec:second}
+Table~\ref{tab:second} evaluates the second stage on the proposed extractor, whose top-20 list contains an exact match for 99.5\% of dev questions. The learned rerankers recover almost none of that oracle headroom: their dev EM changes of +0.2 to +0.3 all have intervals including zero and F1 moves by at most 0.1. The pair features mainly buy consistency (+1.4 agreement, $[+1.07,+1.84]$, against +0.4 without them); an earlier run gave +2.4, so one-point differences between rows are noise. Blending changes EM by tenths of a point, nothing beyond noise. Only on the distractor sets do reranker gains have intervals excluding zero (no-pair: +0.9 EM on AddSent, +1.0 on AddOneSent; +0.5 and +0.7 F1), which is out-of-distribution, not the accuracy we targeted. The training-free ensemble is the stronger consistency device: +6.6 agreement ($[+6.10,+7.16]$) and both-correct 86.6\% $\rightarrow$ 89.3\%, against 87.4\% for the pair-feature reranker, at $-$0.4 dev EM ($[-0.63,-0.20]$). A reranker trained with its own consistency term does not become consistent without a paraphrase at test time. We therefore include no second stage in the proposed system; both add-ons need a paraphrase at test time.
+
+\section{Error Analysis}
+\label{sec:analysis}
+% Rows taken from runs/deb_large_ce/eval_dev/disagreements.jsonl (CE answers, question and paraphrase text) and
+% runs/deb_large_kl/eval_dev/{candidates.jsonl,disagreements.jsonl} (KL answers); question ids
+% 56bf3fd53aeaaa14008c9594 (row 1) and 56bf1ae93aeaaa14008c951e (row 2).
 \begin{table}[t]
-\centering
-\small
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{lcccc}
+\centering\footnotesize
+\begin{tabular}{@{}p{\columnwidth}@{}}
 \toprule
-\textbf{Method} & \textbf{EM} & \textbf{F1} & \textbf{Aggr.} & $\mathbf{\Delta}$ \textbf{Cons.} \\
+\textbf{Q:} Who has the record of being the oldest quarter back in \emph{any} Super Bowl game? \; \textbf{Q$'$:} \ldots in \emph{a} Super Bowl game? \\
+CE: John Elway / Peyton Manning \quad KL: Peyton Manning / Peyton Manning \quad gold: Peyton Manning \\
 \midrule
-Baseline (Standard CE) & 78.4 & 86.2 & 71.5 & --- \\
-+ Symmetric KL Baseline & 79.1 & 86.8 & 76.2 & +4.7\% \\
-+ 1D Optimal Transport ($W_1$) & 80.1 & 87.8 & 84.6 & +13.1\% \\
-+ 2D Hungarian Matching & 80.8 & 88.4 & 86.2 & +14.7\% \\
-\textbf{Dual Regularization (Ours)} & \textbf{82.3} & \textbf{89.9} & \textbf{91.4} & \textbf{+19.9\%} \\
+\textbf{Q:} Who was the \emph{male} singer who performed as a special guest during Super Bowl 50? \; \textbf{Q$'$:} Who was the singer who was a very special guest during Super Bowl 50? \\
+KL: Bruno Mars / Beyoncé \quad gold: Bruno Mars \\
 \bottomrule
-\end{tabular}%
-}
-\caption{Ablation study on SQuAD v1.1 dev set (\%). Agreement denotes exact match between $q$ and paraphrase $q'$.}
-\label{tab:ablation_results}
+\end{tabular}
+\caption{Dev questions, their back-translated paraphrases and the DeBERTa-v3-large answers to question / paraphrase, plain (CE) and consistency-trained (KL). Row 2: back-translation dropped ``male''.}
+\label{tab:qual}
 \end{table}
 
-\subsection{Proposed 2D Hungarian Bipartite Matching}
-Because 1D boundary marginals factorize start and end distributions independently, they cannot prevent chimeric entity pairing (e.g., matching the start boundary of Entity $A$ with the end boundary of Entity $B$). We extract the top-$k$ joint span candidates $\mathcal{S}_k = \{(s_a, e_a)\}_{a=1}^k$ for $q$ and $q'$, ranked by joint span logit $z_{\text{start}}[s_a] + z_{\text{end}}[e_a]$ with probability $p_a \propto \exp(z_{\text{start}}[s_a] + z_{\text{end}}[e_a])$.
+\textbf{Qualitative.} In the first row of Table~\ref{tab:qual} a one-word rephrasing flips the plain extractor to a plausible but wrong entity while the consistency-trained model answers both views correctly. The second row shows a remaining failure mode: back-translation dropped ``male'', so the paraphrase asks a different question although it passes the similarity filter. Of the 200 saved dev disagreements, 119 have exactly one view correct; we did not label their causes. Since the 0.85 filter is imperfect, 100\% agreement is neither realistic nor necessarily desirable.
 
-We construct a pairwise cost matrix $\mathbf{C} \in \mathbb{R}^{k \times k}$ combining positional distance and Intersection-over-Union (IoU):
-\begin{equation}
-C_{ab} = \frac{|s_a - s_b| + |e_a - e_b|}{4m} + \frac{1 - \text{IoU}(a, b)}{2}
-\end{equation}
-where $\text{IoU}(a, b) = \frac{|[s_a, e_a] \cap [s_b, e_b]|}{|[s_a, e_a] \cup [s_b, e_b]|}$. The optimal bijective assignment $\pi^* = \arg\min_{\pi \in \mathcal{S}_k} \sum_{a=1}^k C_{a, \pi(a)}$ is solved in $\mathcal{O}(k^3)$ time via the Kuhn-Munkres Hungarian algorithm~\citep{kuhn1955hungarian}. The Hungarian span loss regularizes assignment cost and probability confidence:
-\begin{align}
-\mathcal{L}_{\text{Hung}} &= \sum_{a=1}^k \Big[ C_{a, \pi^*(a)} \left(\frac{p_a^{(q)} + p_{\pi^*(a)}^{(q')}}{2}\right) \nonumber \\
-&\quad + \frac{w_a}{2} \big|p_a^{(q)} - p_{\pi^*(a)}^{(q')}\big| \Big]
-\end{align}
+\section{Conclusion and Limitations}
+\textbf{A.} Training extractive QA models on original/paraphrased pairs with a symmetric-KL consistency term makes them markedly more stable under paraphrasing: agreement rises by 4.6, 3.8 and 3.3 points over plain training on BERT-base, DeBERTa-v3-base and DeBERTa-v3-large, and on human paraphrases the large model's agreement rises from 92.3\% to 95.0\% at unchanged paraphrase F1. \textbf{B.} Ordinary SQuAD EM/F1 change negligibly (within 0.3 points) in our single-seed runs. \textbf{C.} The pattern holds across backbone strengths, but only on BERT-base can we attribute part of it to the KL term itself (+1.4 over augmentation alone, +3.2 from the paraphrase data); the DeBERTa gains are those of the full recipe. \textbf{D.} A learned span reranker gives no convincing in-distribution gain despite a 99.5\% oracle, and the training-free ensemble improves consistency only with a paraphrase at test time. The proposed system is the DeBERTa-v3-large extractor with augmentation + KL, no second stage.
 
-\subsection{Composite Objective \& Relative Inference}
-The complete training objective combines supervised learning with dual consistency:
-\begin{equation}
-\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{CE}} + \lambda_{\text{OT}} \mathcal{L}_{\text{OT}} + \mu_{\text{Hung}} \mathcal{L}_{\text{Hung}}
-\end{equation}
-where hyperparameters $\lambda_{\text{OT}} = 0.5$ and $\mu_{\text{Hung}} = 0.3$.
+\textbf{Limitations.} Every configuration was trained once, so dev differences under half a point, the +1.4 agreement of KL over augmentation, the distractor-set differences and the 56-question adversarial set are unconfirmed; our intervals cover evaluation samples only, and none exists for agreement. Augmentation-only runs are missing for the DeBERTa models. Agreement is measured only on questions with an accepted paraphrase, and the filter admits meaning-changing paraphrases. The $\lambda$ rule's 0.5-point tolerance is load-bearing (below about 0.44 it would select $\lambda=0.5$, from 0.82 $\lambda=2$) and was fixed before the runs but not formally pre-registered. The large model uses a different batch size and learning rate; results are for English SQuAD v1.1 only.
 
-\textbf{Multi-Window Relative Margin Inference.} In sliding-window evaluation, raw logit magnitudes drift across windows. For each window $w$ and candidate span $(i, j)$, we calibrate scores by subtracting null baseline $z_{\text{null}}^{(w)} = z_{\text{start}}^{(w)}[0] + z_{\text{end}}^{(w)}[0]$:
-\begin{equation}
-\Delta z^{(w)}(i, j) = z_{\text{start}}^{(w)}[i] + z_{\text{end}}^{(w)}[j] - z_{\text{null}}^{(w)}
-\end{equation}
-The global span $(i^*, j^*)$ is obtained via $\arg\max_{(i, j)} \max_{w \in \mathcal{W}} \Delta z^{(w)}(i, j)$ subject to length constraint $0 \le j - i + 1 \le 30$.
+\section*{Contributions and external code}
+\textbf{Written by the group}: paraphrase generation and filtering, sliding-window features, the consistency objective and its OT/Hungarian variants, decoding, the span reranker and paraphrase ensemble, the hold-out protocol, and all evaluation, bootstrap and plotting code (\texttt{g17qa/}, \texttt{*.py}, \texttt{scripts/}). \textbf{External}: PyTorch, NumPy, Hugging Face Transformers with the pre-trained BERT, DeBERTa-v3 and MarianMT weights, sentence-transformers (MiniLM), scikit-learn, SciPy (Hungarian assignment), matplotlib, the official scorer \texttt{evaluate-v2.0.py} (ported in \texttt{g17qa/metrics.py}), and the test sets of \citet{gan2019improving} and \citet{jia2017adversarial}. No closed-source model or API was used.
 
-\begin{figure}[t]
-\centering
-\vspace{-1mm}
-\includegraphics[width=\columnwidth]{figures/loss_convergence.pdf}
-\vspace{-2mm}
-\caption{Training loss convergence dynamics. (Top) Supervised cross-entropy and total loss decrease steadily. (Bottom) 1D OT and 2D Hungarian penalties stabilize smoothly without optimization divergence.}
-\label{fig:loss_convergence}
-\vspace{-2mm}
-\end{figure}
-
-\section{Experimental Setup}
-\textbf{Dataset \& Partitioning.} We evaluate on the Stanford Question Answering Dataset (SQuAD v1.1)~\citep{rajpurkar2016squad}. Following standard benchmark protocol, models are trained on \texttt{train-v1.1.json} (87,599 examples across 442 Wikipedia articles) and evaluated on the official held-out \texttt{dev-v1.1.json} (10,570 examples across 48 disjoint articles). Article-level disjoint partitioning guarantees zero context passage leakage.
-
-\textbf{Paraphrase Generation \& Filtering.} For each question $q$, a syntactically diverse paraphrase $q'$ is generated via neural back-translation through pivot language German ($\text{EN} \to \text{DE} \to \text{EN}$) using MarianMT (\texttt{Helsinki-NLP/opus-mt})~\citep{tiedemann2020opus}. Paraphrases are verified using Sentence-BERT embeddings~\citep{reimers2019sentence}, retaining pairs with cosine similarity $\ge 0.85$ and surface edit distance $\ge 3$.
-
-\textbf{Implementation Details.} Models are initialized from \texttt{bert-base-uncased} (110M parameters). Training is performed with AdamW, learning rate $3 \times 10^{-5}$, linear warmup ratio $0.1$, batch size 16, maximum sequence length $L = 256$, and sliding stride $S = 128$.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.80\columnwidth]{figures/boundary_displacement.pdf}
-\caption{Empirical distribution of token boundary displacement $\Delta s = |s_q - s_{q'}|$ across paraphrase pairs. Proposed dual regularization shifts $91.4\%$ of pairs into exact 0-token alignment.}
-\label{fig:boundary_displacement}
-\end{figure}
-
-\begin{table}[t]
-\centering
-\small
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{lll}
-\toprule
-\textbf{Paired Query} & \textbf{Baseline (CE)} & \textbf{Ours (Dual)} \\
-\midrule
-\textit{When was the university founded?} & Nov 26, 1842 & \textbf{1842} \\
-\textit{In what year was it established?} & 1842 \textit{(Slip)} & \textbf{1842} \checkmark \\
-\midrule
-\textit{To whom did Mary appear?} & Bernadette & \textbf{Bernadette} \\
-\textit{Who witnessed the apparition?} & Lourdes \textit{(Flip)} & \textbf{Bernadette} \checkmark \\
-\midrule
-\textit{Which team won Super Bowl 50?} & Broncos & \textbf{Broncos} \\
-\textit{Who were champions of SB 50?} & Panthers \textit{(Flip)} & \textbf{Broncos} \checkmark \\
-\bottomrule
-\end{tabular}%
-}
-\caption{Qualitative comparisons under query paraphrasing. Baseline models suffer from boundary slips and distractor capture; dual regularization enforces exact semantic invariance.}
-\label{tab:qualitative_cases}
-\end{table}
-
-\section{Empirical Results \& Analysis}
-\subsection{Main Benchmark Findings}
-Table~\ref{tab:ablation_results} summarizes empirical performance across ablation conditions on the official SQuAD v1.1 dev set:
-
-\noindent \textbf{Standard Supervised CE}: Achieves $78.4\%$ EM and $86.2\%$ F1, but exhibits severe paraphrase sensitivity with only $71.5\%$ answer agreement across paired formulations.
-
-\noindent \textbf{Symmetric KL Regularization}: Provides modest gains ($+0.7\%$ EM, $+4.7\%$ agreement); gradient instability under disjoint supports prevents larger improvements.
-
-\noindent \textbf{1D Optimal Transport ($W_1$)}: Substantially boosts consistency to $84.6\%$ ($+13.1\%$) and F1 to $87.8\%$. Smooth metric transport across token positions directly resolves boundary slips.
-
-\noindent \textbf{2D Hungarian Matching}: Reaches $86.2\%$ consistency ($+14.7\%$) and $80.8\%$ EM, confirming that joint candidate assignment suppresses cross-entity chimeric spans.
-
-\noindent \textbf{Dual Regularization (Ours)}: Achieves peak performance across all metrics: \textbf{82.3\% EM} ($+3.9\%$), \textbf{89.9\% F1} ($+3.7\%$), and \textbf{91.4\% Paraphrase Agreement} ($+19.9\%$), validating the complementary synergy of continuous boundary transport and combinatorial candidate alignment.
-
-\subsection{Loss Dynamics \& Boundary Alignment}
-Figure~\ref{fig:loss_convergence} depicts the optimization trajectory. Both $\mathcal{L}_{\text{CE}}$ and $\mathcal{L}_{\text{total}}$ decrease smoothly without divergence spikes. Furthermore, Figure~\ref{fig:boundary_displacement} illustrates the empirical token boundary displacement $\Delta s = |s_q - s_{q'}|$. Under standard CE, $28.5\%$ of paraphrase pairs suffer non-zero spatial drift. Proposed dual regularization compresses the error distribution, elevating exact 0-drift agreement from $71.5\%$ to $91.4\%$.
-
-\section{Qualitative \& Error Analysis}
-Table~\ref{tab:qualitative_cases} highlights representative case studies comparing baseline behavior against our dual regularization model:
-
-\noindent \textbf{Boundary Slip}: Querying \textit{``When was...''} vs. \textit{``In what year...''} causes baseline boundary drift (\textit{``November 26, 1842''} vs. \textit{``1842''}); 1D OT smooths metric displacement, preserving invariant predictions.
-
-\noindent \textbf{Distractor Entity Slip}: Syntactic rephrasing causes the baseline to latch onto salient entity \textit{``Lourdes''} instead of \textit{``Bernadette''}; dual regularization preserves correct entity focus.
-
-\noindent \textbf{Semantic Antonym Flip}: Baseline flips prediction from winner \textit{``Denver Broncos''} to runner-up \textit{``Carolina Panthers''}. Hungarian matching penalizes candidate displacement, ensuring exact identification.
-
-\section{Conclusion \& Limitations}
-We addressed geometric pathologies in categorical KL consistency training for extractive QA and proposed a dual regularization framework combining continuous 1D Optimal Transport with combinatorial 2D Hungarian Bipartite Matching. Our method yields $+3.9\%$ EM, $+3.7\%$ F1, and $+19.9\%$ semantic consistency on SQuAD v1.1.
-
-\textbf{Limitations.} While 1D OT adds negligible overhead ($\mathcal{O}(m)$), Hungarian assignment scales as $\mathcal{O}(k^3)$; however, with $k \le 5$, latency overhead is $< 2$ ms per step. Future work includes extensions to generative and multi-hop QA architectures.
-
-\clearpage
+\label{endcontent}\clearpage
 \bibliography{custom}
 
 \end{document}
