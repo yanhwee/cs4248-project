@@ -27,7 +27,7 @@ FILES = {
 
 def main() -> int:
     argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter).parse_args()
-    root = os.path.dirname(os.path.abspath(__file__))
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     failed = 0
     for rel, url in FILES.items():
         dst = os.path.join(root, rel)

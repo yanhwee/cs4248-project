@@ -1,6 +1,6 @@
 # G17 Results Report: Paraphrase-Consistent Extractive QA on SQuAD v1.1
 
-*Generated 2026-11-08 by `scripts/make_results_report.py` from `runs/`. Every number is read from `config.json`, `train_summary.json`, `reranker_summary.json` or `eval_<set>/results.json` (official `evaluate-v2.0.py` output). Metrics are rounded to one decimal first; every difference in the text is a difference of rounded values. Exact values: `docs/results_digest.json`. Independently fact-checked against the raw files on 2026-11-08.*
+*Generated 2026-11-09 by `scripts/make_results_report.py` from `runs/`. Every number is read from `config.json`, `train_summary.json`, `reranker_summary.json` or `eval_<set>/results.json` (official `evaluate-v2.0.py` output). Metrics are rounded to one decimal first; every difference in the text is a difference of rounded values. Exact values: `docs/results_digest.json`. Independently fact-checked against the raw files on 2026-11-08.*
 
 ## 1. Summary
 
@@ -241,7 +241,7 @@ Hardest: *other* (74.4), *how* (77.9), *why* (78.3); easiest: *when* (95.3), *wh
 ## 13. Provenance
 
 ```
-python visualize.py --best bert_kl_lam1.0        # regenerates figures/ and report/tables/ from runs/
+python scripts/visualize.py --best bert_kl_lam1.0  # regenerates docs/figures/ from runs/
 python scripts/make_results_report.py              # regenerates this file and docs/results_digest.json
 ```
-Sources per run: `config.json`, `train_summary.json`, `reranker_summary.json`, `eval_<set>/results.json` and `official_eval*.json`. NUS SoC cluster, H100 NVL; base-model training jobs 1068703–1068711 and re-evaluation jobs 1069429–1069438 (3 Nov 2026, after the Gan & Ng original-question scoring fix in commit 3d62dc6); DeBERTa-v3-large jobs 1072440 (`ce`) and 1072441 (`kl`) on 4 Nov 2026; reranker-ablation jobs 1073460–1073462 on 4 Nov 2026 (`scripts/submit_reranker_variants.sh`, outputs under `runs/<run>/rerank_variants/`); ensemble-baseline and consistency-reranker jobs 1096581–1096582 on 8 Nov 2026 (`scripts/submit_consistency_baseline.sh`, `scripts/submit_consistency_reranker.sh`). Cluster logs are not part of the repository.
+Sources per run: `config.json`, `train_summary.json`, `reranker_summary.json`, `eval_<set>/results.json` and `official_eval*.json`. NUS SoC cluster, H100 NVL; base-model training jobs 1068703–1068711 and re-evaluation jobs 1069429–1069438 (3 Nov 2026, after the Gan & Ng original-question scoring fix in commit 3d62dc6); DeBERTa-v3-large jobs 1072440 (`ce`) and 1072441 (`kl`) on 4 Nov 2026; reranker-ablation jobs 1073460–1073462 on 4 Nov 2026 (`scripts/run_reranker_variants.sh`, outputs under `runs/<run>/rerank_variants/`); ensemble-baseline and consistency-reranker jobs 1096581–1096582 on 8 Nov 2026 (`scripts/run_consistency_baseline.sh`, `scripts/run_consistency_reranker.sh`). Cluster logs are not part of the repository.

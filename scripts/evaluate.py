@@ -16,8 +16,8 @@ output), predictions_rerank.json + official_eval_rerank.json when a reranker is 
 (top-k distinct spans), disagreements.jsonl, and results.json (everything, incl. per-question-type metrics).
 
 Examples
-  python evaluate.py --weights weights/bert_kl/best.pt --eval_set dev --reranker weights/bert_kl/reranker.pt
-  python evaluate.py --weights weights/bert_kl/best.pt --eval_set addsent
+  python scripts/evaluate.py --weights weights/bert_kl/best.pt --eval_set dev --reranker weights/bert_kl/reranker.pt
+  python scripts/evaluate.py --weights weights/bert_kl/best.pt --eval_set addsent
 """
 
 from __future__ import annotations
@@ -25,19 +25,24 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 import time
 from typing import Any, Dict, Optional
 
 import numpy as np
 
-from g17qa.consistency import bootstrap_delta, ensemble_predictions, pair_accuracy
-from g17qa.data import attach_paraphrases, gold_answers, load_paired_files, load_squad, write_squad_subset
-from g17qa.decode import QuestionOutput, run_extractor
-from g17qa.metrics import compute_exact, consistency_metrics, exact_match_score, per_bucket_metrics, question_type, run_official_scorer
-from g17qa.model import load_checkpoint
-from g17qa.paraphrase import generate_paraphrase_cache
-from g17qa.reranker import SELECT_MODES, analyze_changes, apply_reranker, candidate_match, load_reranker, recall_at_ks
-from g17qa.utils import PROJECT_ROOT, amp_dtype_for, ensure_dir, get_device, write_json
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
+from g17qa.consistency import bootstrap_delta, ensemble_predictions, pair_accuracy  # noqa: E402
+from g17qa.data import attach_paraphrases, gold_answers, load_paired_files, load_squad, write_squad_subset  # noqa: E402
+from g17qa.decode import QuestionOutput, run_extractor  # noqa: E402
+from g17qa.metrics import compute_exact, consistency_metrics, exact_match_score, per_bucket_metrics, question_type, run_official_scorer  # noqa: E402
+from g17qa.model import load_checkpoint  # noqa: E402
+from g17qa.paraphrase import generate_paraphrase_cache  # noqa: E402
+from g17qa.reranker import SELECT_MODES, analyze_changes, apply_reranker, candidate_match, load_reranker, recall_at_ks  # noqa: E402
+from g17qa.utils import PROJECT_ROOT, amp_dtype_for, ensure_dir, get_device, write_json  # noqa: E402
 
 EVAL_SETS: Dict[str, Dict[str, Optional[str]]] = {
     "dev": {"file": "provided/dev-v1.1.json", "orig": None, "cache": "data/paraphrases/dev.jsonl"},

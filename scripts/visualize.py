@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Build report figures and LaTeX/Markdown tables from *real* run artefacts only.
+"""Build figures and Markdown summary tables from *real* run artefacts only.
 
 Reads   runs/<run>/history.json            (train.py loss telemetry)
         runs/<run>/train_summary.json      (validation history)
         runs/<run>/reranker_summary.json   (train_reranker.py)
         runs/<run>/eval_<set>/results.json (evaluate.py, official-scorer numbers)
-Writes  figures/*.pdf|png, figures/*.md, report/figures/*.pdf, report/tables/*.tex
+Writes  docs/figures/*.pdf|png, docs/figures/*.md
 
 There are deliberately no fallbacks: if a run or evaluation is missing, the corresponding figure/table cell is
 simply absent, and the script exits non-zero when it finds nothing at all.
 
-  python visualize.py                  # all runs
-  python visualize.py --runs bert_ce bert_aug bert_kl --best bert_kl
+  python scripts/visualize.py                  # all runs
+  python scripts/visualize.py --runs bert_ce bert_aug bert_kl --best bert_kl
 """
 
 from __future__ import annotations
@@ -218,33 +218,24 @@ def fig_lambda_sweep(runs, out_dirs) -> bool:
     return True
 
 
-def table_lambda(runs, fig_dir, tab_dir) -> bool:
+def table_lambda(runs, fig_dir) -> bool:
     rows = _lambda_runs(runs)
     if not rows:
         return False
-    tex = ["\\begin{table}[t]", "\\centering\\small", "\\begin{tabular}{llcccc}", "\\toprule",
-           "\\textbf{Model} & $\\lambda$ & \\textbf{Val F1} & \\textbf{Val Agr.} & \\textbf{Dev F1} & \\textbf{Dev Agr.} \\\\", "\\midrule"]
     md = ["| Model | λ | run | Val F1 | Val Agreement | Dev F1 | Dev Agreement |", "| :-- | --: | :-- | --: | --: | --: | --: |"]
     for model, lam, name, sm, d in rows:
         dev_f1 = d["f1"] if d else None
         dev_agr = d.get("cons") if d else None
-        tex.append(f"{_tex(model)} & {lam:g} & {_f(sm['best_val_f1'])} & {_f(sm.get('best_val_agreement_em'))} & {_f(dev_f1)} & {_f(dev_agr)} \\\\")
         md.append(f"| {model} | {lam:g} | {name} | {_f(sm['best_val_f1'])} | {_f(sm.get('best_val_agreement_em'))} | {_f(dev_f1)} | {_f(dev_agr)} |")
-    tex += ["\\bottomrule", "\\end{tabular}", "\\caption{Consistency weight $\\lambda$: F1 and paraphrase agreement on the held-out training articles (used to choose $\\lambda$) and on the dev set.}", "\\label{tab:lambda}", "\\end{table}"]
-    _write(os.path.join(tab_dir, "table_lambda.tex"), "\n".join(tex))
     _write(os.path.join(fig_dir, "table_lambda.md"), "\n".join(md))
     return True
-
-
-def _tex(s: str) -> str:
-    return s.replace("_", "\\_")
 
 
 def _f(v: Optional[float]) -> str:
     return "--" if v is None else f"{v:.1f}"
 
 
-def table_ablation(runs, fig_dir, tab_dir) -> bool:
+def table_ablation(runs, fig_dir) -> bool:
     rows = []
     for r in runs.values():
         d = _dev_numbers(r)
@@ -254,19 +245,14 @@ def table_ablation(runs, fig_dir, tab_dir) -> bool:
         rows.append((r["name"], cfg.get("model", "?").split("/")[-1], MODE_LABELS.get(cfg.get("loss_mode"), cfg.get("loss_mode", "?")), d))
     if not rows:
         return False
-    tex = ["\\begin{table}[t]", "\\centering\\small", "\\resizebox{\\columnwidth}{!}{%", "\\begin{tabular}{llcccccccc}", "\\toprule",
-           "\\textbf{Run} & \\textbf{Objective} & \\textbf{Val F1} & \\textbf{Val Agr.} & \\textbf{EM} & \\textbf{F1} & \\textbf{Agr.} & \\textbf{EM$_{rr}$} & \\textbf{F1$_{rr}$} & \\textbf{Agr.$_{rr}$} \\\\", "\\midrule"]
     md = ["| Run | Model | Objective | Val F1 | Val Agreement | EM | F1 | Agreement | EM +reranker | F1 +reranker | Agreement +reranker |", "| :-- | :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: |"]
     for name, model, mode, d in rows:
-        tex.append(f"{_tex(name)} ({model}) & {mode} & {_f(d.get('val_f1'))} & {_f(d.get('val_agr'))} & {_f(d['em'])} & {_f(d['f1'])} & {_f(d.get('cons'))} & {_f(d.get('rr_em'))} & {_f(d.get('rr_f1'))} & {_f(d.get('rr_cons'))} \\\\")
         md.append(f"| {name} | {model} | {mode} | {_f(d.get('val_f1'))} | {_f(d.get('val_agr'))} | {_f(d['em'])} | {_f(d['f1'])} | {_f(d.get('cons'))} | {_f(d.get('rr_em'))} | {_f(d.get('rr_f1'))} | {_f(d.get('rr_cons'))} |")
-    tex += ["\\bottomrule", "\\end{tabular}}", "\\caption{Val F1 / Val Agr.\\ are on the held-out training articles used for model selection and $\\lambda$ tuning; the remaining columns are SQuAD v1.1 dev results from the official scorer. Agr.\\ is the share of (question, back-translated paraphrase) pairs receiving the same answer; $rr$ columns use the learned span reranker.}", "\\label{tab:ablation}", "\\end{table}"]
-    _write(os.path.join(tab_dir, "table_ablation.tex"), "\n".join(tex))
     _write(os.path.join(fig_dir, "table_ablation.md"), "\n".join(md))
     return True
 
 
-def table_robustness(runs, fig_dir, tab_dir) -> bool:
+def table_robustness(runs, fig_dir) -> bool:
     rows = []
     for r in runs.values():
         cells = {}
@@ -282,10 +268,8 @@ def table_robustness(runs, fig_dir, tab_dir) -> bool:
     if not rows:
         return False
     cols = ["dev", "gan_dev_orig", "gan_dev", "gan_dev_agr", "gan_adv", "addsent", "addonesent"]
-    heads = {"dev": "dev", "gan_dev_orig": "G\\&N orig.", "gan_dev": "G\\&N para.", "gan_dev_agr": "G\\&N agr.", "gan_adv": "G\\&N adv.", "addsent": "AddSent", "addonesent": "AddOneSent"}
-    tex = ["\\begin{table}[t]", "\\centering\\small", "\\resizebox{\\columnwidth}{!}{%", "\\begin{tabular}{l" + "c" * len(cols) + "}", "\\toprule",
-           "\\textbf{Run} & " + " & ".join(f"\\textbf{{{heads[c]}}}" for c in cols) + " \\\\", "\\midrule"]
-    md = ["| Run | " + " | ".join(heads[c].replace("\\&", "&") for c in cols) + " |", "| :-- |" + " --: |" * len(cols)]
+    heads = {"dev": "dev", "gan_dev_orig": "G&N orig.", "gan_dev": "G&N para.", "gan_dev_agr": "G&N agr.", "gan_adv": "G&N adv.", "addsent": "AddSent", "addonesent": "AddOneSent"}
+    md = ["| Run | " + " | ".join(heads[c] for c in cols) + " |", "| :-- |" + " --: |" * len(cols)]
     for name, cells in rows:
         vals = []
         for c in cols:
@@ -296,15 +280,12 @@ def table_robustness(runs, fig_dir, tab_dir) -> bool:
                 vals.append(f"{v[0]:.1f} / {v[1]:.1f}")
             else:
                 vals.append(f"{v[0]:.1f}")
-        tex.append(f"{_tex(name)} & " + " & ".join(vals) + " \\\\")
         md.append(f"| {name} | " + " | ".join(vals) + " |")
-    tex += ["\\bottomrule", "\\end{tabular}}", "\\caption{F1 (\\%) from the official scorer on the dev set, the Gan \\& Ng (2019) paraphrased sets (original questions, paraphrases, and agreement between them) and Adversarial SQuAD. Cells with two numbers are extractor / +reranker.}", "\\label{tab:robustness}", "\\end{table}"]
-    _write(os.path.join(tab_dir, "table_robustness.tex"), "\n".join(tex))
     _write(os.path.join(fig_dir, "table_robustness.md"), "\n".join(md))
     return True
 
 
-def table_question_types(runs, best: Optional[str], fig_dir, tab_dir) -> bool:
+def table_question_types(runs, best: Optional[str], fig_dir) -> bool:
     cand = runs.get(best) if best else None
     if best and cand is None:
         print(f"warning: --best {best!r} is not a run under runs/ (have: {', '.join(sorted(runs)) or 'none'}); "
@@ -319,14 +300,10 @@ def table_question_types(runs, best: Optional[str], fig_dir, tab_dir) -> bool:
     ev = cand["evals"]["dev"]
     bt = ev["extractor"]["by_question_type"]
     rr = (ev.get("reranker") or {}).get("by_question_type", {})
-    tex = ["\\begin{table}[t]", "\\centering\\small", "\\begin{tabular}{lrccc}", "\\toprule", "\\textbf{Type} & $n$ & \\textbf{EM} & \\textbf{F1} & \\textbf{F1$_{rr}$} \\\\", "\\midrule"]
     md = [f"Question-type breakdown for run `{cand['name']}` (dev):", "", "| Type | n | EM | F1 | F1 +reranker |", "| :-- | --: | --: | --: | --: |"]
     for t, m in sorted(bt.items(), key=lambda kv: -kv[1]["n"]):
         rrf = rr.get(t, {}).get("f1")
-        tex.append(f"{t} & {m['n']} & {m['exact']:.1f} & {m['f1']:.1f} & {_f(rrf)} \\\\")
         md.append(f"| {t} | {m['n']} | {m['exact']:.1f} | {m['f1']:.1f} | {_f(rrf)} |")
-    tex += ["\\bottomrule", "\\end{tabular}", f"\\caption{{Dev-set results by question type for run {_tex(cand['name'])}.}}", "\\label{tab:qtypes}", "\\end{table}"]
-    _write(os.path.join(tab_dir, "table_question_types.tex"), "\n".join(tex))
     _write(os.path.join(fig_dir, "table_question_types.md"), "\n".join(md))
     return True
 
@@ -343,20 +320,18 @@ def main() -> int:
     p.add_argument("--runs", nargs="*", default=None, help="restrict to these run names (overrides --exclude)")
     p.add_argument("--exclude", nargs="*", default=["smoke*"], help="glob patterns of run names to skip (default: smoke*)")
     p.add_argument("--best", default=None, help="run used for the question-type table")
-    p.add_argument("--fig_dir", default="figures")
-    p.add_argument("--report_dir", default="report")
+    p.add_argument("--fig_dir", default="docs/figures")
     args = p.parse_args()
     runs = collect(args.runs_dir, args.runs, args.exclude)
     if not runs:
         print(f"no run artefacts found under {args.runs_dir}/ (train.py / evaluate.py write them); nothing to plot")
         return 1
-    out_dirs = [args.fig_dir, os.path.join(args.report_dir, "figures")]
-    tab_dir = os.path.join(args.report_dir, "tables")
+    out_dirs = [args.fig_dir]
     made = {
         "loss_curves": fig_loss_curves(runs, out_dirs), "ablation_dev": fig_ablation(runs, out_dirs), "robustness": fig_robustness(runs, out_dirs),
-        "table_ablation": table_ablation(runs, args.fig_dir, tab_dir), "table_robustness": table_robustness(runs, args.fig_dir, tab_dir),
-        "table_question_types": table_question_types(runs, args.best, args.fig_dir, tab_dir),
-        "lambda_sweep": fig_lambda_sweep(runs, out_dirs), "table_lambda": table_lambda(runs, args.fig_dir, tab_dir),
+        "table_ablation": table_ablation(runs, args.fig_dir), "table_robustness": table_robustness(runs, args.fig_dir),
+        "table_question_types": table_question_types(runs, args.best, args.fig_dir),
+        "lambda_sweep": fig_lambda_sweep(runs, out_dirs), "table_lambda": table_lambda(runs, args.fig_dir),
     }
     for k, v in made.items():
         print(f"{'generated' if v else 'skipped  '} {k}")

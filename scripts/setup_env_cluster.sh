@@ -50,7 +50,7 @@ pip install -r requirements.txt
 
 echo "== external evaluation sets =="
 mkdir -p runs weights logs/slurm data/paraphrases
-python download_eval_sets.py
+python scripts/download_eval_sets.py
 
 echo "== pre-downloading model weights =="
 python - <<'EOF'

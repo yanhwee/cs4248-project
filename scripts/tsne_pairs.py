@@ -6,8 +6,8 @@ and the [CLS] representation is taken. The plot shows t-SNE of all 2n points wit
 coloured by whether the extractor gives the pair the same answer. The JSON next to the figure records the
 mean cosine distance between pair representations, which should shrink after consistency training.
 
-  python tsne_pairs.py --weights weights/bert_ce/best.pt --paraphrase_cache data/paraphrases/dev.jsonl --n 300
-  python tsne_pairs.py --weights weights/bert_kl/best.pt --paraphrase_cache data/paraphrases/dev.jsonl --n 300
+  python scripts/tsne_pairs.py --weights weights/bert_ce/best.pt --paraphrase_cache data/paraphrases/dev.jsonl --n 300
+  python scripts/tsne_pairs.py --weights weights/bert_kl/best.pt --paraphrase_cache data/paraphrases/dev.jsonl --n 300
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 
 import matplotlib
 
@@ -23,6 +24,10 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 from torch.utils.data import DataLoader  # noqa: E402
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
 
 from g17qa.data import WindowDataset, attach_paraphrases, build_features, load_squad, make_collate_fn  # noqa: E402
 from g17qa.decode import run_extractor  # noqa: E402
@@ -37,7 +42,7 @@ def main() -> None:
     p.add_argument("--data_file", default="provided/dev-v1.1.json")
     p.add_argument("--paraphrase_cache", default="data/paraphrases/dev.jsonl")
     p.add_argument("--n", type=int, default=300)
-    p.add_argument("--out", default=None, help="default figures/tsne_<run>.pdf")
+    p.add_argument("--out", default=None, help="default docs/figures/tsne_<run>.pdf")
     p.add_argument("--device", default="auto")
     p.add_argument("--seed", type=int, default=42)
     args = p.parse_args()
@@ -45,7 +50,7 @@ def main() -> None:
     device = get_device(args.device)
     model, tok, cfg = load_checkpoint(args.weights, device)
     run = cfg.get("run_name") or os.path.basename(os.path.dirname(args.weights))
-    out = args.out or os.path.join("figures", f"tsne_{run}.pdf")
+    out = args.out or os.path.join("docs", "figures", f"tsne_{run}.pdf")
     os.makedirs(os.path.dirname(out), exist_ok=True)
 
     ex = load_squad(args.data_file)

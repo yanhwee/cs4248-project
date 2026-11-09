@@ -754,14 +754,14 @@ def main() -> int:
     w("## 13. Provenance")
     w("")
     w("```")
-    w("python visualize.py --best " + args.selected + "        # regenerates figures/ and report/tables/ from runs/")
+    w("python scripts/visualize.py --best " + args.selected + "  # regenerates docs/figures/ from runs/")
     w("python scripts/make_results_report.py              # regenerates this file and docs/results_digest.json")
     w("```")
     w("Sources per run: `config.json`, `train_summary.json`, `reranker_summary.json`, `eval_<set>/results.json` and `official_eval*.json`. "
       "NUS SoC cluster, H100 NVL; base-model training jobs 1068703–1068711 and re-evaluation jobs 1069429–1069438 (3 Nov 2026, after the Gan & Ng original-question scoring fix in commit 3d62dc6)"
       + ("; DeBERTa-v3-large jobs 1072440 (`ce`) and 1072441 (`kl`) on 4 Nov 2026" if dl_ce else "")
-      + ("; reranker-ablation jobs 1073460–1073462 on 4 Nov 2026 (`scripts/submit_reranker_variants.sh`, outputs under `runs/<run>/rerank_variants/`)" if any(D[n].get("variants") for n in order) else "")
-      + ("; ensemble-baseline and consistency-reranker jobs 1096581–1096582 on 8 Nov 2026 (`scripts/submit_consistency_baseline.sh`, `scripts/submit_consistency_reranker.sh`)" if any("ENSEMBLE" in D[n].get("variants", {}) for n in order) else "") + ". Cluster logs are not part of the repository.")
+      + ("; reranker-ablation jobs 1073460–1073462 on 4 Nov 2026 (`scripts/run_reranker_variants.sh`, outputs under `runs/<run>/rerank_variants/`)" if any(D[n].get("variants") for n in order) else "")
+      + ("; ensemble-baseline and consistency-reranker jobs 1096581–1096582 on 8 Nov 2026 (`scripts/run_consistency_baseline.sh`, `scripts/run_consistency_reranker.sh`)" if any("ENSEMBLE" in D[n].get("variants", {}) for n in order) else "") + ". Cluster logs are not part of the repository.")
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as f:
         f.write("\n".join(L) + "\n")

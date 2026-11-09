@@ -12,19 +12,8 @@ import argparse, json, os, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
-import numpy as np  # noqa: E402
+from g17qa.consistency import bootstrap_delta  # noqa: E402
 from g17qa.metrics import exact_match_score, f1_score  # noqa: E402
-
-
-
-def bootstrap_delta(base, variant, n_boot=2000, seed=0, ci=95.0):
-    """Verbatim copy of g17qa.consistency.bootstrap_delta (copied so the script needs no torch/transformers)."""
-    d = np.asarray(variant, dtype=np.float64) - np.asarray(base, dtype=np.float64)
-    rng = np.random.default_rng(seed)
-    idx = rng.integers(0, d.size, size=(n_boot, d.size))
-    means = d[idx].mean(1) * 100.0
-    lo, hi = np.percentile(means, [(100 - ci) / 2, 100 - (100 - ci) / 2])
-    return {"delta": 100.0 * float(d.mean()), "ci_low": float(lo), "ci_high": float(hi), "n": int(d.size)}
 
 
 PAIRS = [("deb_large_ce", "deb_large_kl")]  # only the large runs have per-question predictions committed

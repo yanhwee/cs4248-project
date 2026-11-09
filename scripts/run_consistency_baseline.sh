@@ -2,7 +2,7 @@
 # Learning-free paraphrase-ensemble baseline vs the learned reranker, with both-views-correct rates and 95% bootstrap CIs.
 # Eval only: reuses weights/<run>/best.pt and the rerankers trained by scripts/run_reranker_variants.sh. Nothing is retrained.
 #
-#   bash scripts/submit_consistency_baseline.sh                       # sbatch, default RUNS=deb_large_kl
+#   sbatch --job-name=g17_cb --time=03:00:00 --export=ALL,RUNS=deb_large_kl,PIPELINE=scripts/run_consistency_baseline.sh scripts/job_reranker_variants.sbatch
 #   RUNS=deb_large_kl EVAL_SETS="dev gan_dev" bash scripts/run_consistency_baseline.sh    # inside an allocation
 #
 # Per run and eval set it writes (existing artefacts untouched; each step skipped if its output exists):
@@ -25,13 +25,13 @@ evaluate() {  # evaluate RUN SET TAG RERANKER [extra evaluate.py args...]
     echo "   runs/$RUN/rerank_variants/$TAG/eval_$S/results.json exists, skipping"
   else
     echo "-- $RUN | $S | $TAG"
-    $PY evaluate.py --weights "weights/$RUN/best.pt" --eval_set "$S" --reranker "$RR" --tag "$TAG" --precision "$PRECISION" --device "$DEVICE" "$@"
+    $PY scripts/evaluate.py --weights "weights/$RUN/best.pt" --eval_set "$S" --reranker "$RR" --tag "$TAG" --precision "$PRECISION" --device "$DEVICE" "$@"
   fi
 }
 
 echo "== consistency baseline: runs=[$RUNS] sets=[$EVAL_SETS] beta=$BETA =="
 echo "   started on $(hostname) at $(date)"
-$PY download_eval_sets.py
+$PY scripts/download_eval_sets.py
 for RUN in $RUNS; do
   for F in "weights/$RUN/best.pt" "weights/$RUN/reranker_pair.pt" "weights/$RUN/reranker_nopair.pt"; do
     [ -f "$F" ] || { echo "missing $F (run scripts/run_reranker_variants.sh for $RUN first)"; exit 1; }

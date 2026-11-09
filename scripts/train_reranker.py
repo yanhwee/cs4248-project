@@ -7,7 +7,7 @@ train / early-stopping sets. For every question the extractor's top-k distinct c
 together with their hidden-state features and, when a paraphrase is cached, the paraphrase view's scores.
 
 Example
-  python train_reranker.py --weights weights/bert_kl/best.pt --paraphrase_cache data/paraphrases/train.jsonl
+  python scripts/train_reranker.py --weights weights/bert_kl/best.pt --paraphrase_cache data/paraphrases/train.jsonl
 """
 
 from __future__ import annotations
@@ -15,14 +15,18 @@ from __future__ import annotations
 import argparse
 import os
 import random
+import sys
 import time
 from typing import Any, Dict
 
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
 
-from g17qa.data import attach_paraphrases, gold_answers, load_squad, split_by_article
-from g17qa.decode import run_extractor
-from g17qa.model import load_checkpoint
-from g17qa.reranker import build_items, candidate_ceiling, evaluate_items, pair_agreement, save_reranker, train_reranker
+from g17qa.data import attach_paraphrases, gold_answers, load_squad, split_by_article  # noqa: E402
+from g17qa.decode import run_extractor  # noqa: E402
+from g17qa.model import load_checkpoint  # noqa: E402
+from g17qa.reranker import build_items, candidate_ceiling, evaluate_items, pair_agreement, save_reranker, train_reranker  # noqa: E402
 
 # (mode, alpha, override_margin) configurations reported on the held-out articles, so alpha / the gate can be chosen
 # there (never on the SQuAD dev set)

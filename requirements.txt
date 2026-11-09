@@ -1,4 +1,4 @@
-# CS4248 G17 — paraphrase-consistent extractive QA with a learned span reranker
+# CS4248 G17 — paraphrase-consistent extractive question answering on SQuAD v1.1
 # Python >= 3.10. Tested with Python 3.11 / torch 2.15 / transformers 5.22 on macOS (CPU, MPS) and Linux.
 torch>=2.1
 transformers>=4.40
@@ -13,5 +13,3 @@ scipy                  # Hungarian assignment (optimal-transport ablation)
 numpy
 tqdm
 matplotlib
-# optional: the legacy interactive notebook only
-# marimo

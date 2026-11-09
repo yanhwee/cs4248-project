@@ -3,7 +3,7 @@
 # Reuses weights/<run>/best.pt (no extractor training). Trains WITHOUT the paraphrase-derived features so that, unlike the
 # pair_score variant, the reranker needs no paraphrase at test time; the consistency term is the only paraphrase signal.
 #
-#   bash scripts/submit_consistency_reranker.sh                  # sbatch, default RUNS=deb_large_kl
+#   sbatch --job-name=g17_cr --time=04:00:00 --export=ALL,RUNS=deb_large_kl,PIPELINE=scripts/run_consistency_reranker.sh scripts/job_reranker_variants.sbatch
 #   RUNS=deb_large_kl WEIGHTS="0.5 1.0 2.0" bash scripts/run_consistency_reranker.sh     # inside an allocation
 #
 # For each consistency weight W it trains   weights/<R>/reranker_nopair_cw<W>.pt   (runs/<R>/reranker_summary_nopair_cw<W>.json, with a
@@ -30,19 +30,19 @@ evaluate() {  # evaluate RUN SET TAG RERANKER [extra evaluate.py args...]
     echo "   runs/$RUN/rerank_variants/$TAG/eval_$S/results.json exists, skipping"
   else
     echo "-- $RUN | $S | $TAG"
-    $PY evaluate.py --weights "weights/$RUN/best.pt" --eval_set "$S" --reranker "$RR" --tag "$TAG" --precision "$PRECISION" --device "$DEVICE" "$@"
+    $PY scripts/evaluate.py --weights "weights/$RUN/best.pt" --eval_set "$S" --reranker "$RR" --tag "$TAG" --precision "$PRECISION" --device "$DEVICE" "$@"
   fi
 }
 
 echo "== consistency reranker: runs=[$RUNS] weights=[$WEIGHTS] sets=[$EVAL_SETS] select_by=$SELECT_BY =="
 echo "   started on $(hostname) at $(date)"
-$PY download_eval_sets.py
+$PY scripts/download_eval_sets.py
 for RUN in $RUNS; do
   [ -f "weights/$RUN/best.pt" ] || { echo "missing weights/$RUN/best.pt"; exit 1; }
   [ -f "$PARA_TRAIN" ] || { echo "missing $PARA_TRAIN (the consistency term needs the training paraphrase cache)"; exit 1; }
   for W in $WEIGHTS; do
     if [ -f "weights/$RUN/reranker_nopair_cw$W.pt" ]; then echo "   reranker_nopair_cw$W.pt exists, skipping"; else
-      $PY train_reranker.py --weights "weights/$RUN/best.pt" --paraphrase_cache "$PARA_TRAIN" --no_pair_score --consistency_weight "$W" \
+      $PY scripts/train_reranker.py --weights "weights/$RUN/best.pt" --paraphrase_cache "$PARA_TRAIN" --no_pair_score --consistency_weight "$W" \
         --select_by "$SELECT_BY" --tag "_nopair_cw$W" --precision "$PRECISION" --device "$DEVICE" $EXTRA_RR_ARGS
     fi
     for S in $EVAL_SETS; do

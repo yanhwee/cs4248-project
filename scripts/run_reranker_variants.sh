@@ -35,7 +35,7 @@ EXTRA_RR_ARGS=${EXTRA_RR_ARGS:-}          # e.g. "--epochs 30"
 
 echo "== reranker variants: runs=[$RUNS] sets=[$EVAL_SETS] precision=$PRECISION device=$DEVICE =="
 echo "   started on $(hostname) at $(date)"
-$PY download_eval_sets.py
+$PY scripts/download_eval_sets.py
 
 evaluate() {  # evaluate RUN SET TAG RERANKER [extra evaluate.py args...]
   local RUN=$1 S=$2 TAG=$3 RR=$4; shift 4
@@ -43,7 +43,7 @@ evaluate() {  # evaluate RUN SET TAG RERANKER [extra evaluate.py args...]
     echo "   runs/$RUN/rerank_variants/$TAG/eval_$S/results.json exists, skipping"
   else
     echo "-- $RUN | $S | $TAG"
-    $PY evaluate.py --weights "weights/$RUN/best.pt" --eval_set "$S" --reranker "$RR" --tag "$TAG" --precision "$PRECISION" --device "$DEVICE" "$@"
+    $PY scripts/evaluate.py --weights "weights/$RUN/best.pt" --eval_set "$S" --reranker "$RR" --tag "$TAG" --precision "$PRECISION" --device "$DEVICE" "$@"
   fi
 }
 
@@ -51,10 +51,10 @@ for RUN in $RUNS; do
   [ -f "weights/$RUN/best.pt" ] || { echo "missing weights/$RUN/best.pt (this script reuses trained extractors)"; exit 1; }
   echo "== $RUN: train rerankers =="
   if [ -f "weights/$RUN/reranker_pair.pt" ]; then echo "   reranker_pair.pt exists, skipping"; else
-    $PY train_reranker.py --weights "weights/$RUN/best.pt" --paraphrase_cache "$PARA_TRAIN" --use_pair_score --tag _pair --precision "$PRECISION" --device "$DEVICE" $EXTRA_RR_ARGS
+    $PY scripts/train_reranker.py --weights "weights/$RUN/best.pt" --paraphrase_cache "$PARA_TRAIN" --use_pair_score --tag _pair --precision "$PRECISION" --device "$DEVICE" $EXTRA_RR_ARGS
   fi
   if [ -f "weights/$RUN/reranker_nopair.pt" ]; then echo "   reranker_nopair.pt exists, skipping"; else
-    $PY train_reranker.py --weights "weights/$RUN/best.pt" --paraphrase_cache "$PARA_TRAIN" --no_pair_score --tag _nopair --precision "$PRECISION" --device "$DEVICE" $EXTRA_RR_ARGS
+    $PY scripts/train_reranker.py --weights "weights/$RUN/best.pt" --paraphrase_cache "$PARA_TRAIN" --no_pair_score --tag _nopair --precision "$PRECISION" --device "$DEVICE" $EXTRA_RR_ARGS
   fi
   PAIR="weights/$RUN/reranker_pair.pt"; NOPAIR="weights/$RUN/reranker_nopair.pt"
 

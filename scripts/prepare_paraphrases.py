@@ -7,24 +7,30 @@ JSONL file consumed by train.py (--paraphrase_cache) and evaluate.py. The run is
 
 Examples
   # full training set (GPU recommended; on CPU this takes a few hours but can be interrupted and resumed)
-  python prepare_paraphrases.py --input provided/train-v1.1.json --output data/paraphrases/train.jsonl
+  python scripts/prepare_paraphrases.py --input provided/train-v1.1.json --output data/paraphrases/train.jsonl
 
   # dev set, needed for the consistency metric at evaluation time
-  python prepare_paraphrases.py --input provided/dev-v1.1.json --output data/paraphrases/dev.jsonl
+  python scripts/prepare_paraphrases.py --input provided/dev-v1.1.json --output data/paraphrases/dev.jsonl
 
   # quick smoke test with the rule-based fallback
-  python prepare_paraphrases.py --input provided/train-v1.1.json --output data/paraphrases/smoke.jsonl \
+  python scripts/prepare_paraphrases.py --input provided/train-v1.1.json --output data/paraphrases/smoke.jsonl \
       --method heuristic --max_examples 300
 """
 
 from __future__ import annotations
 
 import argparse
+import os
+import sys
 import time
 
-from g17qa.data import load_squad
-from g17qa.paraphrase import generate_paraphrase_cache
-from g17qa.utils import get_device
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
+from g17qa.data import load_squad  # noqa: E402
+from g17qa.paraphrase import generate_paraphrase_cache  # noqa: E402
+from g17qa.utils import get_device  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:

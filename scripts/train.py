@@ -12,12 +12,12 @@ Protocol
   * The checkpoint with the best validation F1 is kept as weights/<run_name>/best.pt.
 
 Examples
-  python train.py --run_name bert_ce  --loss_mode ce
-  python train.py --run_name bert_kl  --loss_mode kl --paraphrase_cache data/paraphrases/train.jsonl --lambda_kl 1.0
-  python train.py --run_name deb_kl   --model microsoft/deberta-v3-base --loss_mode kl \
+  python scripts/train.py --run_name bert_ce  --loss_mode ce
+  python scripts/train.py --run_name bert_kl  --loss_mode kl --paraphrase_cache data/paraphrases/train.jsonl --lambda_kl 1.0
+  python scripts/train.py --run_name deb_kl   --model microsoft/deberta-v3-base --loss_mode kl \
       --paraphrase_cache data/paraphrases/train.jsonl --precision bf16
   # CPU smoke test
-  python train.py --run_name smoke --model google/bert_uncased_L-2_H-128_A-2 --loss_mode kl \
+  python scripts/train.py --run_name smoke --model google/bert_uncased_L-2_H-128_A-2 --loss_mode kl \
       --paraphrase_cache data/paraphrases/smoke.jsonl --max_examples 300 --epochs 1 --batch_size 8
 """
 
@@ -28,18 +28,23 @@ import json
 import math
 import os
 import random
+import sys
 from typing import Any, Dict, List
 
 import torch
 from torch.utils.data import DataLoader
 from transformers import get_linear_schedule_with_warmup
 
-from g17qa.data import WindowDataset, attach_paraphrases, build_features, gold_answers, load_squad, make_collate_fn, split_by_article
-from g17qa.decode import run_extractor
-from g17qa.losses import LOSS_MODES, PAIRED_MODES, compute_total_loss
-from g17qa.metrics import summarize_outputs
-from g17qa.model import SpanExtractor, load_tokenizer, save_checkpoint, tokenizer_uses_token_type_ids
-from g17qa.utils import Timer, amp_dtype_for, count_trainable_parameters, ensure_dir, get_device, set_seed, write_json
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
+from g17qa.data import WindowDataset, attach_paraphrases, build_features, gold_answers, load_squad, make_collate_fn, split_by_article  # noqa: E402
+from g17qa.decode import run_extractor  # noqa: E402
+from g17qa.losses import LOSS_MODES, PAIRED_MODES, compute_total_loss  # noqa: E402
+from g17qa.metrics import summarize_outputs  # noqa: E402
+from g17qa.model import SpanExtractor, load_tokenizer, save_checkpoint, tokenizer_uses_token_type_ids  # noqa: E402
+from g17qa.utils import Timer, amp_dtype_for, count_trainable_parameters, ensure_dir, get_device, set_seed, write_json  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:

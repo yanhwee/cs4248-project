@@ -31,4 +31,4 @@ if [ -z "${SKIP_OT:-}" ]; then
 fi
 echo
 echo "monitor:  squeue --me        logs: tail -f logs/slurm/<job-name>-<job-id>.out"
-echo "results:  runs/<run>/eval_<set>/results.json ; then  python visualize.py --best <run>  (figures stage)"
+echo "results:  runs/<run>/eval_<set>/results.json ; then  python scripts/visualize.py --best <run>  (figures stage)"

@@ -37,19 +37,19 @@ has_stage() { case " $STAGES " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 
 echo "== pipeline: model=$MODEL modes=[$MODES] epochs=$EPOCHS batch=$BATCH x$GRAD_ACCUM lr=$LR precision=$PRECISION device=$DEVICE stages=[$STAGES] =="
 echo "   started on $(hostname) at $(date)"
-$PY download_eval_sets.py
+$PY scripts/download_eval_sets.py
 
 if has_stage paraphrases; then
   echo "== 1. paraphrase caches =="
-  $PY prepare_paraphrases.py --input provided/train-v1.1.json --output "$PARA_TRAIN" --device "$DEVICE"
-  $PY prepare_paraphrases.py --input provided/dev-v1.1.json --output "$PARA_DEV" --device "$DEVICE"
+  $PY scripts/prepare_paraphrases.py --input provided/train-v1.1.json --output "$PARA_TRAIN" --device "$DEVICE"
+  $PY scripts/prepare_paraphrases.py --input provided/dev-v1.1.json --output "$PARA_DEV" --device "$DEVICE"
   for S in addsent addonesent; do
     F=data/external/adversarial_squad/$( [ "$S" = addsent ] && echo AddSent || echo AddOneSent ).json
-    $PY prepare_paraphrases.py --input "$F" --output "data/paraphrases/$S.jsonl" --device "$DEVICE"
+    $PY scripts/prepare_paraphrases.py --input "$F" --output "data/paraphrases/$S.jsonl" --device "$DEVICE"
   done
 fi
 if ! has_stage train && ! has_stage reranker && ! has_stage eval; then
-  has_stage figures && $PY visualize.py || true
+  has_stage figures && $PY scripts/visualize.py || true
   echo "pipeline finished at $(date)"; exit 0
 fi
 
@@ -75,7 +75,7 @@ for JOB in $JOBS; do
         echo "   found a checkpoint from an interrupted run; retraining $RUN from scratch"
         rm -rf "weights/$RUN" "runs/$RUN"
       fi
-      $PY train.py --run_name "$RUN" --model "$MODEL" --loss_mode "$MODE" --paraphrase_cache "$PARA_TRAIN" \
+      $PY scripts/train.py --run_name "$RUN" --model "$MODEL" --loss_mode "$MODE" --paraphrase_cache "$PARA_TRAIN" \
         --epochs "$EPOCHS" --batch_size "$BATCH" --grad_accum "$GRAD_ACCUM" --lr "$LR" --precision "$PRECISION" --device "$DEVICE" --lambda_kl "$LAM" \
         --max_examples "$MAX_EXAMPLES" $EXTRA_TRAIN_ARGS
     fi
@@ -85,7 +85,7 @@ for JOB in $JOBS; do
     if [ -f "weights/$RUN/reranker.pt" ]; then
       echo "   weights/$RUN/reranker.pt exists, skipping"
     else
-      $PY train_reranker.py --weights "weights/$RUN/best.pt" --paraphrase_cache "$PARA_TRAIN" --precision "$PRECISION" --device "$DEVICE"
+      $PY scripts/train_reranker.py --weights "weights/$RUN/best.pt" --paraphrase_cache "$PARA_TRAIN" --precision "$PRECISION" --device "$DEVICE"
     fi
   fi
   if has_stage eval; then
@@ -95,7 +95,7 @@ for JOB in $JOBS; do
       if [ -f "runs/$RUN/eval_$S/results.json" ]; then
         echo "   runs/$RUN/eval_$S/results.json exists, skipping"
       else
-        $PY evaluate.py --weights "weights/$RUN/best.pt" --eval_set "$S" $RR_ARGS --precision "$PRECISION" --device "$DEVICE"
+        $PY scripts/evaluate.py --weights "weights/$RUN/best.pt" --eval_set "$S" $RR_ARGS --precision "$PRECISION" --device "$DEVICE"
       fi
     done
   fi
@@ -103,6 +103,6 @@ done
 
 if has_stage figures; then
   echo "== 5. figures and tables =="
-  $PY visualize.py || true
+  $PY scripts/visualize.py || true
 fi
 echo "pipeline finished at $(date)"

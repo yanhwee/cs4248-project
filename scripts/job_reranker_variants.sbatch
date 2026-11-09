@@ -4,7 +4,8 @@
 #
 #   sbatch --job-name=g17_rr_bert --export=ALL,RUNS=bert_kl_lam1.0 scripts/job_reranker_variants.sbatch
 #   sbatch --job-name=g17_rr_deb  --export=ALL,RUNS=deb_kl         scripts/job_reranker_variants.sbatch
-#   bash scripts/submit_reranker_variants.sh                       # both, one job each
+#   sbatch --job-name=g17_cb --time=03:00:00 --export=ALL,RUNS=deb_large_kl,PIPELINE=scripts/run_consistency_baseline.sh scripts/job_reranker_variants.sbatch
+#   sbatch --job-name=g17_cr --time=04:00:00 --export=ALL,RUNS=deb_large_kl,PIPELINE=scripts/run_consistency_reranker.sh scripts/job_reranker_variants.sbatch
 #SBATCH --job-name=g17_rr_variants
 #SBATCH --partition=gpu-long
 #SBATCH --time=04:00:00

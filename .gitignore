@@ -19,7 +19,6 @@ env/
 # Caches
 .cache/
 hf_cache/
-__marimo__/
 
 # Data: the course-provided files live in provided/ (kept out of git because of size),
 # downloaded evaluation sets and paraphrase caches are reproducible via the scripts
@@ -80,7 +79,6 @@ scratch*/
 # Course handouts, the proposal and internal working notes: kept locally, not part of the submission
 docs/*.pdf
 docs/status_review*.md
-docs/math.md
 docs/CHANGES.md
 research_notes/
 reports/
