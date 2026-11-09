@@ -86,13 +86,13 @@ def table_second(runs):
     r = runs["deb_large_kl"]
     V = r["variants"]
     base = V["CB_pair_argmax_ensemble"]["sets"]
-    rows = [[r"extractor alone", "--", "--", "--", f(base["dev"]["both"]), "--", "--"]]
+    rows = [[r"Extractor alone", "--", "--", "--", f(base["dev"]["both"]), "--", "--"]]
     specs = [
-        (r"+ reranker, pair features", "CB_pair_argmax_ensemble", True),
-        (r"+ reranker, no pair features", "CB_nopair_argmax", False),
-        (r"\quad blended, $\alpha{=}1$", "CB_nopair_res1.0", False),
-        (r"\quad consistency-trained, $w{=}1$", "CR_cw1.0_argmax", False),
-        (r"+ paraphrase ensemble, $\beta{=}1$", "ENSEMBLE", True),
+        (r"Reranker (pair features)", "CB_pair_argmax_ensemble", True),
+        (r"Reranker (no pair features)", "CB_nopair_argmax", False),
+        (r"Reranker (no pair), blended $\alpha{=}1$", "CB_nopair_res1.0", False),
+        (r"Reranker (no pair), cons.-trained $w{=}1$", "CR_cw1.0_argmax", False),
+        (r"Paraphrase ensemble, training-free", "ENSEMBLE", True),
     ]
     for label, key, needs_para in specs:
         s = V[key]["sets"]
@@ -102,22 +102,22 @@ def table_second(runs):
                      delta(dv["rr_f1"], dv["f1"]),
                      sig(delta(dv["rr_agr"], dv["agr"]), dv.get("ci_agr")),
                      f(dv["rr_both"]),
-                     sig(delta(ads["rr_em"], ads["em"]), ads.get("ci_em")),
-                     sig(delta(aos["rr_em"], aos["em"]), aos.get("ci_em"))])
+                     delta(ads["rr_f1"], ads["f1"]),
+                     delta(aos["rr_f1"], aos["f1"])])
     body = "\n".join(" & ".join(c) + " \\\\" for c in rows)
     return rf"""\begin{{table*}}[t]
 \centering\small
-\setlength{{\tabcolsep}}{{6pt}}
+\setlength{{\tabcolsep}}{{5pt}}
 \begin{{tabular}}{{lcccc@{{\hspace{{14pt}}}}cc}}
 \toprule
 & \multicolumn{{4}}{{c}}{{\textbf{{SQuAD dev}}}} & \textbf{{AddSent}} & \textbf{{AddOneSent}} \\
 \cmidrule(lr){{2-5}} \cmidrule(lr){{6-7}}
-\textbf{{Second stage on the proposed extractor}} & $\Delta$EM & $\Delta$F1 & $\Delta$Agreement & Both correct & $\Delta$EM & $\Delta$EM \\
+\textbf{{Second stage on the proposed extractor}} & $\Delta$EM & $\Delta$F1 & $\Delta$Agreement & Both correct & $\Delta$F1 & $\Delta$F1 \\
 \midrule
 {body}
 \bottomrule
 \end{{tabular}}
-\caption{{Second-stage selection among the top-20 spans of the proposed extractor. $\Delta$ = second stage $-$ extractor; $^{{*}}$: 95\% paired-bootstrap interval excludes zero. \emph{{Both correct}}: pairs where both answers are exact matches. $^\dagger$needs the paraphrase at test time.}}
+\caption{{Second-stage selection among the top-20 spans of the proposed extractor. $\Delta$ = second stage $-$ extractor; $^{{*}}$: 95\% paired-bootstrap interval excludes zero (dev EM/agreement only; no F1 intervals). \emph{{Both correct}}: pairs where both answers are exact matches. $^\dagger$needs a paraphrase at test time.}}
 \label{{tab:second}}
 \end{{table*}}
 """
