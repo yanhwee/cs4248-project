@@ -10,13 +10,13 @@ Nothing in the tables is typed by hand:
 ```bash
 python scripts/make_results_report.py     # runs/ -> docs/RESULTS.md + docs/results_digest.json
 python scripts/make_report_tables.py      # digest -> report/tables/rep_main.tex, rep_second.tex (the paper's two tables)
-python scripts/visualize.py --best bert_kl_lam1.0 # docs/figures/ (general plots and Markdown summary tables)
+python scripts/visualize.py --best bert_kl_lam1.0 # figures/ (general plots and Markdown summary tables)
 ```
 
 Numbers quoted in the prose follow `docs/RESULTS.md` (one-decimal rounding; differences are differences of rounded
 values). The qualitative table is transcribed from `runs/deb_large_ce/eval_dev/disagreements.jsonl` and
 `runs/deb_large_kl/eval_dev/{candidates,disagreements}.jsonl`; the question ids are in a comment above the table.
-The representation-geometry numbers come from `docs/figures/tsne_bert_ce.json` and `docs/figures/tsne_bert_kl.json`.
+The representation-geometry numbers come from `figures/tsne_bert_ce.json` and `figures/tsne_bert_kl.json`.
 
 ## Build
 

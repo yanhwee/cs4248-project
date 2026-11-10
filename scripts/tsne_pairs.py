@@ -42,7 +42,7 @@ def main() -> None:
     p.add_argument("--data_file", default="provided/dev-v1.1.json")
     p.add_argument("--paraphrase_cache", default="data/paraphrases/dev.jsonl")
     p.add_argument("--n", type=int, default=300)
-    p.add_argument("--out", default=None, help="default docs/figures/tsne_<run>.pdf")
+    p.add_argument("--out", default=None, help="default figures/tsne_<run>.pdf")
     p.add_argument("--device", default="auto")
     p.add_argument("--seed", type=int, default=42)
     args = p.parse_args()
@@ -50,7 +50,7 @@ def main() -> None:
     device = get_device(args.device)
     model, tok, cfg = load_checkpoint(args.weights, device)
     run = cfg.get("run_name") or os.path.basename(os.path.dirname(args.weights))
-    out = args.out or os.path.join("docs", "figures", f"tsne_{run}.pdf")
+    out = args.out or os.path.join("figures", f"tsne_{run}.pdf")
     os.makedirs(os.path.dirname(out), exist_ok=True)
 
     ex = load_squad(args.data_file)

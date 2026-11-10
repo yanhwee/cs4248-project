@@ -754,7 +754,7 @@ def main() -> int:
     w("## 13. Provenance")
     w("")
     w("```")
-    w("python scripts/visualize.py --best " + args.selected + "  # regenerates docs/figures/ from runs/")
+    w("python scripts/visualize.py --best " + args.selected + "  # regenerates figures/ from runs/")
     w("python scripts/make_results_report.py              # regenerates this file and docs/results_digest.json")
     w("```")
     w("Sources per run: `config.json`, `train_summary.json`, `reranker_summary.json`, `eval_<set>/results.json` and `official_eval*.json`. "

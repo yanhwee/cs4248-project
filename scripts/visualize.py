@@ -5,7 +5,7 @@ Reads   runs/<run>/history.json            (train.py loss telemetry)
         runs/<run>/train_summary.json      (validation history)
         runs/<run>/reranker_summary.json   (train_reranker.py)
         runs/<run>/eval_<set>/results.json (evaluate.py, official-scorer numbers)
-Writes  docs/figures/*.pdf|png, docs/figures/*.md
+Writes  figures/*.pdf|png, figures/*.md
 
 There are deliberately no fallbacks: if a run or evaluation is missing, the corresponding figure/table cell is
 simply absent, and the script exits non-zero when it finds nothing at all.
@@ -320,7 +320,7 @@ def main() -> int:
     p.add_argument("--runs", nargs="*", default=None, help="restrict to these run names (overrides --exclude)")
     p.add_argument("--exclude", nargs="*", default=["smoke*"], help="glob patterns of run names to skip (default: smoke*)")
     p.add_argument("--best", default=None, help="run used for the question-type table")
-    p.add_argument("--fig_dir", default="docs/figures")
+    p.add_argument("--fig_dir", default="figures")
     args = p.parse_args()
     runs = collect(args.runs_dir, args.runs, args.exclude)
     if not runs:

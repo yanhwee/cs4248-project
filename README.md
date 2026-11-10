@@ -118,7 +118,7 @@ All tables and figures are built directly from the committed JSON artefacts unde
 ```bash
 python scripts/make_results_report.py             # runs/ -> docs/RESULTS.md + docs/results_digest.json
 python scripts/make_report_tables.py              # docs/results_digest.json -> report/tables/rep_main.tex, rep_second.tex
-python scripts/visualize.py --best bert_kl_lam1.0 # runs/ -> docs/figures/*.pdf|png|md
+python scripts/visualize.py --best bert_kl_lam1.0 # runs/ -> figures/*.pdf|png|md
 cd report && tectonic main.tex                    # compiles report/main.pdf (or pdflatex + bibtex)
 ```
 
@@ -136,9 +136,11 @@ scripts/        CLI entrypoints (prepare_paraphrases.py, train.py, train_reranke
                 bootstrap_main.py, summarize_reranker_variants.py)
 tests/          unit & integration tests (test_core.py, test_reranker.py, test_consistency.py, test_consistency_reranker.py)
 runs/           committed JSON telemetry and official-scorer outputs for all 11 cluster runs & ablations
+figures/        generated plots (.pdf/.png) and Markdown summary tables (.md)
 report/         ACL short paper (main.tex, compiled main.pdf, custom.bib, generated tables/rep_*.tex)
+presentation/   presentation slides (G17_presentation.pptx), layout, and 15-minute speaker script
 docs/           RESULTS.md (full experimental report), math.md (mathematical specification), results_digest.json,
-                bootstrap_main.json, and figures/ (generated plots .pdf/.png and Markdown summary tables .md)
+                and bootstrap_main.json
 provided/       official SQuAD scorer evaluate-v2.0.py (train-v1.1.json and dev-v1.1.json placed here locally)
 ```
 
